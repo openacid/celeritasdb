@@ -18,4 +18,5 @@ hello = { path = "components/hello" }
 [workspace]
 members = [
   "components/hello",
+  "components/snapshot",
 ]
