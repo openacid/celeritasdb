@@ -46,13 +46,29 @@ sanpshot 模块的主要职责是持久化 epaxos 算法过程中任何需要持
 
 #### 依赖的外部数据结构
 
+sanpshot 模块依赖一些外部定义的数据结构，这里给个例子，细节还需要再完善。
+
 ```rust
 struct Instance {
-    cmds: Vec<String>,
+    cmds: Vec<Command>,
     seq:  String,
     deps: Vec<Instance>,
     replica_id: String,
-    id:  u32,
+    id:  String,
+    status: InstanceStatus,
+}
+
+enum Command {
+    Get(String),
+    Put(String, String),
+    Deleted(String),
+}
+
+enum InstanceStatus {
+    Pre_accepted,
+    Accepted,
+    Committed,
+    executed,
 }
 ```
 
