@@ -13,7 +13,7 @@ sanpshot 模块的主要职责是持久化 epaxos 算法过程中任何需要持
 
 为了配合 epaxos 算法的执行，还需要以下的保证：
 
-- 已经存入 snapshot 的日志，如果它对应的 instance 还不是 executed 状态的，则它一定能被正确的读出。
+- 已经存入 snapshot 的日志，如果它对应的 instance 还不是 Purged 状态的，则它一定能被正确的读出；
 - 支持事务的更新 keys-values；
 - 支持事务的更新 keys-values 以及相应日志。
 
@@ -24,6 +24,8 @@ sanpshot 模块的主要职责是持久化 epaxos 算法过程中任何需要持
 这部分数据的使用者是 executor 模块。它可能计算出 client 的某个请求是读取某个 key 的值；或者是更新某个 key 的值。这时，需要从 snapshot 模块中获取值。
 
 ##### 存取日志
+
+日志数据的唯一标识是：replica_id + instance_id。
 
 日志数据的一个来源是 log-manager 模块。它在 epaxos 交互过程中需要持久化的 instance 作为日志传入 snapshot。
 
@@ -43,6 +45,8 @@ sanpshot 模块的主要职责是持久化 epaxos 算法过程中任何需要持
 - 提供一个用来保存 log 的接口，以 instance 为输入；
 - 提供一个用来读取 log 的接口，以 ReplicaID+InstanceID 为输入，获取一个 json 格式的 instance ；
 - 提供一个用来遍历某个 Replica 中所有状态不是 executed 的 instance 的接口，以 ReplicaID 为输入，获取一个产生 instance 的 iterator；
+- 提供一个用来读取 log 状态信息的接口：
+    - 状态信息包括（不限于）：committed—instance-id、accepted-instance-id、executed-instance-id、max-instance-id；
 
 #### 依赖的外部数据结构
 
@@ -68,7 +72,8 @@ enum InstanceStatus {
     Pre_accepted,
     Accepted,
     Committed,
-    executed,
+    Executed,
+    Purged,
 }
 ```
 
@@ -82,6 +87,6 @@ RocksDB 的 key 和 value 的大小限制是 8MB 和 3GB；据此是否作出一
 
 ##### 日志的生命周期
 
-所有的 instance，按照 epaxos 的正常运行过程，最终状态都会变成 executed，之后其不会被改变，也不会被读取。所以在 snapshot 模块中，当一条 log（也就是 instance）状态到达了 executed 之后，就是可删除的。
+所有的 instance，按照 epaxos 的正常运行过程，最终状态都会变成 executed，一段时间之后，不再会有关于它的请求。snapshot 将其标记为 Purged。所以在 snapshot 模块中，当一条 log（也就是 instance）状态到达了 Purged 之后，就是可删除的。
 
-snapshot 需要一个定期删除日志的机制，把已经 executed 的日志清除。
+snapshot 需要一个定期删除日志的机制，把已经 Purged 的日志清除。
