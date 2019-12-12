@@ -1,4 +1,4 @@
-extern crate net2;
+use net2;
 
 use net2::TcpBuilder;
 use std::io;
