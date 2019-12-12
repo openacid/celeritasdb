@@ -39,12 +39,12 @@ sanpshot 模块的主要职责是持久化 epaxos 算法过程中任何需要持
 
 - 提供一个用来保存 executor 模块执行结果的接口。目前看，应该包含：
     - instance 中的 cmds 涉及的 keys，以及 executor 产生的结果 values；
-    - instance 本身；（需要把状态更新为 executed ）
+    - instance 本身；（需要把状态更新为 Executed ）
 - 提供一个读取 celeritas 的数据的接口，根据 key 返回 value；
-    - 提供选项：是否需要 GetForUpdate，来锁定读走的 key 不被修改
+- 提供一个可以进行 `GetForUpdate --> Update --> Commit` 的操作，来原子某些 key；
 - 提供一个用来保存 log 的接口，以 instance 为输入；
-- 提供一个用来读取 log 的接口，以 ReplicaID+InstanceID 为输入，获取一个 json 格式的 instance ；
-- 提供一个用来遍历某个 Replica 中所有状态不是 executed 的 instance 的接口，以 ReplicaID 为输入，获取一个产生 instance 的 iterator；
+- 提供一个用来读取 log 的接口，以 ReplicaID+InstanceID 为输入，获取一个 instance 实例；
+- 提供一个用来遍历某个 Replica 中所有状态不是 Purged 的 instance 的接口，以 ReplicaID 为输入，获取一个产生 instance 的 iterator；
 - 提供一个用来读取 log 状态信息的接口：
     - 状态信息包括（不限于）：committed—instance-id、accepted-instance-id、executed-instance-id、max-instance-id；
 
@@ -53,12 +53,13 @@ sanpshot 模块的主要职责是持久化 epaxos 算法过程中任何需要持
 sanpshot 模块依赖一些外部定义的数据结构，这里给个例子，细节还需要再完善。
 
 ```rust
+// use replica_id + id uniquely identifies an instance.
 struct Instance {
+    id:  String,
+    replica_id: String,
     cmds: Vec<Command>,
     seq:  String,
     deps: Vec<Instance>,
-    replica_id: String,
-    id:  String,
     status: InstanceStatus,
 }
 
@@ -87,6 +88,6 @@ RocksDB 的 key 和 value 的大小限制是 8MB 和 3GB；据此是否作出一
 
 ##### 日志的生命周期
 
-所有的 instance，按照 epaxos 的正常运行过程，最终状态都会变成 executed，一段时间之后，不再会有关于它的请求。snapshot 将其标记为 Purged。所以在 snapshot 模块中，当一条 log（也就是 instance）状态到达了 Purged 之后，就是可删除的。
+所有的 instance，按照 epaxos 的正常运行过程，最终状态都会变成 Executed，一段时间之后，不再会有关于它的请求。snapshot 将其标记为 Purged。所以在 snapshot 模块中，当一条 log（也就是 instance）状态到达了 Purged 之后，就是可删除的。
 
 snapshot 需要一个定期删除日志的机制，把已经 Purged 的日志清除。
