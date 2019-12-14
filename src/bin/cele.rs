@@ -8,7 +8,6 @@ use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
 use std::sync::mpsc::{channel, Receiver};
 use std::thread;
 
-pub mod parse;
 use parse::*;
 
 enum Stream {
