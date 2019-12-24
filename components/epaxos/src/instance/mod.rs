@@ -1,3 +1,3 @@
-pub mod instance;
+mod instance;
 
 pub use self::instance::*;

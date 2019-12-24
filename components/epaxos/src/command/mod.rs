@@ -1,3 +1,3 @@
-pub mod command;
+mod command;
 
 pub use self::command::*;

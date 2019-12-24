@@ -1,3 +1,3 @@
-pub mod replica;
+mod replica;
 
 pub use self::replica::*;

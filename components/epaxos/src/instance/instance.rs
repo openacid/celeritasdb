@@ -1,5 +1,5 @@
-use super::super::command;
-use super::super::replica;
+use super::super::command::Command;
+use super::super::replica::{BallotNum, ReplicaID};
 
 #[cfg(test)]
 #[path = "./tests/instance_tests.rs"]
@@ -8,7 +8,7 @@ mod tests;
 /// protocol buffer serialized
 pub type InstanceNum = i64;
 pub struct InstanceID {
-    pub replica_id: replica::ReplicaID,
+    pub replica_id: ReplicaID,
     pub num: InstanceNum,
 }
 
@@ -21,12 +21,12 @@ pub enum InstanceStatus {
     Executed,
 }
 
-pub struct DepCmds(Vec<InstanceID>);
+pub type InstIDs = Vec<InstanceID>;
 
 pub struct Instance {
     pub status: InstanceStatus,
-    pub cmds: Vec<command::Command>,
-    pub ballot: replica::BallotNum,
+    pub cmds: Vec<Command>,
+    pub ballot: BallotNum,
     pub seq: u64,
-    pub deps: DepCmds,
+    pub deps: InstIDs,
 }
