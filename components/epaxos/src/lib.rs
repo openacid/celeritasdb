@@ -1,8 +1,14 @@
+#[macro_use]
+extern crate quick_error;
+extern crate rocksdb;
+
+
 pub mod command;
-pub mod instance;
-pub mod replica;
-pub mod message;
 pub mod conf;
+pub mod instance;
+pub mod message;
+pub mod replica;
+pub mod snapshot;
 
 #[cfg(test)]
 mod tests {
