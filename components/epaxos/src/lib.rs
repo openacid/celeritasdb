@@ -1,9 +1,13 @@
+#[macro_use]
+extern crate quick_error;
+
 pub mod command;
-pub mod instance;
-pub mod replica;
-pub mod message;
 pub mod conf;
 pub mod data;
+pub mod instance;
+pub mod message;
+pub mod replica;
+pub mod snapshot;
 
 #[cfg(test)]
 mod tests {
