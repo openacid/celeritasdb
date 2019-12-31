@@ -3,7 +3,7 @@ use std::thread::JoinHandle;
 
 use super::super::command::Command;
 use super::super::conf::ClusterInfo;
-use super::super::instance::{Instance, InstanceID, InstanceNum};
+use super::super::instance::{InstIDs, Instance, InstanceID, InstanceNum};
 use super::super::message::*;
 
 #[cfg(test)]
@@ -57,9 +57,9 @@ pub struct Replica {
     pub smr: SMR, // state machine replication
 
     pub inst_num: InstanceNum,
-    pub crt_inst: Vec<InstanceNum>, // highest active instance numbers that this replica knows
-    pub replica_committed: Vec<InstanceNum>, // highest continuous committed instance per replica that known
-    pub replica_executed: Vec<InstanceNum>,  // highest executed instance per replica that known
+    pub crt_inst: InstIDs, // highest active instance numbers that this replica knows
+    pub replica_committed: InstIDs, // highest continuous committed instance per replica that known
+    pub replica_executed: InstIDs,  // highest executed instance per replica that known
 
     // TODO(lsl): get exec thread handle from @baohai
     pub exec_worker: JoinHandle<()>, // handle of exec thread
@@ -131,11 +131,17 @@ impl Replica {
         Err("not implemented".to_string())
     }
 
-    fn make_try_pre_accept_req(&mut self, instance: &Instance) -> Result<TryPreAcceptReply, String> {
+    fn make_try_pre_accept_req(
+        &mut self,
+        instance: &Instance,
+    ) -> Result<TryPreAcceptReply, String> {
         Err("not implemented".to_string())
     }
 
-    fn handle_try_pre_accept(&mut self, req: &TryPreAcceptReq) -> Result<TryPreAcceptReply, String> {
+    fn handle_try_pre_accept(
+        &mut self,
+        req: &TryPreAcceptReq,
+    ) -> Result<TryPreAcceptReply, String> {
         Err("not implemented".to_string())
     }
 
