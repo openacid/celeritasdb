@@ -3,7 +3,7 @@ use std::thread::JoinHandle;
 
 use super::super::command::Command;
 use super::super::conf::ClusterInfo;
-use super::super::instance::{InstIDs, Instance, InstanceID, InstanceNum};
+use super::super::instance::{InstIDs, Instance, InstanceID, InstanceNum, Sequence};
 use super::super::message::*;
 
 #[cfg(test)]
@@ -63,7 +63,7 @@ pub struct Replica {
 
     // TODO(lsl): get exec thread handle from @baohai
     pub exec_worker: JoinHandle<()>, // handle of exec thread
-    pub max_seq: i64,                // max seq ever known in cluster
+    pub max_seq: Sequence,                // max seq ever known in cluster
     pub latest_cp: InstanceID,       // record the instance id in the lastest communication
 }
 
