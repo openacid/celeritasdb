@@ -1,7 +1,7 @@
 //! all messages must be serialized by protocol-buffer
 //! so define it in rust first.
 
-use super::super::instance::{InstIDs, Instance, InstanceID, InstanceStatus};
+use super::super::instance::{InstIDs, Instance, InstanceID, InstanceStatus, Sequence};
 use super::super::replica::{BallotNum, ReplicaID};
 
 #[cfg(test)]
@@ -94,7 +94,7 @@ pub struct CommitShort {
     pub instance_id: InstanceID,
     pub count: i32,
 
-    pub seq: i32,
+    pub seq: Sequence,
     pub deps: InstIDs,
 }
 

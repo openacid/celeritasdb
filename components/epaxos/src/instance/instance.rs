@@ -21,12 +21,14 @@ pub enum InstanceStatus {
     Executed,
 }
 
+pub type Sequence = i64;
+
 pub type InstIDs = Vec<InstanceID>;
 
 pub struct Instance {
     pub status: InstanceStatus,
     pub cmds: Vec<Command>,
     pub ballot: BallotNum,
-    pub seq: u64,
+    pub seq: Sequence,
     pub deps: InstIDs,
 }
