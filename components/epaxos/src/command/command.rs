@@ -19,6 +19,10 @@ pub struct Command {
     pub value: Value, // TODO(lsl): must consider type, value and max
 }
 
+pub struct Proposal {
+    pub command: Command,
+}
+
 // TODO(lsl): test private function in unit test, should be removed after review
 fn lsl_private() {
     println!("lsl-debug: private func");

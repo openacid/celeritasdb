@@ -5,6 +5,7 @@ use super::super::command::Command;
 use super::super::conf::ClusterInfo;
 use super::super::instance::{InstIDs, Instance, InstanceID, InstanceNum, Sequence};
 use super::super::message::*;
+use super::super::smr::SMR;
 
 #[cfg(test)]
 #[path = "./tests/replica_tests.rs"]
@@ -42,9 +43,6 @@ pub enum ReplicaStatus {
     Down,
 }
 
-// TODO(lsl): use defination from @yipu
-pub struct SMR {}
-
 /// structure to represent a replica
 pub struct Replica {
     pub replica_id: ReplicaID,        // replica id
@@ -57,13 +55,9 @@ pub struct Replica {
     pub smr: SMR, // state machine replication
 
     pub inst_num: InstanceNum,
-    pub crt_inst: InstIDs, // highest active instance numbers that this replica knows
-    pub replica_committed: InstIDs, // highest continuous committed instance per replica that known
-    pub replica_executed: InstIDs,  // highest executed instance per replica that known
 
     // TODO(lsl): get exec thread handle from @baohai
     pub exec_worker: JoinHandle<()>, // handle of exec thread
-    pub max_seq: Sequence,                // max seq ever known in cluster
     pub latest_cp: InstanceID,       // record the instance id in the lastest communication
 }
 
