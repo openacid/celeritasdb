@@ -6,3 +6,8 @@ repository:
   description: A redis compatible database.
   homepage: https://blog.openacid.com/
   topics: rust, db, distributed, wan, global-consistency
+
+
+labels:
+  - name: smr
+    color: "0d1999"
