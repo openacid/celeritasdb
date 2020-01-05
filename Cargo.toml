@@ -22,4 +22,5 @@ members = [
   "components/parse",
   "components/hello",
   "components/epaxos",
+  "components/protobuf-gen-rust"
 ]
