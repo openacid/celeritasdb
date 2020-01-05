@@ -1,0 +1,8 @@
+_extends: gh-config
+
+
+repository:
+  name: celeritasdb
+  description: A redis compatible database.
+  homepage: https://blog.openacid.com/
+  topics: rust, db, distributed, wan, global-consistency
