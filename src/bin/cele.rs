@@ -1,11 +1,13 @@
 // TODO rename this file, choose a better bin name
 
 use net2;
+use redis;
 
 use net2::TcpBuilder;
 use std::io;
 use std::io::{Read, Write};
 use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
+use std::str::{from_utf8};
 
 use std::sync::mpsc::{channel, Receiver};
 use std::thread;
@@ -166,75 +168,49 @@ impl Client {
         let (stream_tx, rx) = channel::<Option<Response>>();
         self.create_writer_thread(rx);
 
-        let mut parser = Parser::new();
-
         loop {
-            // FIXME: is_incomplete parses the command a second time
-            if parser.is_incomplete() {
-                parser.allocate();
-                let len = {
-                    let pos = parser.written;
-                    let buffer = parser.get_mut();
-
-                    // read socket
-                    match self.stream.read(&mut buffer[pos..]) {
-                        Ok(r) => r,
-                        Err(err) => {
-                            println!("Reading from client: {:?}", err);
-                            break;
-                        }
+            let mut buf = vec![0u8; 1024];
+            let len = {
+                // TODO extend buf
+                // Now it requires a complete command in a single packet.
+                match self.stream.read(&mut buf[..]) {
+                    Ok(r) => {
+                        println!("read buf: r={:}, {:?}", r, buf);
+                        r
+                    },
+                    Err(err) => {
+                        println!("Reading from client: {:?}", err);
+                        break;
                     }
-                };
-                parser.written += len;
-
-                // client closed connection
-                if len == 0 {
-                    println!("Client closed connection");
-                    break;
                 }
+            };
+
+            // client closed connection
+            if len == 0 {
+                println!("Client closed connection");
+                break;
             }
 
-            // try to parse received command
-            let parsed_command = match parser.next() {
-                Ok(p) => p,
+            let v = redis::parse_redis_value(&buf);
+            let v = match v {
+                Ok(q) => {
+                    println!("q= {:?}", q);
+                    q
+                }
                 Err(err) => {
-                    match err {
-                        // if it's incomplete, keep adding to the buffer
-                        ParseError::Incomplete => {
-                            continue;
-                        }
-                        ParseError::BadProtocol(s) => {
-                            let _ = stream_tx.send(Some(Response::Error(s)));
-                            break;
-                        }
-                        _ => {
-                            println!("Protocol error from client: {:?}", err);
-                            break;
-                        }
-                    }
+                    // TODO bad protocol handling
+                    println!("parse error: {:}", err);
+                    break;
                 }
             };
-            println!("parsed command: {:?}", parsed_command);
-
-            let cmd = match parsed_command.get_str(0) {
-                Ok(r) => r,
-                Err(_) => "xxx",
-            };
-
-            // execute the command
-
-            let r = if cmd == "SET" {
-                Ok(Response::Status("OK".to_owned()))
-            } else if cmd == "GET" {
-                Ok(Response::Integer(123))
-            } else {
-                Ok(Response::Error("unknown command".to_owned()))
-            };
+            
+            // TODO implementation entry:
+            let r = exec_redis_cmd(v);
 
             // check out the response
             match r {
                 // received a response, send it to the client
-                Ok(response) => {
+                Some(response) => {
                     // send to writer thread, which writes bytes into underlying tcp socket.
                     match stream_tx.send(Some(response)) {
                         Ok(_) => (),
@@ -243,24 +219,58 @@ impl Client {
                             break;
                         }
                     };
-                }
-                // no response
-                Err(err) => {
-                    match err {
-                        // There is no reply to send, that's ok
-                        ResponseError::NoReply => (),
-                        // We have to wait until a sender signals us back and then retry
-                        // (Repeating the same command is actually wrong because of the timeout)
-                        ResponseError::Wait(_) => {
-                            println!("unimplemented: Wait()");
-                            break;
-                        }
-                    }
+                },
+                None => {
+                    println!("internal error");
+                    break;
                 }
             }
         }
         println!("client exit");
+        //TODO close socket
     }
+}
+
+fn exec_redis_cmd(v: redis::Value) -> Option<Response> {
+
+    // cmd is a nested array: ["set", "a", "1"] or ["set", ["b", "c"], ...]
+    // A "set" or "get" redis command is serialized as non-nested array.
+    //
+    // Flatten one level:
+    // tokens is a vec[Value].
+    let tokens = match v {
+        redis::Value::Bulk(tokens) => tokens,
+        _ => vec![], 
+    };
+
+    // the first token is instruction, e.g. "set" or "get".
+    let tok0 = &tokens[0];
+
+    let t = match tok0 {
+        redis::Value::Data(d) => d,
+        _ => {
+            println!("tok0 is not a Data!!!");
+            return Some(Response::Error("invalid command".to_owned()));
+        },
+    };
+
+    println!("instruction: {:?}", t);
+    let tok0str = from_utf8(&t).unwrap();
+
+    // execute the command
+
+    match tok0str {
+        "SET" => {
+            Some(Response::Status("OK".to_owned()))
+        },
+        "GET" => {
+            Some(Response::Integer(123))
+        },
+        _ => {
+            Some(Response::Error("invalid command".to_owned()))
+        }
+    }
+
 }
 
 
