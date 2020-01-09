@@ -1,25 +1,26 @@
+use super::super::data;
+
 #[cfg(test)]
-#[path = "./tests/command_tests.rs"]
+#[path = "tests/command_tests.rs"]
 mod tests;
 
 // FIXME(lsl): for simplicity, string type for both key and value
 pub type Key = String;
 pub type Value = String;
 
-pub enum OpCode {
-    NoOp,
-    Set,
-    Put,
-    Get,
-}
+// re-export enum OpCode in data/command_data.rs
+pub use data::OpCode;
 
-pub struct Command {
-    pub op: OpCode,
-    pub key: Key,
-    pub value: Value, // TODO(lsl): must consider type, value and max
-}
+// re-export struct Command in data/command_data.rs
+pub use data::Command;
 
-// TODO(lsl): test private function in unit test, should be removed after review
-fn lsl_private() {
-    println!("lsl-debug: private func");
+impl Command {
+    pub fn new_command(op: OpCode, key: &str, value: &str) -> Command {
+        let mut cmd = Command::new();
+        cmd.set_op(op);
+        cmd.set_key(key.to_string());
+        cmd.set_value(value.to_string());
+
+        return cmd;
+    }
 }

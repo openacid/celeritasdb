@@ -1,0 +1,15 @@
+syntax = "proto3";
+
+enum OpCode {
+    NoOp = 0;
+    Set = 1;
+    Put = 2;
+    Get = 3;
+};
+
+message Command{
+    OpCode op = 1;
+    string key = 2;
+    string value= 3; // TODO(lsl): must consider type, value and max
+};
+

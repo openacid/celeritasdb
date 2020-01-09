@@ -3,6 +3,7 @@ pub mod instance;
 pub mod replica;
 pub mod message;
 pub mod conf;
+pub mod data;
 
 #[cfg(test)]
 mod tests {

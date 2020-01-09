@@ -1,12 +1,15 @@
+use protobuf::{Message, parse_from_bytes};
 use super::*;
 
 #[test]
-fn test_command() {
-    println!("lsl-debug: command_tests");
-}
+fn test_command_protobuf() {
+    let cmd1 = Command::new_command(OpCode::NoOp, "key", "value");
 
-// TODO(lsl): test private function in unit test, should be removed after review
-#[test]
-fn test_private() {
-    lsl_private();
+    let cmd_bytes: Vec<u8> = cmd1.write_to_bytes().unwrap();
+
+    let cmd2 = parse_from_bytes::<Command>(&cmd_bytes).unwrap();
+
+    assert_eq!(cmd1.op, cmd2.op);
+    assert_eq!(cmd1.key, cmd2.key);
+    assert_eq!(cmd1.value, cmd2.value);
 }
