@@ -1,0 +1,108 @@
+syntax = "proto3";
+
+import "instance.proto";
+
+enum RequestType {
+    Prepare = 0;
+    TryPreAccept = 1;
+    PreAccept = 2;
+    Accept = 3;
+    Commit = 4;
+};
+
+enum MessageType {
+    Request = 0;
+    Reply = 1;
+};
+
+message Message {
+    RequestType req_type = 2;
+    MessageType msg_type = 3;
+    bytes data = 4;
+};
+
+message PrepareReq {
+    int64 leader_id = 1;  // the replica owns the instance
+    int64 replica_id = 2; // the replica who starts the explict prepare
+    InstanceID instance_id = 3;
+    BallotNum ballot = 4;
+};
+
+message PrepareReply {
+    int64 acceptor_id = 1;
+    int64 replica_id = 2; // the replica who starts the explict prepare
+    InstanceID instance_id = 3;
+    // successful(true), or failed(false) in case ballot number of msg
+    // smaller than that in instance
+    bool ok = 4;
+    BallotNum ballot = 5;
+    Instance instance = 6;
+};
+
+message PreAcceptReq {
+    int64 leader_id = 1;
+    int64 replica_id = 2; // the same value with leader_id, weird!
+    InstanceID instance_id = 3;
+    Instance instance = 4;
+    BallotNum ballot = 5;
+};
+
+message PreAcceptReply {
+    int64 replica_id = 1;
+    Instance instance = 2;
+    bool ok = 3;
+    BallotNum ballot = 4;
+    InstIDs committed_deps = 5;
+};
+
+// used in Paxos-Accept
+message AcceptReq {
+    int64 leader_id = 1;  // the replica who sends the msg
+    int64 replica_id = 2; // the replica who starts the explicit_prepare or who starts the preaccept or who starts the try-preaccept
+    Instance instance = 3;
+    BallotNum ballot = 4;
+    int32 count = 5;
+};
+
+message AcceptReply {
+    int64 replica_id = 1;
+    InstanceID instance_id = 2;
+    bool ok = 3;
+    BallotNum ballot = 4;
+};
+
+// used in commit phase
+message CommitReq {
+    int64 leader_id = 1;
+    int64 replica_id = 2;
+    Instance instance = 3;
+};
+
+message CommitShort {
+    int64 leader_id = 1;
+    int64 replica_id = 2;
+    InstanceID instance_id = 3;
+    int32 count = 4;
+
+    int32 seq = 5;
+    InstIDs deps = 6;
+}
+
+message TryPreAcceptReq {
+    int64 leader_id = 1;
+    int64 replica_id = 2;
+    InstanceID instance_id = 3;
+    BallotNum ballot = 4;
+    Instance instance = 5;
+};
+
+message TryPreAcceptReply {
+    int64 acceptor_id = 1;
+    int64 replica_id = 2;
+    InstanceID instance_id = 3;
+    bool ok = 4;
+    BallotNum ballot = 5;
+    int64 conflict_replica = 6;
+    InstanceID conflict_instance_id = 7;
+    InstanceStatus conflict_status = 8;
+};

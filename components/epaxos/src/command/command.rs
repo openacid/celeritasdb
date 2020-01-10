@@ -8,10 +8,10 @@ mod tests;
 pub type Key = String;
 pub type Value = String;
 
-// re-export enum OpCode in data/command_data.rs
+// re-export enum OpCode in data/command.rs
 pub use data::OpCode;
 
-// re-export struct Command in data/command_data.rs
+// re-export struct Command in data/command.rs
 pub use data::Command;
 
 impl Command {

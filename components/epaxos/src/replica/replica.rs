@@ -3,7 +3,7 @@ use std::thread::JoinHandle;
 
 use super::super::command::Command;
 use super::super::conf::ClusterInfo;
-use super::super::instance::{InstIDs, Instance, InstanceID, InstanceNum};
+use super::super::instance::{InstIDs, Instance, InstanceID, InstanceIdx};
 use super::super::message::*;
 
 #[cfg(test)]
@@ -11,12 +11,6 @@ use super::super::message::*;
 mod tests;
 
 pub type ReplicaID = i64;
-
-pub struct BallotNum {
-    pub epoch: u32,
-    pub num: u32,
-    pub replica_id: ReplicaID,
-}
 
 /// information of communication peer
 pub struct ReplicaPeer {
@@ -56,7 +50,7 @@ pub struct Replica {
 
     pub smr: SMR, // state machine replication
 
-    pub inst_num: InstanceNum,
+    pub inst_idx: InstanceIdx,
     pub crt_inst: InstIDs, // highest active instance numbers that this replica knows
     pub replica_committed: InstIDs, // highest continuous committed instance per replica that known
     pub replica_executed: InstIDs,  // highest executed instance per replica that known

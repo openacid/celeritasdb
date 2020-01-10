@@ -1,0 +1,35 @@
+syntax = "proto3";
+
+import "command.proto";
+
+message InstanceID {
+    int64 replica_id = 1;
+    int64 idx = 2;
+};
+
+enum InstanceStatus {
+    NA = 0;
+    PreAcceptedEQ = 1;
+    PreAccepted = 2;
+    Accepted = 3;
+    Committed = 4;
+    Executed = 5;
+};
+
+message BallotNum {
+    int32 epoch = 1;
+    int32 num = 2;
+    int64 replica_id = 3;
+};
+
+message InstIDs {
+    repeated InstanceID ids = 1;
+};
+
+message Instance {
+    InstanceStatus status = 1;
+    repeated Command cmds = 2;
+    BallotNum ballot = 3;
+    int64 seq = 4;
+    InstIDs deps = 5;
+};
