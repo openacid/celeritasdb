@@ -2,6 +2,8 @@
 
 all proto files and generated files are placed here.
 
+and ** DO NOT USE THIS MODULE DIRECTLY **
+
 
 ## Usage
 
@@ -26,7 +28,7 @@ the generated rs files would be placed under `celeritasdb/components/epaxos/src/
 go to path `celeritasdb/components/epaxos/src/data`
 
 ```
-protobuf-gen-rust -o ./ -s protos -f command_data.proto
+protobuf-gen-rust -o ./ -s protos -f command.proto
 ```
 
 the result is the same as above.
