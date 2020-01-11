@@ -8,5 +8,5 @@ edition = "2018"
 
 [dependencies]
 getopts = "0.2"
-bytes = "0.4"
+bytes = "0.5"
 protoc-rust = "2.0"
