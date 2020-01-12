@@ -31,11 +31,7 @@ pub use data::MessageType;
 pub use data::Message;
 impl Message {
     // data is moved
-    pub fn new_message(
-        req_type: RequestType,
-        msg_type: MessageType,
-        data: Vec<u8>,
-    ) -> Message {
+    pub fn new_message(req_type: RequestType, msg_type: MessageType, data: Vec<u8>) -> Message {
         let mut msg = Message::new();
 
         msg.set_req_type(req_type);

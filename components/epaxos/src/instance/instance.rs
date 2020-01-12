@@ -1,5 +1,5 @@
-use protobuf::RepeatedField;
 use super::super::command::Command;
+use protobuf::RepeatedField;
 
 use super::super::data;
 

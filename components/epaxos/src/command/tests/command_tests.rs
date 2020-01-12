@@ -1,5 +1,5 @@
-use protobuf::{Message, parse_from_bytes};
 use super::*;
+use protobuf::{parse_from_bytes, Message};
 
 #[test]
 fn test_command_protobuf() {
