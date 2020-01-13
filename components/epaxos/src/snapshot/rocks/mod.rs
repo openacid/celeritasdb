@@ -1,4 +1,4 @@
-use super::{Error, Engine, DBCF, DBPath};
+use super::{DBColumnFamily, DBPath, Engine, Error};
 
 mod dbutil;
 use dbutil::*;
@@ -8,18 +8,18 @@ impl Engine<'_> {
     ///
     /// # Examples:
     /// ```
-    /// use crate::epaxos::snapshot::{DBCF, DBPath, Engine};
+    /// use crate::epaxos::snapshot::{DBColumnFamily, DBPath, Engine};
     ///
     /// let my_eng;
-    /// match Engine::new(DBPath::Test, DBCF::Default) {
+    /// match Engine::new(DBPath::Test, DBColumnFamily::Default) {
     ///     Ok(eng) => my_eng = eng,
     ///     Err(err) => println!("failed to get snapshot engine, failed: {}", err),
     /// };
     /// ```
-    pub fn new<'a>(path: DBPath, cf: DBCF) -> Result<Engine<'a>, Error> {
-        let db = open(path)?;
+    pub fn new<'a>(path: DBPath, cf: DBColumnFamily) -> Result<Engine<'a>, Error> {
+        let db = open(path.as_str())?;
 
-        Ok(Engine{
+        Ok(Engine {
             _db: db,
             _cf: cf.as_str(),
         })

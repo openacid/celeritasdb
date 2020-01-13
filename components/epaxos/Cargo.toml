@@ -15,4 +15,6 @@ edition = "2018"
 [dependencies]
 protobuf = { version = "2", features = ["with-bytes"] }
 quick-error = { version = "1.2.2" }
-rocksdb = { git = "https://github.com/tikv/rust-rocksdb.git" }
+rocksdb = { git = "https://github.com/tikv/rust-rocksdb.git", branch = "release-2.0" }
+tempdir = { version = "0.3.7" }
+tempfile = { version = "3.1.0" }

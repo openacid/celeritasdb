@@ -10,7 +10,7 @@ pub struct Engine<'a> {
     _cf: &'a str,
 }
 
-pub enum DBPath{
+pub enum DBPath {
     Product,
     Test,
 }
@@ -24,29 +24,29 @@ impl DBPath {
     }
 }
 
-pub enum DBCF {
+pub enum DBColumnFamily {
     Default,
     Instance,
     Config,
     Conflict,
 }
 
-impl DBCF {
+impl DBColumnFamily {
     pub fn as_str<'a>(&self) -> &'a str {
         match self {
-            DBCF::Default => "default",
-            DBCF::Instance => "instance",
-            DBCF::Config => "config",
-            DBCF::Conflict => "conflict",
+            DBColumnFamily::Default => "default",
+            DBColumnFamily::Instance => "instance",
+            DBColumnFamily::Config => "config",
+            DBColumnFamily::Conflict => "conflict",
         }
     }
 
     fn all<'a>() -> Vec<&'a str> {
         vec![
-            DBCF::Default.as_str(),
-            DBCF::Instance.as_str(),
-            DBCF::Config.as_str(),
-            DBCF::Conflict.as_str(),
+            DBColumnFamily::Default.as_str(),
+            DBColumnFamily::Instance.as_str(),
+            DBColumnFamily::Config.as_str(),
+            DBColumnFamily::Conflict.as_str(),
         ]
     }
 }
