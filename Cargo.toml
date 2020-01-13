@@ -23,5 +23,6 @@ members = [
   "components/parse",
   "components/hello",
   "components/epaxos",
-  "components/protobuf-gen-rust"
+  "components/protobuf-gen-rust",
+  "components/cele_threads",
 ]
