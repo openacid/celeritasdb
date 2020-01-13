@@ -1,5 +1,5 @@
-use std::net::IpAddr;
 use std::collections::HashMap;
+use std::net::IpAddr;
 
 #[cfg(test)]
 #[path = "./tests/conf_tests.rs"]
