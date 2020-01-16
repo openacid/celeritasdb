@@ -16,7 +16,7 @@ edition = "2018"
 [dependencies]
 net2  = { version = "0.2.2", features = ["nightly"] }
 parse = { path = "components/parse" }
-redis = { version = "0.14.0"}
+redis = { version = "0.15.1"}
 
 [workspace]
 members = [
