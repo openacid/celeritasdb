@@ -1,46 +1,35 @@
 use rocksdb::DB;
 
+#[macro_use]
+mod enum_str;
+
 mod errors;
 pub use errors::*;
 
 mod rocks;
 
-pub struct Engine<'a> {
+pub struct Engine {
     _db: DB,
-    _cf: &'a str,
+    _cf: &'static str,
 }
 
-pub enum DBPath {
-    Product,
-    Test,
-}
-
-impl DBPath {
-    fn as_str<'a>(&self) -> &'a str {
-        match self {
-            DBPath::Product => "snapshot.db",
-            DBPath::Test => "test.db",
-        }
+enum_str! {
+    pub DBPath {
+        Product("snapshot.db")
+        Test("test.db")
     }
 }
 
-pub enum DBColumnFamily {
-    Default,
-    Instance,
-    Config,
-    Conflict,
+enum_str! {
+    pub DBColumnFamily {
+        Default("default")
+        Instance("instance")
+        Config("config")
+        Conflict("conflict")
+    }
 }
 
 impl DBColumnFamily {
-    pub fn as_str<'a>(&self) -> &'a str {
-        match self {
-            DBColumnFamily::Default => "default",
-            DBColumnFamily::Instance => "instance",
-            DBColumnFamily::Config => "config",
-            DBColumnFamily::Conflict => "conflict",
-        }
-    }
-
     fn all<'a>() -> Vec<&'a str> {
         vec![
             DBColumnFamily::Default.as_str(),

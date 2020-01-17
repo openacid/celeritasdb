@@ -3,7 +3,7 @@ use super::{DBColumnFamily, DBPath, Engine, Error};
 mod dbutil;
 use dbutil::*;
 
-impl Engine<'_> {
+impl Engine {
     /// Open a new Engine to use snapshot.
     ///
     /// # Examples:
@@ -16,7 +16,7 @@ impl Engine<'_> {
     ///     Err(err) => println!("failed to get snapshot engine, failed: {}", err),
     /// };
     /// ```
-    pub fn new<'a>(path: DBPath, cf: DBColumnFamily) -> Result<Engine<'a>, Error> {
+    pub fn new(path: DBPath, cf: DBColumnFamily) -> Result<Engine, Error> {
         let db = open(path.as_str())?;
 
         Ok(Engine {
