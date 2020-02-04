@@ -1,2 +1,2 @@
 dirs:
-  wiki: ssh://git@github.com/openacid/celeritasdb.wiki
+  wiki: ssh://git@github.com/openacid/celeritasdb.wiki@master
