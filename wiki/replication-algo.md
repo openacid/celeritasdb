@@ -213,70 +213,103 @@ From definition, we infer that:
     R0         R1         R2
     ```
 
--   When `d` is replicated to `R1`,
-    `R1` believes that `d₁¹ > {a, b, x, y, z}`.
+###   Simple case:
 
-    `d₁¹` got a new relation `d₁¹ > b`:
+When `d` is replicated to `R1`,
+`R1` believes that `d₁¹ > {a, b, x, y, z}`.
 
-    ```
-    d          d
-    ↓           ↘
-    a            b            c
-    x y z      x y z      x y z
-    -----      -----      -----
-    R0         R1         R2
-    ```
+`d₁¹` got a new relation `d₁¹ > b`:
 
--   Then `c` is replicated to `R1`,
-    `R1` believes that `c₁¹ > {d, a, b, x, y, z}`.
+```
+d          d
+↓           ↘
+a            b            c
+x y z      x y z      x y z
+-----      -----      -----
+R0         R1         R2
+```
 
-    `c₁¹` got three new relations `c₁¹ > {b, d, a}`(
-    because `R1` believes `d > a` thus `c₁¹ > a`):
+###   Transitive:
 
-    ```
-                  .c
-                ↙  |
-    d          d   |
-    ↓           ↘ ↙
-    a            b            c
-    x y z      x y z      x y z
-    -----      -----      -----
-    R0         R1         R2
-    ```
+Then `c` is replicated to `R1`,
+`R1` believes that `c₁¹ > {d, a, b, x, y, z}`.
 
--   Then `a` is replicated to `R1`,
-    `R1` believes that `a₁¹ > {b, x, y, z}`.
+`c₁¹` got three new relations `c₁¹ > {b, d, a}`(
+because `R1` believes `d > a` thus `c₁¹ > a`):
 
-    `a₁¹` got only one new relation `a₁¹ > b`:
-    `R1` already believes `d₀ > a` because it had received `d₀` from `R0`.
-    `c₁¹ > d` thus `c₁¹ > a`.
+```
+              .c
+            ↙  |
+d          d   |
+↓           ↘ ↙
+a            b            c
+x y z      x y z      x y z
+-----      -----      -----
+R0         R1         R2
+```
 
-    ```
-                  .c
-                ↙  |
-    d          d   |
-    ↓          ↓↘ ↙
-    a          a→b            c
-    x y z      x y z      x y z
-    -----      -----      -----
-    R0         R1         R2
-    ```
+###   Not to override existent replation:
 
--   Then `a` is replicated to `R2`,
-    `R2` believes that `a₁² > {c, x, y, z}`.
+Then `a` is replicated to `R1`,
+`R1` believes that `a₁¹ > {b, x, y, z}`.
 
-    `a₁²` got one new relation `a₁² > c`
+`a₁¹` got only one new relation `a₁¹ > b`:
+`R1` already believes `d₀ > a` because it had received `d₀` from `R0`.
+`c₁¹ > d` thus `c₁¹ > a`.
 
-    ```
-                  .c
-                ↙  |
-    d          d   |
-    ↓          ↓↘ ↙
-    a          a→b        a--→c
-    x y z      x y z      x y z
-    -----      -----      -----
-    R0         R1         R2
-    ```
+```
+              .c
+            ↙  |
+d          d   |
+↓          ↓↘ ↙
+a          a→b            c
+x y z      x y z      x y z
+-----      -----      -----
+R0         R1         R2
+```
+
+### Transitive-2: update `deps` with unknown instances
+
+Starts with a new initial setup:
+
+```
+d
+↓↘
+a c                       b
+x y z      x y z      x y z
+-----      -----      -----
+R0         R1         R2
+```
+
+After forwarding `d` to `R1`:
+`d₁¹ = d₀ > {a, c, z}`
+
+```
+d          d
+↓↘
+a c                       b
+x y z      x y z      x y z
+-----      -----      -----
+R0         R1         R2
+```
+
+Then `b` is forwarded to `R1`:
+
+`b` did not see `a` and `c`,
+but `b` still updates with three new relations:
+`ḇ₁¹ > {d, a, c}`.
+Because `d > {a, c}` and `deps` is transitive.
+
+```
+               b
+             ↙
+d          d
+↓↘
+a c                       b
+x y z      x y z      x y z
+-----      -----      -----
+R0         R1         R2
+```
 
 We see that different replicas have their own view of instance relations.
 
