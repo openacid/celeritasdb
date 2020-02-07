@@ -12,7 +12,7 @@ use std::str::{from_utf8};
 use std::sync::mpsc::{channel, Receiver};
 use std::thread;
 
-use parse::*;
+use parse::Response;
 
 enum Stream {
     Tcp(TcpStream),
@@ -150,9 +150,12 @@ impl Client {
         thread::spawn(move || loop {
             match rx.recv() {
                 Ok(m) => match m {
-                    Some(msg) => match stream.write(&*msg.as_bytes()) {
-                        Ok(_) => (),
-                        Err(e) => println!("Error writing to client: {:?}", e),
+                    Some(msg) => {
+                        println!("to client:");
+                        match stream.write(&*msg.as_bytes()) {
+                            Ok(_) => (),
+                            Err(e) => println!("Error writing to client: {:?}", e),
+                        }
                     },
                     None => break,
                 },
@@ -203,7 +206,7 @@ impl Client {
                     break;
                 }
             };
-            
+
             // TODO implementation entry:
             let r = exec_redis_cmd(v);
 
@@ -240,7 +243,7 @@ fn exec_redis_cmd(v: redis::Value) -> Option<Response> {
     // tokens is a vec[Value].
     let tokens = match v {
         redis::Value::Bulk(tokens) => tokens,
-        _ => vec![], 
+        _ => vec![],
     };
 
     // the first token is instruction, e.g. "set" or "get".
@@ -272,7 +275,6 @@ fn exec_redis_cmd(v: redis::Value) -> Option<Response> {
     }
 
 }
-
 
 fn main() {
     let mut server = Server::new();
