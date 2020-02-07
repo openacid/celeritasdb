@@ -7,7 +7,7 @@ use net2::TcpBuilder;
 use std::io;
 use std::io::{Read, Write};
 use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
-use std::str::{from_utf8};
+use std::str::from_utf8;
 
 use std::sync::mpsc::{channel, Receiver};
 use std::thread;
@@ -43,7 +43,6 @@ impl Stream {
         }
     }
 }
-
 
 pub struct Server {
     /// A list of threads listening for incoming connections
@@ -156,7 +155,7 @@ impl Client {
                             Ok(_) => (),
                             Err(e) => println!("Error writing to client: {:?}", e),
                         }
-                    },
+                    }
                     None => break,
                 },
                 Err(_) => break,
@@ -180,7 +179,7 @@ impl Client {
                     Ok(r) => {
                         println!("read buf: r={:}, {:?}", r, buf);
                         r
-                    },
+                    }
                     Err(err) => {
                         println!("Reading from client: {:?}", err);
                         break;
@@ -222,7 +221,7 @@ impl Client {
                             break;
                         }
                     };
-                },
+                }
                 None => {
                     println!("internal error");
                     break;
@@ -235,7 +234,6 @@ impl Client {
 }
 
 fn exec_redis_cmd(v: redis::Value) -> Option<Response> {
-
     // cmd is a nested array: ["set", "a", "1"] or ["set", ["b", "c"], ...]
     // A "set" or "get" redis command is serialized as non-nested array.
     //
@@ -254,7 +252,7 @@ fn exec_redis_cmd(v: redis::Value) -> Option<Response> {
         _ => {
             println!("tok0 is not a Data!!!");
             return Some(Response::Error("invalid command".to_owned()));
-        },
+        }
     };
 
     println!("instruction: {:?}", t);
@@ -263,17 +261,10 @@ fn exec_redis_cmd(v: redis::Value) -> Option<Response> {
     // execute the command
 
     match tok0str {
-        "SET" => {
-            Some(Response::Status("OK".to_owned()))
-        },
-        "GET" => {
-            Some(Response::Integer(123))
-        },
-        _ => {
-            Some(Response::Error("invalid command".to_owned()))
-        }
+        "SET" => Some(Response::Status("OK".to_owned())),
+        "GET" => Some(Response::Integer(123)),
+        _ => Some(Response::Error("invalid command".to_owned())),
     }
-
 }
 
 fn main() {
