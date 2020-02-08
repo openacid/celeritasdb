@@ -2,11 +2,14 @@
    * [Goals](#goals)
    * [Terminology](#terminology)
    * [Definition: instance](#definition-instance)
-      * [deps](#deps)
    * [Definition instance space](#definition-instance-space)
       * [instance space layout](#instance-space-layout)
    * [Definition: depends on](#definition-depends-on)
       * [Examples of relation depends-on](#examples-of-relation-depends-on)
+         * [Simple case:](#simple-case)
+         * [Transitive:](#transitive)
+         * [Not to override existent replation:](#not-to-override-existent-replation)
+         * [Transitive-2: update deps with unknown instances](#transitive-2-update-deps-with-unknown-instances)
       * [Property: antisymmetric](#property-antisymmetric)
       * [Property: transitivity](#property-transitivity)
    * [Definition: attribute deps](#definition-attribute-deps)
@@ -41,7 +44,7 @@
          * [Case-2: R1 is unreachable, only one possibly committed value of a.deps[1].](#case-2-r1-is-unreachable-only-one-possibly-committed-value-of-adeps1)
          * [Case-3: R1 is reached.](#case-3-r1-is-reached)
 
-<!-- Added by: drdrxp, at: Wed Feb  5 17:44:32 CST 2020 -->
+<!-- Added by: drdrxp, at: Fri Feb  7 15:22:25 CST 2020 -->
 
 <!--te-->
 
@@ -104,9 +107,22 @@ type Instance {
 }
 ```
 
-## deps
+An instance has 4 attributes for `deps`:
 
-For instance `a`,
+- `a.initialDeps`: is instance id set when `a` is created on leader.
+- `a.deps`: when `a` is created it is same as `a.initialDeps`.
+   when `a` is forwarded to other replica through PreAccept,
+   it is updated instnce id set.
+
+- `a.acceptedDeps` is `deps` updated by Accept.
+- `a.committedDeps` is committed `deps`.
+
+On a replica:
+`a.deps` is all instances that `a` is after:
+`a.deps = {x | a > x}`.
+
+On a replica:
+for instance `a`,
 `a.deps` is a set of **instance-ids** that **should** be executed before `a`.
 
 
