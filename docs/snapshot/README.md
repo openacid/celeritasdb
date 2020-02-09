@@ -13,7 +13,7 @@ sanpshot 模块的主要职责是持久化 epaxos 算法过程中任何需要持
 
 为了配合 epaxos 算法的执行，还需要以下的保证：
 
-- 已经存入 snapshot 的日志，如果该 instance 的 leader 上，instance 还不是 executed 状态的，则它一定能被正确的读出。
+- 已经存入 snapshot 的日志，如果该 instance 的 leader 上，instance 还不是 purged 状态的，则它一定能被正确的读出。
 - 支持事务的更新 keys-values；
 - 支持事务的更新 keys-values 以及相应的 instance 。
 
@@ -34,13 +34,21 @@ sanpshot 模块的主要职责是持久化 epaxos 算法过程中任何需要持
 
 需要提供以下接口：
 
+- 提供一个事务接口：
+    ```
+    Engine.begin()
+    Engine.commit()
+    ```
+    调用 `begin` 之后，为 Engine 设置一个事务，之后的操作，都在这个事务中进行，调用 `commit` 提交事务。
+
 - 提供一个用来存取 key-value 的接口。
     - client 提交的 cmds 涉及的 keys，以及 executor 产生的结果 values:
     ```
-    Engine.set_kvs(vec<[u8]>, vec<[u8]>, vec<Instance>);
+    Engine.set_kv([u8], [u8]);
     Engine.get_kv([u8)]) -> [u8];
-    Engine.get_kv_for_update([u8]) -> [u8];
+    Engine.get_kv_for_update([u8]) -> [u8]; // 只能在事务中调用
     ```
+
 - 提供一个用来存取 instance 的接口。
     - epaxos 交互过程中需要的 instance:
     ```
@@ -48,6 +56,9 @@ sanpshot 模块的主要职责是持久化 epaxos 算法过程中任何需要持
     Engine.update_instance(Instance);
     Engine.get_instance(InstanceID) -> Instance;
     Engine.scan_instances(ReplicaID) -> InstanceIter;
+
+    InstanceIter.seek(InstanceID);
+    InstanceIter.next() -> Instance;
     ```
 
 #### 内部的规划
@@ -60,14 +71,18 @@ RocksDB 的 key 和 value 的大小限制是 8MB 和 3GB；目前看，还没有
 
 ##### 日志的生命周期
 
-所有的 instance，按照 epaxos 的正常运行过程，最终状态都会变成 executed，之后其不会被改变，也不会被读取。所以在 snapshot 模块中，当一条 instance 在它的 replica 上的状态到达了 executed 之后，就是可删除的。
+所有的 instance，按照 epaxos 的正常运行过程，最终状态都会变成 executed，之后其不会被改变，也不会被读取。一段时间（现在猜一个1-2 小时）之后标记为 purged。当一条 instance 在它的 replica 上的状态到达了 purged 之后，就是可删除的。
 
-snapshot 启动一个定期删除日志的进程。
+snapshot 需要定期标记/删除日志的进程。
+
+##### 日志的复制
+
+需要提供快照功能，可以利用 RocksDB 的快照功能实现。然后由 replica 读取快照中的内容并写入另一个 replica。
 
 ##### snapshot 的内部状态
 
 snapshot 需要保存一些状态支持其他模块对 instance 的读取需求。
-这些配置存在一个单独的 column family 中。
+这些状态存在一个单独的 column family 中。
 
 - 每个 replica 已经产生的最大的 instance id;
     ```
