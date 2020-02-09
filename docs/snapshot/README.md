@@ -34,14 +34,14 @@ sanpshot 模块的主要职责是持久化 epaxos 算法过程中任何需要持
 
 需要提供以下接口：
 
-- 提供一个事务接口：
+- 提供事务接口：
     ```
     Engine.begin()
     Engine.commit()
     ```
     调用 `begin` 之后，为 Engine 设置一个事务，之后的操作，都在这个事务中进行，调用 `commit` 提交事务。
 
-- 提供一个用来存取 key-value 的接口。
+- 提供用来存取 key-value 的接口。
     - client 提交的 cmds 涉及的 keys，以及 executor 产生的结果 values:
     ```
     Engine.set_kv([u8], [u8]);
@@ -49,7 +49,7 @@ sanpshot 模块的主要职责是持久化 epaxos 算法过程中任何需要持
     Engine.get_kv_for_update([u8]) -> [u8]; // 只能在事务中调用
     ```
 
-- 提供一个用来存取 instance 的接口。
+- 提供用来存取 instance 的接口。
     - epaxos 交互过程中需要的 instance:
     ```
     Engine.set_instance(Instance);
@@ -60,6 +60,20 @@ sanpshot 模块的主要职责是持久化 epaxos 算法过程中任何需要持
     InstanceIter.seek(InstanceID);
     InstanceIter.next() -> Instance;
     ```
+
+- 提供用来存取状态的接口。包括下面几个：
+    ```
+    Engine.set_committed_inst_id()
+    Engine.get_committed_inst_id()
+
+    Engine.set_executed_inst_id()
+    Engine.get_executed_inst_id()
+
+    Engine.set_conflict_inst_ids([u8], vec<Instance>);
+    Engine.get_conflict_inst_ids([u8]) -> vec<Instance>;
+    ```
+    在 rocksdb 中 committed 的 key 是 replica_id + committed; executed 的 key 是 replica_id + executed;
+    conflict instance ids 分每个 instance 单独存储，每个 key 是 key + replica_id;
 
 #### 内部的规划
 
