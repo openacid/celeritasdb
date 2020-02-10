@@ -17,6 +17,8 @@ edition = "2018"
 net2  = { version = "0.2.2", features = ["nightly"] }
 parse = { path = "components/parse" }
 redis = { version = "0.15.1"}
+rand = "0.7"
+tokio = { version = "0.2", features = ["rt-core", "macros"] }
 
 [workspace]
 members = [
