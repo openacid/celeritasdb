@@ -1,6 +1,7 @@
 // TODO rename this file, choose a better bin name
 
-use std::env;
+use clap::{Arg, App};
+
 use net2;
 use redis;
 
@@ -283,9 +284,14 @@ fn exec_redis_cmd(v: redis::Value) -> Option<Response> {
 }
 
 fn main() {
-    // TODO parse command line args
-    let args: Vec<String> = env::args().collect();
-    let port = args[2].to_string().parse::<u16>().unwrap();
+    let matches = App::new("cele")
+        .version("0.0.1")
+        .arg(Arg::with_name("port").long("port").takes_value(true))
+        .arg(Arg::with_name("bind").long("bind").takes_value(true))
+        .get_matches();
+
+    let port_str = matches.value_of("port").unwrap_or("6379");
+    let port = port_str.parse::<u16>().unwrap();
     let mut server = Server::new(port);
     println!("Port: {}", 6379);
     server.run();
