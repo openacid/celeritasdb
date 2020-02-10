@@ -1,5 +1,6 @@
 // TODO rename this file, choose a better bin name
 
+use std::env;
 use net2;
 use redis;
 
@@ -47,13 +48,15 @@ impl Stream {
 
 pub struct Server {
     /// A list of threads listening for incoming connections
+    listen_port: u16,
     listener_threads: Vec<thread::JoinHandle<()>>,
 }
 
 impl Server {
     /// Creates a new server
-    pub fn new() -> Server {
+    pub fn new(port: u16) -> Server {
         return Server {
+            listen_port: port, 
             listener_threads: Vec::new(),
         };
     }
@@ -109,7 +112,7 @@ impl Server {
 
     /// Starts threads listening to new connections.
     pub fn start(&mut self) {
-        let addresses = vec![("127.0.0.1".to_owned(), 6379)];
+        let addresses = vec![("127.0.0.1".to_owned(), self.listen_port)];
         for (host, port) in addresses {
             match self.listen((&host[..], port), 10) {
                 Ok(_) => {
@@ -263,11 +266,14 @@ fn exec_redis_cmd(v: redis::Value) -> Option<Response> {
     // execute the command
 
     match tok0str {
+        "FLUSHDB" => {
+            Some(Response::Status("OK".to_owned()))
+        },
         "SET" => {
             Some(Response::Status("OK".to_owned()))
         },
         "GET" => {
-            Some(Response::Integer(123))
+            Some(Response::Integer(42))
         },
         _ => {
             Some(Response::Error("invalid command".to_owned()))
@@ -277,7 +283,10 @@ fn exec_redis_cmd(v: redis::Value) -> Option<Response> {
 }
 
 fn main() {
-    let mut server = Server::new();
+    // TODO parse command line args
+    let args: Vec<String> = env::args().collect();
+    let port = args[2].to_string().parse::<u16>().unwrap();
+    let mut server = Server::new(port);
     println!("Port: {}", 6379);
     server.run();
 }
