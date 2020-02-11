@@ -9,11 +9,10 @@ message InstanceID {
 
 enum InstanceStatus {
     NA = 0;
-    PreAcceptedEQ = 1;
-    PreAccepted = 2;
-    Accepted = 3;
-    Committed = 4;
-    Executed = 5;
+    PreAccepted = 1;
+    Accepted = 2;
+    Committed = 3;
+    Executed = 4;
 };
 
 message BallotNum {
@@ -27,9 +26,11 @@ message InstIDs {
 };
 
 message Instance {
-    InstanceStatus status = 1;
-    repeated Command cmds = 2;
-    BallotNum ballot = 3;
-    int64 seq = 4;
-    InstIDs deps = 5;
+    InstIDs initial_deps = 1;
+    InstIDs deps = 2;
+    InstIDs accepted_deps = 3;
+    InstIDs committed_deps = 4;
+    InstanceStatus status = 5;
+    repeated Command cmds = 6;
+    BallotNum ballot = 7;
 };

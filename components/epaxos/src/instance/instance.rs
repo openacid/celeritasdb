@@ -63,7 +63,6 @@ impl Instance {
         status: InstanceStatus,
         cmds: &[Command],
         ballot: &BallotNum,
-        seq: i64,
         deps: &[InstanceID],
     ) -> Instance {
         let mut inst = Instance::new();
@@ -71,8 +70,7 @@ impl Instance {
         inst.set_status(status);
         inst.set_cmds(RepeatedField::from_slice(cmds));
         inst.set_ballot(ballot.clone());
-        inst.set_seq(seq);
-        inst.set_deps(InstIDs::new_instance_ids(deps));
+        inst.set_initial_deps(InstIDs::new_instance_ids(deps));
 
         return inst;
     }
