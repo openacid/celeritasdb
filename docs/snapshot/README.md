@@ -30,23 +30,38 @@ sanpshot 模块的主要职责是持久化 epaxos 算法过程中任何需要持
 日志数据的一个使用者是 executor 模块。它需要利用 snapshot 中的 instance 数据计算出 需要保存在 celeritas db 中的 key-value。
 日志数据还会被 smr 模块使用，读取 epaxos 交互过程中需要更新 deps 时的 instance。
 
+##### 存取内部状态
+
+snapshot 需要保存一些状态支持其他模块对 instance 的读取需求。
+这些状态存在一个单独的 column family 中。
+
+- 每个 replica 已经产生的最大的 instance id;
+    ```
+    key: $replica_id + current
+    ```
+- 每个 replica 已经 executed 的最大的 instance id;
+    ```
+    key: $replica_id + executed
+    ```
+
 #### 接口的规划
 
 需要提供以下接口：
 
 - 提供事务接口：
     ```
-    Engine.begin()
-    Engine.commit()
+    Engine.begin();
+    Engine.commit();
+    Engine.rollback();
+    Engine.get_kv_for_update(Vec<u8>) -> Vec<u8>; // 读取 key 后被该事务独占，事务结束前不允许被修改；
     ```
-    调用 `begin` 之后，为 Engine 设置一个事务，之后的操作，都在这个事务中进行，调用 `commit` 提交事务。
+    调用 `begin` 之后，为 Engine 设置一个事务，之后的关于 key-value 和 instance 的操作，都在这个事务中进行，调用 `commit` 提交事务。
 
 - 提供用来存取 key-value 的接口。
     - client 提交的 cmds 涉及的 keys，以及 executor 产生的结果 values:
     ```
-    Engine.set_kv([u8], [u8]);
-    Engine.get_kv([u8)]) -> [u8];
-    Engine.get_kv_for_update([u8]) -> [u8]; // 只能在事务中调用
+    Engine.set_kv(Vec<u8>, Vec<u8>);
+    Engine.get_kv(Vec<u8>) -> Vec<u8>;
     ```
 
 - 提供用来存取 instance 的接口。
@@ -55,7 +70,7 @@ sanpshot 模块的主要职责是持久化 epaxos 算法过程中任何需要持
     Engine.set_instance(Instance);
     Engine.update_instance(Instance);
     Engine.get_instance(InstanceID) -> Instance;
-    Engine.scan_instances(ReplicaID) -> InstanceIter;
+    Engine.get_instance_iter(ReplicaID) -> InstanceIter;
 
     InstanceIter.seek(InstanceID);
     InstanceIter.next() -> Instance;
@@ -63,17 +78,10 @@ sanpshot 模块的主要职责是持久化 epaxos 算法过程中任何需要持
 
 - 提供用来存取状态的接口。包括下面几个：
     ```
-    Engine.set_committed_inst_id()
-    Engine.get_committed_inst_id()
-
-    Engine.set_executed_inst_id()
-    Engine.get_executed_inst_id()
-
-    Engine.set_interfere_inst_ids([u8], op_code, vec<Instance>);
-    Engine.get_interfere_inst_ids([u8], op_code) -> vec<Instance>;
+    Engine.get_max_instance_id(ReplicaID);
+    Engine.get_max_executed_instance_id(ReplicaID);
     ```
-    在 rocksdb 中 committed 的 key 是 replica_id + committed; executed 的 key 是 replica_id + executed;
-    interfere instance ids 分每个 instance 单独存储，每个 key 是 key + op_code + replica_id;
+    在 rocksdb 中 max instance 的 key 是 replica_id + max; max executed instance 的 key 是 replica_id + executed;
 
 #### 内部的规划
 
@@ -92,17 +100,3 @@ snapshot 需要定期标记/删除日志的进程。
 ##### 日志的复制
 
 需要提供快照功能，可以利用 RocksDB 的快照功能实现。然后由 replica 读取快照中的内容并写入另一个 replica。
-
-##### snapshot 的内部状态
-
-snapshot 需要保存一些状态支持其他模块对 instance 的读取需求。
-这些状态存在一个单独的 column family 中。
-
-- 每个 replica 已经产生的最大的 instance id;
-    ```
-    key: $replica_id + current
-    ```
-- 每个 replica 已经 executed 的 instance id;
-    ```
-    key: $replica_id + executed
-    ```
