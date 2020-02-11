@@ -1,6 +1,6 @@
 // TODO rename this file, choose a better bin name
 
-use clap::{Arg, App};
+use clap::{App, Arg};
 
 use net2;
 use redis;
@@ -9,7 +9,7 @@ use net2::TcpBuilder;
 use std::io;
 use std::io::{Read, Write};
 use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
-use std::str::{from_utf8};
+use std::str::from_utf8;
 
 use std::sync::mpsc::{channel, Receiver};
 use std::thread;
@@ -46,7 +46,6 @@ impl Stream {
     }
 }
 
-
 pub struct Server {
     /// A list of threads listening for incoming connections
     listen_port: u16,
@@ -57,7 +56,7 @@ impl Server {
     /// Creates a new server
     pub fn new(port: u16) -> Server {
         return Server {
-            listen_port: port, 
+            listen_port: port,
             listener_threads: Vec::new(),
         };
     }
@@ -160,7 +159,7 @@ impl Client {
                             Ok(_) => (),
                             Err(e) => println!("Error writing to client: {:?}", e),
                         }
-                    },
+                    }
                     None => break,
                 },
                 Err(_) => break,
@@ -184,7 +183,7 @@ impl Client {
                     Ok(r) => {
                         println!("read buf: r={:}, {:?}", r, buf);
                         r
-                    },
+                    }
                     Err(err) => {
                         println!("Reading from client: {:?}", err);
                         break;
@@ -226,7 +225,7 @@ impl Client {
                             break;
                         }
                     };
-                },
+                }
                 None => {
                     println!("internal error");
                     break;
@@ -239,7 +238,6 @@ impl Client {
 }
 
 fn exec_redis_cmd(v: redis::Value) -> Option<Response> {
-
     // cmd is a nested array: ["set", "a", "1"] or ["set", ["b", "c"], ...]
     // A "set" or "get" redis command is serialized as non-nested array.
     //
@@ -258,7 +256,7 @@ fn exec_redis_cmd(v: redis::Value) -> Option<Response> {
         _ => {
             println!("tok0 is not a Data!!!");
             return Some(Response::Error("invalid command".to_owned()));
-        },
+        }
     };
 
     println!("instruction: {:?}", t);
@@ -267,20 +265,11 @@ fn exec_redis_cmd(v: redis::Value) -> Option<Response> {
     // execute the command
 
     match tok0str {
-        "FLUSHDB" => {
-            Some(Response::Status("OK".to_owned()))
-        },
-        "SET" => {
-            Some(Response::Status("OK".to_owned()))
-        },
-        "GET" => {
-            Some(Response::Integer(42))
-        },
-        _ => {
-            Some(Response::Error("invalid command".to_owned()))
-        }
+        "FLUSHDB" => Some(Response::Status("OK".to_owned())),
+        "SET" => Some(Response::Status("OK".to_owned())),
+        "GET" => Some(Response::Integer(42)),
+        _ => Some(Response::Error("invalid command".to_owned())),
     }
-
 }
 
 fn main() {
@@ -290,14 +279,18 @@ fn main() {
         .version("0.0.1")
         .author("openacid")
         .about("distributed redis")
-        .arg(Arg::with_name("port")
-             .long("port")
-             .takes_value(true)
-             .help("port to listen"))
-        .arg(Arg::with_name("bind")
-             .long("bind")
-             .takes_value(true)
-             .help("network address to listen"))
+        .arg(
+            Arg::with_name("port")
+                .long("port")
+                .takes_value(true)
+                .help("port to listen"),
+        )
+        .arg(
+            Arg::with_name("bind")
+                .long("bind")
+                .takes_value(true)
+                .help("network address to listen"),
+        )
         .get_matches();
 
     let port_str = matches.value_of("port").unwrap_or("6379");
