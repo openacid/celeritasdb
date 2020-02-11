@@ -296,6 +296,6 @@ fn main() {
     let port_str = matches.value_of("port").unwrap_or("6379");
     let port = port_str.parse::<u16>().unwrap();
     let mut server = Server::new(port);
-    println!("Port: {}", 6379);
+    println!("Port: {}", port);
     server.run();
 }
