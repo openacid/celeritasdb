@@ -1,48 +1,49 @@
 <!--ts-->
-   * [Goals](#goals)
-   * [Terminology](#terminology)
-   * [Definition: instance](#definition-instance)
-   * [Definition instance space](#definition-instance-space)
-      * [instance space layout](#instance-space-layout)
-   * [Definition: depends on](#definition-depends-on)
-      * [Examples of relation depends-on](#examples-of-relation-depends-on)
-         * [Simple case:](#simple-case)
-         * [Transitive:](#transitive)
-         * [Not to override existent replation:](#not-to-override-existent-replation)
-         * [Transitive-2: update deps with unknown instances](#transitive-2-update-deps-with-unknown-instances)
-      * [Property: antisymmetric](#property-antisymmetric)
-      * [Property: transitivity](#property-transitivity)
-   * [Definition: attribute deps](#definition-attribute-deps)
-         * [Properties of attribute deps](#properties-of-attribute-deps)
-         * [Implementation](#implementation)
-   * [Definition: commit](#definition-commit)
-      * [Definition: safe](#definition-safe)
-         * [Example: safe](#example-safe)
-      * [Commit an instance](#commit-an-instance)
-         * [Commit "a.deps"](#commit-adeps)
-         * [FP-condition](#fp-condition)
-      * [Proof: all replica have the same view of committed instance](#proof-all-replica-have-the-same-view-of-committed-instance)
-      * [Fast path](#fast-path)
-      * [Slow path](#slow-path)
-      * [Commit](#commit)
-   * [Execution](#execution)
-      * [Execution order](#execution-order)
-      * [Guarantees:](#guarantees)
-      * [For interfering instances:](#for-interfering-instances)
-      * [For non-interfering instances:](#for-non-interfering-instances)
-      * [Proof](#proof)
-   * [Execution algorithm](#execution-algorithm)
-   * [Recover](#recover)
-      * [Cases not need to recover:](#cases-not-need-to-recover)
-      * [Recover PreAccept instance](#recover-preaccept-instance)
-      * [Recover one relation](#recover-one-relation)
-         * [Case-1: R1 is unreachable, there could be two possibly committed value of a.deps[1].](#case-1-r1-is-unreachable-there-could-be-two-possibly-committed-value-of-adeps1)
-            * [Lemma-1: R1 does not have a &lt; x on it](#lemma-1-r1-does-not-have-a--x-on-it)
-            * [Lemma-2: R0 does not have a &gt; x on it.](#lemma-2-r0-does-not-have-a--x-on-it)
-            * [Lemma-3: x could only have been committed on fast path with x &gt; a:](#lemma-3-x-could-only-have-been-committed-on-fast-path-with-x--a)
-            * [slow-committed value of x](#slow-committed-value-of-x)
-         * [Case-2: R1 is unreachable, only one possibly committed value of a.deps[1].](#case-2-r1-is-unreachable-only-one-possibly-committed-value-of-adeps1)
-         * [Case-3: R1 is reached.](#case-3-r1-is-reached)
+
+- [Goals](#goals)
+- [Terminology](#terminology)
+- [Definition: instance](#definition-instance)
+- [Definition instance space](#definition-instance-space)
+  - [instance space layout](#instance-space-layout)
+- [Definition: depends on](#definition-depends-on)
+  - [Examples of relation depends-on](#examples-of-relation-depends-on)
+    - [Simple case:](#simple-case)
+    - [Transitive:](#transitive)
+    - [Not to override existent replation:](#not-to-override-existent-replation)
+    - [Transitive-2: update deps with unknown instances](#transitive-2-update-deps-with-unknown-instances)
+  - [Property: antisymmetric](#property-antisymmetric)
+  - [Property: transitivity](#property-transitivity)
+- [Definition: attribute deps](#definition-attribute-deps)
+  _ [Properties of attribute deps](#properties-of-attribute-deps)
+  _ [Implementation](#implementation)
+- [Definition: commit](#definition-commit)
+  - [Definition: safe](#definition-safe)
+    - [Example: safe](#example-safe)
+  - [Commit an instance](#commit-an-instance)
+    - [Commit "a.deps"](#commit-adeps)
+    - [FP-condition](#fp-condition)
+  - [Proof: all replica have the same view of committed instance](#proof-all-replica-have-the-same-view-of-committed-instance)
+  - [Fast path](#fast-path)
+  - [Slow path](#slow-path)
+  - [Commit](#commit)
+- [Execution](#execution)
+  - [Execution order](#execution-order)
+  - [Guarantees:](#guarantees)
+  - [For interfering instances:](#for-interfering-instances)
+  - [For non-interfering instances:](#for-non-interfering-instances)
+  - [Proof](#proof)
+- [Execution algorithm](#execution-algorithm)
+- [Recover](#recover)
+  - [Cases not need to recover:](#cases-not-need-to-recover)
+  - [Recover PreAccept instance](#recover-preaccept-instance)
+  - [Recover one relation](#recover-one-relation)
+    - [Case-1: R1 is unreachable, there could be two possibly committed value of a.deps[1].](#case-1-r1-is-unreachable-there-could-be-two-possibly-committed-value-of-adeps1)
+      - [Lemma-1: R1 does not have a &lt; x on it](#lemma-1-r1-does-not-have-a--x-on-it)
+      - [Lemma-2: R0 does not have a &gt; x on it.](#lemma-2-r0-does-not-have-a--x-on-it)
+      - [Lemma-3: x could only have been committed on fast path with x &gt; a:](#lemma-3-x-could-only-have-been-committed-on-fast-path-with-x--a)
+      - [slow-committed value of x](#slow-committed-value-of-x)
+    - [Case-2: R1 is unreachable, only one possibly committed value of a.deps[1].](#case-2-r1-is-unreachable-only-one-possibly-committed-value-of-adeps1)
+    - [Case-3: R1 is reached.](#case-3-r1-is-reached)
 
 <!-- Added by: drdrxp, at: Fri Feb  7 15:22:25 CST 2020 -->
 
@@ -57,14 +58,13 @@
 Major changes from epaxos:
 
 - When updating `deps`, only check against PreAccept phase values:
-    `deps` updated by Accept or Commit is ignored.
+  `deps` updated by Accept or Commit is ignored.
 
 - Instances by a same leader has a strong depends-on relation.
-    A later instance always depends on a former one.
+  A later instance always depends on a former one.
 
 - Use the **all-committed** constrain.
-    **all-initial-value** and **only-to-quorum** is not used.
-
+  **all-initial-value** and **only-to-quorum** is not used.
 
 # Terminology
 
@@ -82,7 +82,6 @@ Major changes from epaxos:
 - `a₂`: value of instance `a` some relica believes to be safe.
 
 - `>`: depend-on: `a > b` means `a` depends on `b`.
-
 
 # Definition: instance
 
@@ -110,8 +109,8 @@ An instance has 4 attributes for `deps`:
 
 - `a.initialDeps`: is instance id set when `a` is created on leader.
 - `a.deps`: when `a` is created it is same as `a.initialDeps`.
-   when `a` is forwarded to other replica through PreAccept,
-   it is updated instnce id set.
+  when `a` is forwarded to other replica through PreAccept,
+  it is updated instnce id set.
 
 - `a.final_deps` is `deps` updated by Accept or Commit.
 
@@ -122,7 +121,6 @@ On a replica:
 On a replica:
 for instance `a`,
 `a.deps` is a set of **instance-ids** that **should** be executed before `a`.
-
 
 # Definition instance space
 
@@ -147,7 +145,6 @@ Explain:
 
 ## instance space layout
 
-
 ```
 |                                                                        |
 |                                                                        |
@@ -162,8 +159,6 @@ Explain:
 
 We may write `R[0]` as `R0` for short.
 
-
-
 # Definition: depends on
 
 **depends on** is a local relation between instances on a replica.
@@ -176,58 +171,56 @@ if `a` is after `b` in time**.
 
 From definition, we infer that:
 
--   On a replica,
-    any two instances `a` and `b` must have one of `a > b` or `b > a`.
+- On a replica,
+  any two instances `a` and `b` must have one of `a > b` or `b > a`.
 
--   When a leader initiates an instance `a`, `a` depends on all existent instances.
-    Because none of existent instances have an `depends-on` relation with `a`.
+- When a leader initiates an instance `a`, `a` depends on all existent instances.
+  Because none of existent instances have an `depends-on` relation with `a`.
 
-    > committed flag are ignored in this pseudo code for clarity
+  > committed flag are ignored in this pseudo code for clarity
 
-    ```
-    a.deps  = a.initialDeps = all_instances_on_this_repilca
-    ```
+  ```
+  a.deps  = a.initialDeps = all_instances_on_this_repilca
+  ```
 
--   When a replica receives PreAccept of `a`,
-    it updates `a` to depend on
-    all those do not have a relation `>` with `a`
+- When a replica receives PreAccept of `a`,
+  it updates `a` to depend on
+  all those do not have a relation `>` with `a`
 
-    > committed flag are ignored in this pseudo code for clarity
+  > committed flag are ignored in this pseudo code for clarity
 
-    ```
-    for x in all_instances_on_this_repilca:
-        if not x > a:
-            update a.deps with `a > x`
-    ```
-
-
+  ```
+  for x in all_instances_on_this_repilca:
+      if not x > a:
+          update a.deps with `a > x`
+  ```
 
 ## Examples of relation depends-on
 
--   Initially, there are 3 instances `x, y, z`.
+- Initially, there are 3 instances `x, y, z`.
 
-    When `a` is initiated on `R0`, `R0` believes it is after all others:
-    `a₀ > {x, y, z}`.
+  When `a` is initiated on `R0`, `R0` believes it is after all others:
+  `a₀ > {x, y, z}`.
 
-    When `b` is initiated on `R1`, `R1` believes it is after all others:
-    `b₀ > {x, y, z}`.
+  When `b` is initiated on `R1`, `R1` believes it is after all others:
+  `b₀ > {x, y, z}`.
 
-    When `c` is initiated on `R2`, `R2` believes it is after all others:
-    `c₀ > {x, y, z}`.
+  When `c` is initiated on `R2`, `R2` believes it is after all others:
+  `c₀ > {x, y, z}`.
 
-    When `d` is initiated on `R0`, `R0` believes it is after all others:
-    `d₀ > {a, x, y, z}`.
+  When `d` is initiated on `R0`, `R0` believes it is after all others:
+  `d₀ > {a, x, y, z}`.
 
-    ```
-    d
-    ↓
-    a            b            c
-    x y z      x y z      x y z
-    -----      -----      -----
-    R0         R1         R2
-    ```
+  ```
+  d
+  ↓
+  a            b            c
+  x y z      x y z      x y z
+  -----      -----      -----
+  R0         R1         R2
+  ```
 
-###   Simple case:
+### Simple case:
 
 When `d` is replicated to `R1`,
 `R1` believes that `d₁¹ > {a, b, x, y, z}`.
@@ -243,7 +236,7 @@ x y z      x y z      x y z
 R0         R1         R2
 ```
 
-###   Transitivity:
+### Transitivity:
 
 Then `c` is replicated to `R1`,
 `R1` believes that `c₁¹ > {d, a, b, x, y, z}`.
@@ -262,7 +255,7 @@ x y z      x y z      x y z
 R0         R1         R2
 ```
 
-###   Not to override existent replation:
+### Not to override existent replation:
 
 Then `a` is replicated to `R1`,
 `R1` believes that `a₁¹ > {b, x, y, z}`.
@@ -330,16 +323,15 @@ We see that different replicas have their own view of instance relations.
 ## Property: antisymmetric
 
 - On a replica,
-    If `a > b` has been seen, then `b > a` does not hold.
+  If `a > b` has been seen, then `b > a` does not hold.
 
 - On a replica,
-    `a > a` never holds.
+  `a > a` never holds.
 
 ## Property: transitivity
 
 On a replica,
 `a > b` and `b > c` implies `a > c`.
-
 
 # Definition: attribute deps
 
@@ -347,7 +339,7 @@ An instance has 4 attributes for `deps`:
 
 - `a.initialDeps`: is instance id set when `a` is created on leader.
 - `a.deps`: when `a` is created it is same as `a.initialDeps`.
-   when `a` is forwarded to other replica, it is updated instnce id set.
+  when `a` is forwarded to other replica, it is updated instnce id set.
 
 - `a.final_deps` is `deps` updated by Accept or Commit.
 
@@ -360,7 +352,7 @@ where `n` is number of replicas.
 Every subset contains only instances from leader `Ri`:
 `a.deps[Ri] = {x | x.replicaID == Ri and a > x}`.
 
-###  Properties of attribute deps
+### Properties of attribute deps
 
 On a replica:
 
@@ -368,12 +360,10 @@ On a replica:
 
 - Thus `a.deps ⊂ b.deps` then `a < b` does not hold.
 
-
 ### Implementation
 
 `a.deps[i]` stores only the max instance id in it,
 because an instance is **after** all preceding instances by the same leader.
-
 
 # Definition: commit
 
@@ -409,23 +399,21 @@ a₁³.deps = {b, c}
 
 Thus `a.deps = {b, c}` can be committed.
 
-
 ## Commit an instance
 
 In this algorithm we need to ensure two things to be **safe**,
 before committing it:
 
--   What to execute: `a.cmds`.
+- What to execute: `a.cmds`.
 
-    To commit `a.cmds`, forwards it to `Qc=F+1`
-    replicas, 
-    because `a.cmds` never changes.
+  To commit `a.cmds`, forwards it to `Qc=F+1`
+  replicas,
+  because `a.cmds` never changes.
 
--   and when to execute: `a.deps`.
+- and when to execute: `a.deps`.
 
-    `a.deps` have different values on different replicas.
-    Thus it requires `Qf` replicas to have the identical value to be safe.
-
+  `a.deps` have different values on different replicas.
+  Thus it requires `Qf` replicas to have the identical value to be safe.
 
 ### Commit "a.deps"
 
@@ -439,11 +427,11 @@ a.deps = {
 }
 ```
 
--   If all `a.deps[Ri]` is safe, `a` is safe.
-    Then leader commit it on fast-path.
+- If all `a.deps[Ri]` is safe, `a` is safe.
+  Then leader commit it on fast-path.
 
--   Otherwise if any of `a.deps[Ri]` is not safe, run another round of Accept to
-    make it safe(slow path).
+- Otherwise if any of `a.deps[Ri]` is not safe, run another round of Accept to
+  make it safe(slow path).
 
 ### FP-condition
 
@@ -473,72 +461,72 @@ Leader:
 
 1. Initiate instance `a`
 
-    build `a.deps`:
+   build `a.deps`:
 
-    > committed flag are ignored in this pseudo code for clarity
+   > committed flag are ignored in this pseudo code for clarity
 
-    ```
-    for x in all_instances_on_this_repilca:
-        Lx = leaderOf(x)
-        a.deps[Lx] = max(x, a.deps[Lx])
+   ```
+   for x in all_instances_on_this_repilca:
+       Lx = leaderOf(x)
+       a.deps[Lx] = max(x, a.deps[Lx])
 
-    a.initialDeps = a.deps
-    ```
+   a.initialDeps = a.deps
+   ```
 
 2. PreAccept: forward `a` to other replicas.
 
 3. Handle-PreAcceptReply
 
-    There are two step of PreAcceptReply:
+   There are two step of PreAcceptReply:
 
-    If `a` has some committed instances in `a.deps`,
-    update the commit status to local instance-space.
+   If `a` has some committed instances in `a.deps`,
+   update the commit status to local instance-space.
 
-    Thus there would be some empty slot in instance space has a committed
-    status.
+   Thus there would be some empty slot in instance space has a committed
+   status.
 
-    The second step is to update `a.deps`:
+   The second step is to update `a.deps`:
 
-    ```
-    a.commitDeps = [];
-    for i in 0..n:
-        values = {a.deps[i] for a in all_replies}
-        for v in values:
-            if (count(v, all_replies) >= fast_quorum
-                    and v is committed):
+   ```
+   a.commitDeps = [];
+   for i in 0..n:
+       values = {a.deps[i] for a in all_replies}
+       for v in values:
+           if (count(v, all_replies) >= fast_quorum
+                   and v is committed):
 
-                a.commitDeps[i] = v
-                break
-        if a.commitDeps[i] is NULL:
-            quit fast-path.
+               a.commitDeps[i] = v
+               break
+       if a.commitDeps[i] is NULL:
+           quit fast-path.
 
-    commit(a)
-    ```
+   commit(a)
+   ```
 
 Non-leader replicas:
 
 1. Handle-PreAccept
 
-    TODO need proof of linearizability with this.
-    TODO explain why this is efficient reducing conflict.
+   TODO need proof of linearizability with this.
+   TODO explain why this is efficient reducing conflict.
 
-    update `a.deps'`
+   update `a.deps'`
 
-    > committed flag are ignored in this pseudo code for clarity
+   > committed flag are ignored in this pseudo code for clarity
 
-    ```
-    for x in all_instances_on_this_repilca:
-        Lx = leaderOf(x)
-        if (not x.deps[Lx] > a
-                and (
-                    x ~ a
-                    or x is committed
-                )):
+   ```
+   for x in all_instances_on_this_repilca:
+       Lx = leaderOf(x)
+       if (not x.deps[Lx] > a
+               and (
+                   x ~ a
+                   or x is committed
+               )):
 
-            a.deps[Lx] = max(x, a.deps[Lx])
+           a.deps[Lx] = max(x, a.deps[Lx])
 
-    reply(a)
-    ```
+   reply(a)
+   ```
 
 ## Slow path
 
@@ -550,21 +538,17 @@ Leader:
 
 3. Handle AcceptReply
 
-
 Non-leader replicas:
 
 1. Handle Accept
-
 
 ## Commit
 
 Just commit.
 
-
 # Execution
 
 ## Execution order
-
 
 On a replica, `a.deps` represents local relation between `a` and other instances
 on this replia. There is not circle, e.g.: `a > b > c > a` on a replica.
@@ -572,6 +556,7 @@ on this replia. There is not circle, e.g.: `a > b > c > a` on a replica.
 But `a.final_deps` could have.
 
 E.g. initially:
+
 ```
 a₀        b₀
 -----  -----
@@ -588,7 +573,7 @@ a₀        b₀
 R0     R1
 ```
 
-Finaly `a.final_deps = {b}`, 
+Finaly `a.final_deps = {b}`,
 `b.final_deps = {a}`.
 
 For this reason execution order is determined not by relation `>`,
@@ -599,28 +584,27 @@ TODO
 ## Guarantees:
 
 - Execution consistency:
-    If two interfering commands `a` and `b` are successfully committed,
-    they will be executed in the same order by every replica.
+  If two interfering commands `a` and `b` are successfully committed,
+  they will be executed in the same order by every replica.
 
 - Execution linearizability:
-    If two instance
-    TODO proof
-
+  If two instance
+  TODO proof
 
 ## For interfering instances:
 
 - `a.final_deps ⊃ b.final_deps` : exec `a` after `b`
 - `a.final_deps ⊅ b.final_deps` and `a.final_deps ⊄ b.final_deps` : exec `a` and `b` in instance id
-    order.
+  order.
 - there is no `a` and `b` have `a.final_deps == b.final_deps`.
 
 ## For non-interfering instances:
 
 - `a.final_deps ⊃ b.final_deps` : exec `a` after `b`
 - `a.final_deps == b.final_deps`: exec `a` and `b` in instance id
-    order.
+  order.
 - `a.final_deps ⊅ b.final_deps` and `a.final_deps ⊄ b.final_deps` : exec `a` and `b` in instance id
-    order.
+  order.
 
 ## Proof
 
@@ -632,7 +616,6 @@ Thus `a.deps ⊃ b.deps`
 
 ∴ execute `a` after `b` will never break guarantees.
 
-
 # Execution algorithm
 
 Guarantees:
@@ -642,7 +625,6 @@ Guarantees:
 - Every instance must be executed in finite time.
 
 - If there is `x: a ⊃ x` then `x` must be executed before `a`
-
 
 ```
         a      b
@@ -666,15 +648,14 @@ Assumes:
 
 After Preparing on a quorum(`F+1`):
 
--   If `P` saw `R0`, exit and wait for `R0` to commit `a`.
+- If `P` saw `R0`, exit and wait for `R0` to commit `a`.
 
--   If `P` saw a committed `a`: broadcast and quit.
+- If `P` saw a committed `a`: broadcast and quit.
 
--   If `P` saw `a` with `ballot>0`: run classic paxos with this
-    value and quit.
+- If `P` saw `a` with `ballot>0`: run classic paxos with this
+  value and quit.
 
-    TODO explain ballot
-
+  TODO explain ballot
 
 ∴ `P` only need to recover if all of `a` it saw are in PreAccept phase.
 
@@ -743,7 +724,6 @@ on fast-path.
 
 > But `R0` could have `a > y` on it.
 
-
 There are `F + Nx` replicas
 accepted or could have accepted `a.deps[1] == x`.
 `F` unreached replicas plus `Nx`.
@@ -772,13 +752,10 @@ E.g.:
 
 `P` needs to eliminate one of them
 
-
-
-
 - `a` did not see a fast-committed `x`
 
 If `a.deps[1] == x` is committed,
-by [fast-commit requirements](#fast-commit-requirements), 
+by [fast-commit requirements](#fast-commit-requirements),
 the committed `x.deps` must not contain `a`(`x < a`)
 
 #### Lemma-3: `x` could only have been committed on fast path with `x > a`:
@@ -793,7 +770,6 @@ the committed `x.deps` must not contain `a`(`x < a`)
 
 ∴ If `x` is fast-committed, it must be committed with `x > a`.
 
-
 #### slow-committed value of `x`
 
 Prepare on `x`.
@@ -803,36 +779,32 @@ run classic paxos and commit `x`.
 
 - If `P` saw a committed `x`:
 
-    - If `x > a`, From FP-condition,
-      `a.deps[1] == x` could not have been committed on fast-path.
-
-      Discard `a.deps[1] == x`, try other value of `a.deps[1]`.
-
-    - If `x < a`, there is a at least classic-quorum on which
-      `x` came before `a`.
-
-      ∴ `x` must be in `a.deps` when `a` is committed.
-
-      ∴ `a.deps[1] == x` is the only possible value to commit.
-
-- Otherwise, `x` is not committed on slow-path.
-
-    From Lemma-3:
-    `a.deps[1] == x` can not be committed on fast-path.
+  - If `x > a`, From FP-condition,
+    `a.deps[1] == x` could not have been committed on fast-path.
 
     Discard `a.deps[1] == x`, try other value of `a.deps[1]`.
 
+  - If `x < a`, there is a at least classic-quorum on which
+    `x` came before `a`.
+
+    ∴ `x` must be in `a.deps` when `a` is committed.
+
+    ∴ `a.deps[1] == x` is the only possible value to commit.
+
+- Otherwise, `x` is not committed on slow-path.
+
+  From Lemma-3:
+  `a.deps[1] == x` can not be committed on fast-path.
+
+  Discard `a.deps[1] == x`, try other value of `a.deps[1]`.
 
 Continue checking if `a.deps[1] == y` can be committed on fast-path, and so on.
 If no value of `a.deps[1]` could have been committed, use the initial value:
 `a.initialDeps[1]`.
 
-
-
 ### Case-2: `R1` is unreachable, only one possibly committed value of `a.deps[1]`.
 
 Choose the only value to commit `a.deps[1]`.
-
 
 ### Case-3: `R1` is reached.
 
@@ -851,12 +823,12 @@ down                     down
 If `x` is committed,
 
 - If `x < a`, then only `a.deps[1] == x` can be committed.
-    Because if `a.deps[1] == y` is committed, `a` and `x` has no relation, which is
-    impossible.
+  Because if `a.deps[1] == y` is committed, `a` and `x` has no relation, which is
+  impossible.
 
 - If `x > a`, then `a.deps[1] == x` can not be committed.
-    Because on `R2` `x` does not have `x > a`, this is not a committed value of
-    `x`.
+  Because on `R2` `x` does not have `x > a`, this is not a committed value of
+  `x`.
 
 If `x` is not committed, wait until it is committed.
 
