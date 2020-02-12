@@ -194,3 +194,10 @@ restylers:
           - '80'
           - "--prose-wrap"
           - preserve
+    - enabled: true
+      name: rustfmt
+      command:
+          - rustfmt
+      arguments: []
+      supports_arg_sep: true
+      supports_multiple_paths: true
