@@ -2,9 +2,9 @@
 
 this page is the main entry of all the discussions we ever have and the decisions accordingly.
 
-recommended format： [time] [proposer] [topic description]
+recommended format： [time][proposer] [topic description]
 
-for example: [2019-12-27] [Shakespeare] [Hamlet: To be or not to be, that is the question]
+for example: [2019-12-27][shakespeare] [Hamlet: To be or not to be, that is the question]
 
 > bracket `[` is a markdown token thus it might be better avoiding using it. -- by xp
 
