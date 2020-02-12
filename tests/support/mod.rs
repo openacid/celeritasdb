@@ -14,7 +14,6 @@ use std::time::Duration;
 
 use std::path::PathBuf;
 
-
 use redis::{RedisResult, Value};
 
 #[derive(PartialEq)]
