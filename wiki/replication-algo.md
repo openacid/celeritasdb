@@ -245,7 +245,7 @@ x y z      x y z      x y z
 R0         R1         R2
 ```
 
-###   Transitive:
+###   Transitivity:
 
 Then `c` is replicated to `R1`,
 `R1` believes that `c₁¹ > {d, a, b, x, y, z}`.
@@ -522,6 +522,9 @@ Non-leader replicas:
 
 1. Handle-PreAccept
 
+    TODO need proof of linearizability with this.
+    TODO explain why this is efficient reducing conflict.
+
     update `a.deps'`
 
     > committed flag are ignored in this pseudo code for clarity
@@ -529,7 +532,12 @@ Non-leader replicas:
     ```
     for x in all_instances_on_this_repilca:
         Lx = leaderOf(x)
-        if not x.deps[Lx] > a:
+        if (not x.deps[Lx] > a
+                and (
+                    x ~ a
+                    or x is committed
+                )):
+
             a.deps[Lx] = max(x, a.deps[Lx])
 
     reply(a)
@@ -594,10 +602,12 @@ TODO
 ## Guarantees:
 
 - Execution consistency:
-   on every replica.
+    If two interfering commands `a` and `b` are successfully committed,
+    they will be executed in the same order by every replica.
 
 - Execution linearizability:
     If two instance
+    TODO proof
 
 
 ## For interfering instances:
