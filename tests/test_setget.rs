@@ -11,7 +11,6 @@ use crate::support::*;
 
 mod support;
 
-
 #[test]
 fn test_getset() {
     let ctx = TestContext::new();
