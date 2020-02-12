@@ -25,12 +25,25 @@ message InstIDs {
     repeated InstanceID ids = 1;
 };
 
+// Instance is the internal representation of a client request.
 message Instance {
-    InstIDs initial_deps = 1;
-    InstIDs deps = 2;
-    InstIDs accepted_deps = 3;
-    InstIDs committed_deps = 4;
-    InstanceStatus status = 5;
-    repeated Command cmds = 6;
-    BallotNum ballot = 7;
+
+    // initial_deps is the dependent instance ids when an instance is created.
+    InstIDs initial_deps                = 1;
+
+    // deps is the updated instance ids on a replica when handling PreAccept
+    // request.
+    // When an instance is intiated, it is same as initial_deps.
+    InstIDs deps                        = 2;
+    // deps_status describe what status a dependent instance is in.
+    // Only `deps` needs these information in order to commit on fast-path.
+    repeated InstanceStatus deps_status = 3;
+
+    // final_deps is the final dependency chosen by instance leader or recover
+    // process, and is set by Accept request or Commit request.
+    InstIDs final_deps                  = 4;
+
+    InstanceStatus status               = 21;
+    repeated Command cmds               = 31;
+    BallotNum ballot                    = 41;
 };
