@@ -636,8 +636,8 @@ pub struct Instance {
     // message fields
     pub initial_deps: ::protobuf::SingularPtrField<InstIDs>,
     pub deps: ::protobuf::SingularPtrField<InstIDs>,
-    pub accepted_deps: ::protobuf::SingularPtrField<InstIDs>,
-    pub committed_deps: ::protobuf::SingularPtrField<InstIDs>,
+    pub deps_status: ::std::vec::Vec<InstanceStatus>,
+    pub final_deps: ::protobuf::SingularPtrField<InstIDs>,
     pub status: InstanceStatus,
     pub cmds: ::protobuf::RepeatedField<super::command::Command>,
     pub ballot: ::protobuf::SingularPtrField<BallotNum>,
@@ -723,73 +723,65 @@ impl Instance {
         self.deps.take().unwrap_or_else(|| InstIDs::new())
     }
 
-    // .InstIDs accepted_deps = 3;
+    // repeated .InstanceStatus deps_status = 3;
 
 
-    pub fn get_accepted_deps(&self) -> &InstIDs {
-        self.accepted_deps.as_ref().unwrap_or_else(|| InstIDs::default_instance())
+    pub fn get_deps_status(&self) -> &[InstanceStatus] {
+        &self.deps_status
     }
-    pub fn clear_accepted_deps(&mut self) {
-        self.accepted_deps.clear();
-    }
-
-    pub fn has_accepted_deps(&self) -> bool {
-        self.accepted_deps.is_some()
+    pub fn clear_deps_status(&mut self) {
+        self.deps_status.clear();
     }
 
     // Param is passed by value, moved
-    pub fn set_accepted_deps(&mut self, v: InstIDs) {
-        self.accepted_deps = ::protobuf::SingularPtrField::some(v);
+    pub fn set_deps_status(&mut self, v: ::std::vec::Vec<InstanceStatus>) {
+        self.deps_status = v;
+    }
+
+    // Mutable pointer to the field.
+    pub fn mut_deps_status(&mut self) -> &mut ::std::vec::Vec<InstanceStatus> {
+        &mut self.deps_status
+    }
+
+    // Take field
+    pub fn take_deps_status(&mut self) -> ::std::vec::Vec<InstanceStatus> {
+        ::std::mem::replace(&mut self.deps_status, ::std::vec::Vec::new())
+    }
+
+    // .InstIDs final_deps = 4;
+
+
+    pub fn get_final_deps(&self) -> &InstIDs {
+        self.final_deps.as_ref().unwrap_or_else(|| InstIDs::default_instance())
+    }
+    pub fn clear_final_deps(&mut self) {
+        self.final_deps.clear();
+    }
+
+    pub fn has_final_deps(&self) -> bool {
+        self.final_deps.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_final_deps(&mut self, v: InstIDs) {
+        self.final_deps = ::protobuf::SingularPtrField::some(v);
     }
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_accepted_deps(&mut self) -> &mut InstIDs {
-        if self.accepted_deps.is_none() {
-            self.accepted_deps.set_default();
+    pub fn mut_final_deps(&mut self) -> &mut InstIDs {
+        if self.final_deps.is_none() {
+            self.final_deps.set_default();
         }
-        self.accepted_deps.as_mut().unwrap()
+        self.final_deps.as_mut().unwrap()
     }
 
     // Take field
-    pub fn take_accepted_deps(&mut self) -> InstIDs {
-        self.accepted_deps.take().unwrap_or_else(|| InstIDs::new())
+    pub fn take_final_deps(&mut self) -> InstIDs {
+        self.final_deps.take().unwrap_or_else(|| InstIDs::new())
     }
 
-    // .InstIDs committed_deps = 4;
-
-
-    pub fn get_committed_deps(&self) -> &InstIDs {
-        self.committed_deps.as_ref().unwrap_or_else(|| InstIDs::default_instance())
-    }
-    pub fn clear_committed_deps(&mut self) {
-        self.committed_deps.clear();
-    }
-
-    pub fn has_committed_deps(&self) -> bool {
-        self.committed_deps.is_some()
-    }
-
-    // Param is passed by value, moved
-    pub fn set_committed_deps(&mut self, v: InstIDs) {
-        self.committed_deps = ::protobuf::SingularPtrField::some(v);
-    }
-
-    // Mutable pointer to the field.
-    // If field is not initialized, it is initialized with default value first.
-    pub fn mut_committed_deps(&mut self) -> &mut InstIDs {
-        if self.committed_deps.is_none() {
-            self.committed_deps.set_default();
-        }
-        self.committed_deps.as_mut().unwrap()
-    }
-
-    // Take field
-    pub fn take_committed_deps(&mut self) -> InstIDs {
-        self.committed_deps.take().unwrap_or_else(|| InstIDs::new())
-    }
-
-    // .InstanceStatus status = 5;
+    // .InstanceStatus status = 21;
 
 
     pub fn get_status(&self) -> InstanceStatus {
@@ -804,7 +796,7 @@ impl Instance {
         self.status = v;
     }
 
-    // repeated .Command cmds = 6;
+    // repeated .Command cmds = 31;
 
 
     pub fn get_cmds(&self) -> &[super::command::Command] {
@@ -829,7 +821,7 @@ impl Instance {
         ::std::mem::replace(&mut self.cmds, ::protobuf::RepeatedField::new())
     }
 
-    // .BallotNum ballot = 7;
+    // .BallotNum ballot = 41;
 
 
     pub fn get_ballot(&self) -> &BallotNum {
@@ -875,12 +867,7 @@ impl ::protobuf::Message for Instance {
                 return false;
             }
         };
-        for v in &self.accepted_deps {
-            if !v.is_initialized() {
-                return false;
-            }
-        };
-        for v in &self.committed_deps {
+        for v in &self.final_deps {
             if !v.is_initialized() {
                 return false;
             }
@@ -909,18 +896,18 @@ impl ::protobuf::Message for Instance {
                     ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.deps)?;
                 },
                 3 => {
-                    ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.accepted_deps)?;
+                    ::protobuf::rt::read_repeated_enum_with_unknown_fields_into(wire_type, is, &mut self.deps_status, 3, &mut self.unknown_fields)?
                 },
                 4 => {
-                    ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.committed_deps)?;
+                    ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.final_deps)?;
                 },
-                5 => {
-                    ::protobuf::rt::read_proto3_enum_with_unknown_fields_into(wire_type, is, &mut self.status, 5, &mut self.unknown_fields)?
+                21 => {
+                    ::protobuf::rt::read_proto3_enum_with_unknown_fields_into(wire_type, is, &mut self.status, 21, &mut self.unknown_fields)?
                 },
-                6 => {
+                31 => {
                     ::protobuf::rt::read_repeated_message_into(wire_type, is, &mut self.cmds)?;
                 },
-                7 => {
+                41 => {
                     ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.ballot)?;
                 },
                 _ => {
@@ -943,24 +930,23 @@ impl ::protobuf::Message for Instance {
             let len = v.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
         }
-        if let Some(ref v) = self.accepted_deps.as_ref() {
-            let len = v.compute_size();
-            my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
-        }
-        if let Some(ref v) = self.committed_deps.as_ref() {
+        for value in &self.deps_status {
+            my_size += ::protobuf::rt::enum_size(3, *value);
+        };
+        if let Some(ref v) = self.final_deps.as_ref() {
             let len = v.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
         }
         if self.status != InstanceStatus::NA {
-            my_size += ::protobuf::rt::enum_size(5, self.status);
+            my_size += ::protobuf::rt::enum_size(21, self.status);
         }
         for value in &self.cmds {
             let len = value.compute_size();
-            my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
+            my_size += 2 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
         };
         if let Some(ref v) = self.ballot.as_ref() {
             let len = v.compute_size();
-            my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
+            my_size += 2 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
         }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
@@ -978,26 +964,24 @@ impl ::protobuf::Message for Instance {
             os.write_raw_varint32(v.get_cached_size())?;
             v.write_to_with_cached_sizes(os)?;
         }
-        if let Some(ref v) = self.accepted_deps.as_ref() {
-            os.write_tag(3, ::protobuf::wire_format::WireTypeLengthDelimited)?;
-            os.write_raw_varint32(v.get_cached_size())?;
-            v.write_to_with_cached_sizes(os)?;
-        }
-        if let Some(ref v) = self.committed_deps.as_ref() {
+        for v in &self.deps_status {
+            os.write_enum(3, v.value())?;
+        };
+        if let Some(ref v) = self.final_deps.as_ref() {
             os.write_tag(4, ::protobuf::wire_format::WireTypeLengthDelimited)?;
             os.write_raw_varint32(v.get_cached_size())?;
             v.write_to_with_cached_sizes(os)?;
         }
         if self.status != InstanceStatus::NA {
-            os.write_enum(5, self.status.value())?;
+            os.write_enum(21, self.status.value())?;
         }
         for v in &self.cmds {
-            os.write_tag(6, ::protobuf::wire_format::WireTypeLengthDelimited)?;
+            os.write_tag(31, ::protobuf::wire_format::WireTypeLengthDelimited)?;
             os.write_raw_varint32(v.get_cached_size())?;
             v.write_to_with_cached_sizes(os)?;
         };
         if let Some(ref v) = self.ballot.as_ref() {
-            os.write_tag(7, ::protobuf::wire_format::WireTypeLengthDelimited)?;
+            os.write_tag(41, ::protobuf::wire_format::WireTypeLengthDelimited)?;
             os.write_raw_varint32(v.get_cached_size())?;
             v.write_to_with_cached_sizes(os)?;
         }
@@ -1053,15 +1037,15 @@ impl ::protobuf::Message for Instance {
                     |m: &Instance| { &m.deps },
                     |m: &mut Instance| { &mut m.deps },
                 ));
-                fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<InstIDs>>(
-                    "accepted_deps",
-                    |m: &Instance| { &m.accepted_deps },
-                    |m: &mut Instance| { &mut m.accepted_deps },
+                fields.push(::protobuf::reflect::accessor::make_vec_accessor::<_, ::protobuf::types::ProtobufTypeEnum<InstanceStatus>>(
+                    "deps_status",
+                    |m: &Instance| { &m.deps_status },
+                    |m: &mut Instance| { &mut m.deps_status },
                 ));
                 fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<InstIDs>>(
-                    "committed_deps",
-                    |m: &Instance| { &m.committed_deps },
-                    |m: &mut Instance| { &mut m.committed_deps },
+                    "final_deps",
+                    |m: &Instance| { &m.final_deps },
+                    |m: &mut Instance| { &mut m.final_deps },
                 ));
                 fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<InstanceStatus>>(
                     "status",
@@ -1102,8 +1086,8 @@ impl ::protobuf::Clear for Instance {
     fn clear(&mut self) {
         self.initial_deps.clear();
         self.deps.clear();
-        self.accepted_deps.clear();
-        self.committed_deps.clear();
+        self.deps_status.clear();
+        self.final_deps.clear();
         self.status = InstanceStatus::NA;
         self.cmds.clear();
         self.ballot.clear();
@@ -1193,17 +1177,17 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     (\x03R\x03idx\"R\n\tBallotNum\x12\x14\n\x05epoch\x18\x01\x20\x01(\x05R\
     \x05epoch\x12\x10\n\x03num\x18\x02\x20\x01(\x05R\x03num\x12\x1d\n\nrepli\
     ca_id\x18\x03\x20\x01(\x03R\treplicaId\"(\n\x07InstIDs\x12\x1d\n\x03ids\
-    \x18\x01\x20\x03(\x0b2\x0b.InstanceIDR\x03ids\"\xa0\x02\n\x08Instance\
+    \x18\x01\x20\x03(\x0b2\x0b.InstanceIDR\x03ids\"\x9b\x02\n\x08Instance\
     \x12+\n\x0cinitial_deps\x18\x01\x20\x01(\x0b2\x08.InstIDsR\x0binitialDep\
-    s\x12\x1c\n\x04deps\x18\x02\x20\x01(\x0b2\x08.InstIDsR\x04deps\x12-\n\ra\
-    ccepted_deps\x18\x03\x20\x01(\x0b2\x08.InstIDsR\x0cacceptedDeps\x12/\n\
-    \x0ecommitted_deps\x18\x04\x20\x01(\x0b2\x08.InstIDsR\rcommittedDeps\x12\
-    '\n\x06status\x18\x05\x20\x01(\x0e2\x0f.InstanceStatusR\x06status\x12\
-    \x1c\n\x04cmds\x18\x06\x20\x03(\x0b2\x08.CommandR\x04cmds\x12\"\n\x06bal\
-    lot\x18\x07\x20\x01(\x0b2\n.BallotNumR\x06ballot*T\n\x0eInstanceStatus\
-    \x12\x06\n\x02NA\x10\0\x12\x0f\n\x0bPreAccepted\x10\x01\x12\x0c\n\x08Acc\
-    epted\x10\x02\x12\r\n\tCommitted\x10\x03\x12\x0c\n\x08Executed\x10\x04b\
-    \x06proto3\
+    s\x12\x1c\n\x04deps\x18\x02\x20\x01(\x0b2\x08.InstIDsR\x04deps\x120\n\
+    \x0bdeps_status\x18\x03\x20\x03(\x0e2\x0f.InstanceStatusR\ndepsStatus\
+    \x12'\n\nfinal_deps\x18\x04\x20\x01(\x0b2\x08.InstIDsR\tfinalDeps\x12'\n\
+    \x06status\x18\x15\x20\x01(\x0e2\x0f.InstanceStatusR\x06status\x12\x1c\n\
+    \x04cmds\x18\x1f\x20\x03(\x0b2\x08.CommandR\x04cmds\x12\"\n\x06ballot\
+    \x18)\x20\x01(\x0b2\n.BallotNumR\x06ballot*T\n\x0eInstanceStatus\x12\x06\
+    \n\x02NA\x10\0\x12\x0f\n\x0bPreAccepted\x10\x01\x12\x0c\n\x08Accepted\
+    \x10\x02\x12\r\n\tCommitted\x10\x03\x12\x0c\n\x08Executed\x10\x04b\x06pr\
+    oto3\
 ";
 
 static mut file_descriptor_proto_lazy: ::protobuf::lazy::Lazy<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::lazy::Lazy {

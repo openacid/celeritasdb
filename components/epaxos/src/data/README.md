@@ -8,12 +8,15 @@ and ** DO NOT USE THIS MODULE DIRECTLY **
 ## Usage
 
 ### Prepare
+
 create `protobuf-gen-rust` under `celeritasdb/components/protobuf-gen-rust`.
 
-Place the executable binary named protobuf-gen-rust under the directory in your `PATH`.
+Place the executable binary named protobuf-gen-rust under the directory in your
+`PATH`.
 
 
 ### generate all protos once
+
 go to path `celeritasdb/components/epaxos/src/data`
 
 ```
