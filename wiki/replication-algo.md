@@ -98,8 +98,7 @@ type Instance {
 
     initialDeps:   Vec<Dep>;
     deps:          Vec<Dep>;
-    acceptedDeps:  Vec<Dep>;
-    committedDeps: Vec<Dep>;
+    final_deps:    Vec<Dep>;
     status:        "committed|acceptted|preaccepted";
 
     cmds: Vec<Commands>;
@@ -114,8 +113,7 @@ An instance has 4 attributes for `deps`:
    when `a` is forwarded to other replica through PreAccept,
    it is updated instnce id set.
 
-- `a.acceptedDeps` is `deps` updated by Accept.
-- `a.committedDeps` is committed `deps`.
+- `a.final_deps` is `deps` updated by Accept or Commit.
 
 On a replica:
 `a.deps` is all instances that `a` is after:
@@ -351,8 +349,7 @@ An instance has 4 attributes for `deps`:
 - `a.deps`: when `a` is created it is same as `a.initialDeps`.
    when `a` is forwarded to other replica, it is updated instnce id set.
 
-- `a.acceptedDeps` is `deps` updated by Accept.
-- `a.committedDeps` is committed `deps`.
+- `a.final_deps` is `deps` updated by Accept or Commit.
 
 On a replica:
 `a.deps` is all instances that `a` is after:
@@ -572,7 +569,7 @@ Just commit.
 On a replica, `a.deps` represents local relation between `a` and other instances
 on this replia. There is not circle, e.g.: `a > b > c > a` on a replica.
 
-But `a.committedDeps` could have.
+But `a.final_deps` could have.
 
 E.g. initially:
 ```
@@ -591,11 +588,11 @@ a₀        b₀
 R0     R1
 ```
 
-Finaly `a.committedDeps = {b}`, 
-`b.committedDeps = {a}`.
+Finaly `a.final_deps = {b}`, 
+`b.final_deps = {a}`.
 
 For this reason execution order is determined not by relation `>`,
-but by comparing the vecotr `a.committedDeps`.
+but by comparing the vecotr `a.final_deps`.
 
 TODO
 
@@ -612,17 +609,17 @@ TODO
 
 ## For interfering instances:
 
-- `a.committedDeps ⊃ b.committedDeps` : exec `a` after `b`
-- `a.committedDeps ⊅ b.committedDeps` and `a.committedDeps ⊄ b.committedDeps` : exec `a` and `b` in instance id
+- `a.final_deps ⊃ b.final_deps` : exec `a` after `b`
+- `a.final_deps ⊅ b.final_deps` and `a.final_deps ⊄ b.final_deps` : exec `a` and `b` in instance id
     order.
-- there is no `a` and `b` have `a.committedDeps == b.committedDeps`.
+- there is no `a` and `b` have `a.final_deps == b.final_deps`.
 
 ## For non-interfering instances:
 
-- `a.committedDeps ⊃ b.committedDeps` : exec `a` after `b`
-- `a.committedDeps == b.committedDeps`: exec `a` and `b` in instance id
+- `a.final_deps ⊃ b.final_deps` : exec `a` after `b`
+- `a.final_deps == b.final_deps`: exec `a` and `b` in instance id
     order.
-- `a.committedDeps ⊅ b.committedDeps` and `a.committedDeps ⊄ b.committedDeps` : exec `a` and `b` in instance id
+- `a.final_deps ⊅ b.final_deps` and `a.final_deps ⊄ b.final_deps` : exec `a` and `b` in instance id
     order.
 
 ## Proof
