@@ -112,16 +112,16 @@ impl Server {
         Ok(())
     }
 
-    fn lis(&mut self, t:T, backlog: i32) -> io:Result<()> {
-            let builder = match addr {
-                SocketAddr::V4(_) => TcpBuilder::new_v4(),
-                SocketAddr::V6(_) => TcpBuilder::new_v6(),
-            }?;
+    // fn lis(&mut self, t:T, backlog: i32) -> io::Result<()> {
+    //         let builder = match addr {
+    //             SocketAddr::V4(_) => TcpBuilder::new_v4(),
+    //             SocketAddr::V6(_) => TcpBuilder::new_v6(),
+    //         }?;
 
-            self.reuse_address(&builder)?;
-            let listener = builder.bind(addr)?.listen(tcp_backlog)?;
-            io:Result(listener)
-    }
+    //         self.reuse_address(&builder)?;
+    //         let listener = builder.bind(addr)?.listen(tcp_backlog)?;
+    //         io:Result(listener)
+    // }
 
     /// Starts threads listening to new connections.
     pub fn start(&mut self) {
