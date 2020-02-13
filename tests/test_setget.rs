@@ -27,3 +27,14 @@ fn test_getset() {
     //     Ok(b"foo".to_vec())
     // );
 }
+
+#[test]
+fn test_replication_server() {
+    let ctx = TestContext::new();
+    let mut con = ctx.repl_connection();
+
+    // Just check if it works.
+    // No protocol parsing yet.
+    redis::cmd("SET").arg("foo").arg(42).execute(&mut con);
+    assert_eq!(redis::cmd("GET").arg("foo").query(&mut con), Ok(42));
+}

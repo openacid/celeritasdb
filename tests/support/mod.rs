@@ -68,8 +68,11 @@ impl RedisServer {
                 let server_port = listener.local_addr().unwrap().port();
                 cmd.arg("--port")
                     .arg(server_port.to_string())
+                    .arg("--replication-port")
+                    .arg("6666")
                     .arg("--bind")
                     .arg("127.0.0.1");
+
                 redis::ConnectionAddr::Tcp("127.0.0.1".to_string(), server_port)
             }
             ServerType::Unix => {
@@ -80,9 +83,7 @@ impl RedisServer {
             }
         };
 
-        println!("{:?}", cmd);
         let process = cmd.spawn().unwrap();
-        println!("executed");
         RedisServer { process, addr }
     }
 
@@ -113,6 +114,7 @@ impl Drop for RedisServer {
 pub struct TestContext {
     pub server: RedisServer,
     pub client: redis::Client,
+    pub repl_client: redis::Client,
 }
 
 impl TestContext {
@@ -145,11 +147,41 @@ impl TestContext {
         }
         redis::cmd("FLUSHDB").execute(&mut con);
 
-        TestContext { server, client }
+        // TODO temp impl, remove these
+        let repl_addr = redis::ConnectionAddr::Tcp("127.0.0.1".to_string(), 6666);
+        let repl_client = redis::Client::open(redis::ConnectionInfo {
+            addr: Box::new(repl_addr),
+            db: 0,
+            passwd: None,
+        })
+        .unwrap();
+        loop {
+            match repl_client.get_connection() {
+                Err(err) => {
+                    if err.is_connection_refusal() {
+                        sleep(millisecond);
+                    } else {
+                        panic!("Could not connect: {}", err);
+                    }
+                }
+                Ok(_) => {
+                    break;
+                }
+            }
+        }
+
+        TestContext {
+            server,
+            client,
+            repl_client,
+        }
     }
 
     pub fn connection(&self) -> redis::Connection {
         self.client.get_connection().unwrap()
+    }
+    pub fn repl_connection(&self) -> redis::Connection {
+        self.repl_client.get_connection().unwrap()
     }
 
     pub async fn async_connection(&self) -> RedisResult<redis::aio::Connection> {
