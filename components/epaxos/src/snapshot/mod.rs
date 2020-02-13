@@ -20,13 +20,6 @@ pub struct Engine {
 pub struct InstanceIter {}
 
 enum_str! {
-    pub DBPath {
-        Product("snapshot.db")
-        Test("test.db")
-    }
-}
-
-enum_str! {
     pub DBColumnFamily {
         Default("default")
         Instance("instance")

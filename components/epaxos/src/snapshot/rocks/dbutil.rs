@@ -2,7 +2,6 @@ use std::fs;
 use std::path::Path;
 
 use rocksdb::{ColumnFamilyOptions, DBOptions, DB};
-use tempfile::Builder;
 
 use super::DBColumnFamily;
 
@@ -120,6 +119,8 @@ fn open_db_cfs(
 
 #[test]
 fn test_open() {
+    use tempfile::Builder;
+
     let tmp_root = Builder::new().tempdir().unwrap();
     let db_path = format!("{}/test", tmp_root.path().display());
     let db = open(&db_path).unwrap();
