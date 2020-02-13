@@ -22,10 +22,10 @@ message Message {
 };
 
 message PrepareReq {
-    int64 leader_id = 1;  // the replica owns the instance
-    int64 replica_id = 2; // the replica who starts the explict prepare
+    int64      leader_id = 1;  // the replica owns the instance
+    int64      replica_id = 2; // the replica who starts the explict prepare
     InstanceID instance_id = 3;
-    BallotNum ballot = 4;
+    BallotNum  ballot = 4;
 };
 
 message PrepareReply {

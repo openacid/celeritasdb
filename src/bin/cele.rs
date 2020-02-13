@@ -49,14 +49,16 @@ impl Stream {
 pub struct Server {
     /// A list of threads listening for incoming connections
     listen_port: u16,
+    repl_listen_port: u16,
     listener_threads: Vec<thread::JoinHandle<()>>,
 }
 
 impl Server {
     /// Creates a new server
-    pub fn new(port: u16) -> Server {
+    pub fn new(port: u16, repl_port: u16) -> Server {
         return Server {
             listen_port: port,
+            repl_listen_port: repl_port,
             listener_threads: Vec::new(),
         };
     }
@@ -110,25 +112,38 @@ impl Server {
         Ok(())
     }
 
+    fn lis(&mut self, t:T, backlog: i32) -> io:Result<()> {
+            let builder = match addr {
+                SocketAddr::V4(_) => TcpBuilder::new_v4(),
+                SocketAddr::V6(_) => TcpBuilder::new_v6(),
+            }?;
+
+            self.reuse_address(&builder)?;
+            let listener = builder.bind(addr)?.listen(tcp_backlog)?;
+            io:Result(listener)
+    }
+
     /// Starts threads listening to new connections.
     pub fn start(&mut self) {
         let addresses = vec![("127.0.0.1".to_owned(), self.listen_port)];
         for (host, port) in addresses {
-            match self.listen((&host[..], port), 10) {
-                Ok(_) => {
-                    println!(
-                        "The server is now ready to accept connections on port {}",
-                        port
-                    );
-                }
-                Err(err) => {
-                    println!(
-                        "Creating Server TCP listening socket {}:{}: {:?}",
-                        host, port, err
-                    );
-                    continue;
-                }
-            }
+            self.listen((&host[..], port), 10).unwrap();
+            println!(
+                "ready to accept connections on port {}",
+                port
+                );
+        }
+    }
+
+    /// Starts listening replication message.
+    pub fn start_replication_server(&mut self) {
+        let addresses = vec![("127.0.0.1".to_owned(), self.repl_listen_port)];
+        for (host, port) in addresses {
+            self.listen((&host[..], port), 10).unwrap();
+            println!(
+                "ready to accept replication on port {}",
+                port
+                );
         }
     }
 }
@@ -291,11 +306,27 @@ fn main() {
                 .takes_value(true)
                 .help("network address to listen"),
         )
+        .arg(
+            Arg::with_name("replication_port")
+                .long("replication-port")
+                .takes_value(true)
+                .help("replication port to listen"),
+        )
+        .arg(
+            Arg::with_name("replication_bind")
+                .long("replication-bind")
+                .takes_value(true)
+                .help("network address to listen for replication"),
+        )
         .get_matches();
 
     let port_str = matches.value_of("port").unwrap_or("6379");
     let port = port_str.parse::<u16>().unwrap();
-    let mut server = Server::new(port);
-    println!("Port: {}", port);
+
+    let repl_port_str = matches.value_of("replication_port").unwrap_or("6377");
+    let repl_port = repl_port_str.parse::<u16>().unwrap();
+    let mut server = Server::new(port, repl_port);
+    println!("port: {}", port);
+    println!("replication port: {}", repl_port);
     server.run();
 }
