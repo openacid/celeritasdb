@@ -128,10 +128,7 @@ impl Server {
         let addresses = vec![("127.0.0.1".to_owned(), self.listen_port)];
         for (host, port) in addresses {
             self.listen((&host[..], port), 10).unwrap();
-            println!(
-                "ready to accept connections on port {}",
-                port
-                );
+            println!("ready to accept connections on port {}", port);
         }
     }
 
@@ -140,10 +137,7 @@ impl Server {
         let addresses = vec![("127.0.0.1".to_owned(), self.repl_listen_port)];
         for (host, port) in addresses {
             self.listen((&host[..], port), 10).unwrap();
-            println!(
-                "ready to accept replication on port {}",
-                port
-                );
+            println!("ready to accept replication on port {}", port);
         }
     }
 }
