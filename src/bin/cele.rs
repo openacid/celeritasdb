@@ -8,7 +8,7 @@ use redis;
 use net2::TcpBuilder;
 use std::io;
 use std::io::{Read, Write};
-use std::net::{SocketAddr, TcpStream, ToSocketAddrs};
+use std::net::{SocketAddr, TcpStream, ToSocketAddrs, TcpListener};
 use std::str::from_utf8;
 
 use std::sync::mpsc::{channel, Receiver};
@@ -79,56 +79,52 @@ impl Server {
     }
 
     /// Listens to a socket address.
-    fn listen<T: ToSocketAddrs>(&mut self, t: T, tcp_backlog: i32) -> io::Result<()> {
+    fn api_listen<T: ToSocketAddrs>(&mut self, t: T, tcp_backlog: i32) -> io::Result<()> {
         for addr in t.to_socket_addrs()? {
-            let builder = match addr {
-                SocketAddr::V4(_) => TcpBuilder::new_v4(),
-                SocketAddr::V6(_) => TcpBuilder::new_v6(),
-            }?;
-
-            self.reuse_address(&builder)?;
-            let listener = builder.bind(addr)?.listen(tcp_backlog)?;
+            let listener = self.make_listener(addr, tcp_backlog)?;
 
             let th = thread::spawn(move || {
-                for stream in listener.incoming() {
-                    match stream {
-                        Ok(stream) => {
-                            println!("Accepted connection to {:?}", stream);
-                            thread::spawn(move || {
-                                let mut client = Client::tcp(stream);
-                                client.run();
-                            });
-                        }
-                        Err(e) => {
-                            println!("Accepting client connection: {:?}", e);
-                        }
-                    }
-                }
+                Self::api_server_loop(listener)
             });
             self.listener_threads.push(th);
         }
         Ok(())
     }
 
+    fn api_server_loop(listener: TcpListener) {
+        for stream in listener.incoming() {
+            match stream {
+                Ok(stream) => {
+                    println!("Accepted connection to {:?}", stream);
+                    thread::spawn(move || {
+                        let mut client = Client::tcp(stream);
+                        client.run();
+                    });
+                }
+                Err(e) => {
+                    println!("Accepting client connection: {:?}", e);
+                }
+            }
+        }
+    }
+
+    fn make_listener(&mut self, addr:SocketAddr, backlog: i32) -> io::Result<TcpListener> {
+            let builder = match addr {
+                SocketAddr::V4(_) => TcpBuilder::new_v4(),
+                SocketAddr::V6(_) => TcpBuilder::new_v6(),
+            }?;
+
+            self.reuse_address(&builder)?;
+            let listener = builder.bind(addr)?.listen(backlog)?;
+            Ok(listener)
+    }
+
     /// Starts threads listening to new connections.
     pub fn start(&mut self) {
         let addresses = vec![("127.0.0.1".to_owned(), self.listen_port)];
         for (host, port) in addresses {
-            match self.listen((&host[..], port), 10) {
-                Ok(_) => {
-                    println!(
-                        "The server is now ready to accept connections on port {}",
-                        port
-                    );
-                }
-                Err(err) => {
-                    println!(
-                        "Creating Server TCP listening socket {}:{}: {:?}",
-                        host, port, err
-                    );
-                    continue;
-                }
-            }
+            self.api_listen((&host[..], port), 10).unwrap();
+            println!( "ready to accept connections on port {}", port);
         }
     }
 }
