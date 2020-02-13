@@ -35,9 +35,6 @@ message Instance {
     // request.
     // When an instance is intiated, it is same as initial_deps.
     InstIDs deps                        = 2;
-    // deps_status describe what status a dependent instance is in.
-    // Only `deps` needs these information in order to commit on fast-path.
-    repeated InstanceStatus deps_status = 3;
 
     // final_deps is the final dependency chosen by instance leader or recover
     // process, and is set by Accept request or Commit request.
