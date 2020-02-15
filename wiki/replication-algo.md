@@ -549,22 +549,22 @@ Just commit.
 # Messages
 
 - All request messages have 3 common fields:
-    - `req_type` identify type: PreAccept, Accept, Commit or Prepare.
 
-    - `ballot` is the ballot number,
-        - For PreAccept it is always `0`.
-        - Fast path Accept ballot is `1`.
-        - Slow path Accept ballot is `2` or greater.
-        - `ballot` in Commit message is useless.
-        - `ballot` in a Prepare is chosen by recovery process and should be
-            `>2`.
-    - `instance_id` is the instance id this request for.
+  - `req_type` identify type: PreAccept, Accept, Commit or Prepare.
+
+  - `ballot` is the ballot number,
+    - For PreAccept it is always `0`.
+    - Fast path Accept ballot is `1`.
+    - Slow path Accept ballot is `2` or greater.
+    - `ballot` in Commit message is useless.
+    - `ballot` in a Prepare is chosen by recovery process and should be
+      `>2`.
+  - `instance_id` is the instance id this request for.
 
 - All reply messages have 3 common fields:
-    - `req_type`.
-    - `last_ballot` is the ballot number before processing the request.
-    - `instance_id`.
-
+  - `req_type`.
+  - `last_ballot` is the ballot number before processing the request.
+  - `instance_id`.
 
 ## PreAccept request
 
