@@ -21,6 +21,49 @@ message Message {
     bytes data = 4;
 };
 
+message Request {
+
+    // field id:
+    // 01~10: meta.
+    // 11~20: common fields.
+    // 21~30: replication irrelevant fields.
+    // 31~40: fast path related fields.
+    // 41~50: slow path related fields.
+    // 51~60: for commit.
+
+    RequestType req_type = 1;
+
+    // Sender's ballot
+    BallotNum ballot = 11;
+    InstanceID instance_id = 12;
+
+    //                                         // required by:
+
+    repeated Command        cmds         = 21; // PreAccept,          Commit, Prepare
+    repeated InstanceID     initial_deps = 31; // PreAccept,
+    repeated InstanceStatus deps_status  = 33; // PreAccept,
+    repeated InstanceID     final_deps   = 41; //             Accept, Commit
+}
+
+message Reply {
+
+    RequestType req_type = 1;
+
+    // The ballot stored on acceptor before handling a request.
+    BallotNum last_ballot = 11;
+    InstanceID instance_id = 12;
+
+    // deps_status describe what status a dependent instance is in.
+    // Only `deps` needs these information in order to commit on fast-path.
+
+    //                                         // required by:
+
+    repeated InstanceID     deps        = 31;  // PreAccept,     Prepare
+    repeated InstanceStatus deps_status = 33;  // PreAccept,
+    InstanceStatus          status      = 51;  //                Prepare
+}
+
+
 message PrepareReq {
     int64 leader_id = 1;  // the replica owns the instance
     int64 replica_id = 2; // the replica who starts the explict prepare
