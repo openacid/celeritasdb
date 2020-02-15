@@ -1,6 +1,9 @@
 #![allow(clippy::let_unit_value)]
 use redis::{Commands, ControlFlow, PubSubCommands};
 
+#[cfg(test)]
+use pretty_assertions::{assert_eq, assert_ne};
+
 use std::collections::{BTreeMap, BTreeSet};
 use std::collections::{HashMap, HashSet};
 use std::io::BufReader;

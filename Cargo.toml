@@ -21,6 +21,9 @@ rand  = { version = "0.7" }
 tokio = { version = "0.2", features = ["rt-core", "macros"] }
 clap  = { version = "~2.33.0" } # command line argument parse
 
+[dev-dependencies]
+pretty_assertions = {}
+
 [workspace]
 members = [
   "components/parse",
