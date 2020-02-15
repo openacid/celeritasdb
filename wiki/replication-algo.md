@@ -546,6 +546,62 @@ Non-leader replicas:
 
 Just commit.
 
+# Messages
+
+- All request messages have 3 common fields:
+
+  - `req_type` identify type: PreAccept, Accept, Commit or Prepare.
+
+  - `ballot` is the ballot number,
+    - For PreAccept it is always `0`.
+    - Fast path Accept ballot is `1`.
+    - Slow path Accept ballot is `2` or greater.
+    - `ballot` in Commit message is useless.
+    - `ballot` in a Prepare is chosen by recovery process and should be
+      `>2`.
+  - `instance_id` is the instance id this request for.
+
+- All reply messages have 3 common fields:
+  - `req_type`.
+  - `last_ballot` is the ballot number before processing the request.
+  - `instance_id`.
+
+## PreAccept request
+
+- `cmds`: the commands to run.
+- `initial_deps`: the deps when leader initiate the instance.
+- `deps_status`: a vector of committed flag of every instance in `initial_deps`
+
+## PreAccept reply
+
+- `deps`: udpated deps by a replica.
+- `deps_status`: a vector of committed flag of every instance in `deps`
+
+## Accept request
+
+- `final_deps`: the deps chosen by leader or recovery process.
+
+## Accept reply
+
+Nothing except the common fileds.
+
+## Commit request
+
+- `cmds`: the commands to run.
+- `final_deps`: the deps chosen by leader or recovery process.
+
+## Commit reply
+
+Nothing except the common fileds.
+
+## Prepare request
+
+Nothing except the common fileds.
+
+## Prepare reply
+
+- `status` is the status of the instance on a replica.
+
 # Execution
 
 ## Execution order
