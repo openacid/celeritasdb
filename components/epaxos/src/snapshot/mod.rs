@@ -11,13 +11,16 @@ pub use traits::*;
 
 mod rocks;
 
+mod memDB;
+pub use memDB::*;
+
+mod itersDB;
+pub use itersDB::*;
+
 pub struct Engine {
     _db: DB,
     _cf: &'static str,
 }
-
-// TODO: define details later
-pub struct InstanceIter {}
 
 enum_str! {
     pub DBColumnFamily {

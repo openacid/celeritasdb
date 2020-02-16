@@ -6,5 +6,6 @@ quick_error! {
             from(msg: String) -> {msg: msg}
             display("rocksdb got error:{}", msg)
         }
+        MemDBError {}
     }
 }
