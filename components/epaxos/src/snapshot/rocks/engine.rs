@@ -30,7 +30,7 @@ impl RocksDBEngine {
     fn _make_cf_handle(&self, cf: &DBColumnFamily) -> Result<&CFHandle, Error> {
         match self.db.cf_handle(cf.as_str()) {
             Some(h) => Ok(h),
-            None => Err(Error::RocksDBError {
+            None => Err(Error::DBError {
                 msg: format!("got column family {} handle failed", cf.as_str()),
             }),
         }
@@ -55,12 +55,12 @@ impl RocksDBEngine {
                     let k_str = match str::from_utf8(k) {
                         Ok(s) => s,
                         Err(err) => {
-                            return Err(Error::RocksDBError {
+                            return Err(Error::DBError {
                                 msg: format!("{} while converting utf8 to str", err),
                             });
                         }
                     };
-                    return Err(Error::RocksDBError {
+                    return Err(Error::DBError {
                         msg: format!("key not found: {}", k_str),
                     });
                 }
@@ -69,12 +69,12 @@ impl RocksDBEngine {
                 let k_str = match str::from_utf8(k) {
                     Ok(s) => s,
                     Err(err) => {
-                        return Err(Error::RocksDBError {
+                        return Err(Error::DBError {
                             msg: format!("{} while converting utf8 to str", err),
                         });
                     }
                 };
-                return Err(Error::RocksDBError {
+                return Err(Error::DBError {
                     msg: format!("{} while loading key {}", err, k_str),
                 });
             }

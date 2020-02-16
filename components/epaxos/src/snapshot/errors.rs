@@ -1,10 +1,11 @@
 quick_error! {
     /// Errors occur when set/get with snapshot
-    #[derive(Debug)]
+    #[derive(Debug, PartialEq)]
     pub enum Error {
-        RocksDBError{msg: String} {
+        DBError{msg: String} {
             from(msg: String) -> {msg: msg}
-            display("rocksdb got error:{}", msg)
+            display("got db error:{}", msg)
         }
+        NotFound{}
     }
 }

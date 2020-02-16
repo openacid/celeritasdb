@@ -1,6 +1,8 @@
 use crate::instance::{Instance, InstanceID};
 use crate::replica::ReplicaID;
 
+use protobuf::{parse_from_bytes, Message};
+
 use super::Error;
 use super::InstanceIter;
 
@@ -13,28 +15,41 @@ pub trait KVEngine {
 }
 
 /// InstanceEngine offer functions to operate snapshot instances
-pub trait InstanceEngine {
+pub trait InstanceEngine<T>: KVEngine {
     /// set a new instance
-    fn set_instance(&mut self, inst: Instance) -> Result<(), Error>;
+    fn set_instance(&mut self, iid: &InstanceID, inst: Instance) -> Result<(), Error>;
     /// update an existing instance with instance id
-    fn update_instance(&mut self, inst: Instance) -> Result<(), Error>;
+    fn update_instance(&mut self, iid: &InstanceID, inst: Instance) -> Result<(), Error>;
     /// get an instance with instance id
-    fn get_instance(&self, inst_id: InstanceID) -> Result<Instance, Error>;
+    fn get_instance(&self, iid: &InstanceID) -> Result<Instance, Error>;
     /// get an iterator to scan all instances with a leader replica id
-    fn get_instance_iter(&self, repl_id: ReplicaID) -> Result<InstanceIter, Error>;
+    fn get_instance_iter(&self, rid: ReplicaID) -> Result<InstanceIter<T>, Error>;
 }
 
 /// StatusEngine offer functions to operate snapshot status
-pub trait StatusEngine {
+pub trait StatusEngine: KVEngine {
     /// get current maximum instance id with a leader replica
-    fn get_max_instance_id(&self, repl_id: ReplicaID) -> Result<InstanceID, Error>;
+    fn get_max_instance_id(&self, rid: ReplicaID) -> Result<InstanceID, Error>;
 
     /// get executed maximum continuous instance id with a leader replica
-    fn get_max_executed_instance_id(&self, repl_id: ReplicaID) -> Result<InstanceID, Error>;
+    fn get_max_exec_instance_id(&self, rid: ReplicaID) -> Result<InstanceID, Error>;
+
+    fn max_instance_id_key(&self, rid: ReplicaID) -> Vec<u8> {
+        format!("/status/max_instance_id/{:x}", rid).into_bytes()
+    }
+
+    fn max_exec_instance_id_key(&self, rid: ReplicaID) -> Vec<u8> {
+        format!("/status/max_exec_instance_id/{:x}", rid).into_bytes()
+    }
+
+    fn set_instance_id(&mut self, key: &Vec<u8>, iid: InstanceID) -> Result<(), Error> {
+        let value: Vec<u8> = iid.write_to_bytes().unwrap();
+        self.set_kv(&key, &value)
+    }
 }
 
 /// TransactionEngine offer a transaction to operate key-values and instances atomically
-pub trait TransactionEngine: KVEngine + InstanceEngine {
+pub trait TransactionEngine<T>: KVEngine + InstanceEngine<T> {
     /// start a transaction
     fn trans_begin(&mut self);
     /// commit a transaction

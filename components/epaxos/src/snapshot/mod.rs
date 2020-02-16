@@ -12,9 +12,13 @@ pub use rocks::*;
 mod traits;
 pub use traits::*;
 
+mod memEngine;
+pub use memEngine::*;
+
+mod iters;
+pub use iters::*;
+
 pub struct RocksDBEngine {
     db: DB,
 }
 
-// TODO: define details later
-pub struct InstanceIter {}
