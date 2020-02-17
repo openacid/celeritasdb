@@ -266,7 +266,7 @@ pub struct Request {
     pub instance_id: ::protobuf::SingularPtrField<super::instance::InstanceID>,
     pub cmds: ::protobuf::RepeatedField<super::command::Command>,
     pub initial_deps: ::protobuf::RepeatedField<super::instance::InstanceID>,
-    pub deps_status: ::std::vec::Vec<super::instance::InstanceStatus>,
+    pub deps_committed: ::std::vec::Vec<bool>,
     pub final_deps: ::protobuf::RepeatedField<super::instance::InstanceID>,
     // special fields
     pub unknown_fields: ::protobuf::UnknownFields,
@@ -430,29 +430,29 @@ impl Request {
         ::std::mem::replace(&mut self.initial_deps, ::protobuf::RepeatedField::new())
     }
 
-    // repeated .InstanceStatus deps_status = 33;
+    // repeated bool deps_committed = 33;
 
 
-    pub fn get_deps_status(&self) -> &[super::instance::InstanceStatus] {
-        &self.deps_status
+    pub fn get_deps_committed(&self) -> &[bool] {
+        &self.deps_committed
     }
-    pub fn clear_deps_status(&mut self) {
-        self.deps_status.clear();
+    pub fn clear_deps_committed(&mut self) {
+        self.deps_committed.clear();
     }
 
     // Param is passed by value, moved
-    pub fn set_deps_status(&mut self, v: ::std::vec::Vec<super::instance::InstanceStatus>) {
-        self.deps_status = v;
+    pub fn set_deps_committed(&mut self, v: ::std::vec::Vec<bool>) {
+        self.deps_committed = v;
     }
 
     // Mutable pointer to the field.
-    pub fn mut_deps_status(&mut self) -> &mut ::std::vec::Vec<super::instance::InstanceStatus> {
-        &mut self.deps_status
+    pub fn mut_deps_committed(&mut self) -> &mut ::std::vec::Vec<bool> {
+        &mut self.deps_committed
     }
 
     // Take field
-    pub fn take_deps_status(&mut self) -> ::std::vec::Vec<super::instance::InstanceStatus> {
-        ::std::mem::replace(&mut self.deps_status, ::std::vec::Vec::new())
+    pub fn take_deps_committed(&mut self) -> ::std::vec::Vec<bool> {
+        ::std::mem::replace(&mut self.deps_committed, ::std::vec::Vec::new())
     }
 
     // repeated .InstanceID final_deps = 41;
@@ -538,7 +538,7 @@ impl ::protobuf::Message for Request {
                     ::protobuf::rt::read_repeated_message_into(wire_type, is, &mut self.initial_deps)?;
                 },
                 33 => {
-                    ::protobuf::rt::read_repeated_enum_with_unknown_fields_into(wire_type, is, &mut self.deps_status, 33, &mut self.unknown_fields)?
+                    ::protobuf::rt::read_repeated_bool_into(wire_type, is, &mut self.deps_committed)?;
                 },
                 41 => {
                     ::protobuf::rt::read_repeated_message_into(wire_type, is, &mut self.final_deps)?;
@@ -577,9 +577,7 @@ impl ::protobuf::Message for Request {
             let len = value.compute_size();
             my_size += 2 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
         };
-        for value in &self.deps_status {
-            my_size += ::protobuf::rt::enum_size(33, *value);
-        };
+        my_size += 3 * self.deps_committed.len() as u32;
         for value in &self.final_deps {
             let len = value.compute_size();
             my_size += 2 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
@@ -616,8 +614,8 @@ impl ::protobuf::Message for Request {
             os.write_raw_varint32(v.get_cached_size())?;
             v.write_to_with_cached_sizes(os)?;
         };
-        for v in &self.deps_status {
-            os.write_enum(33, v.value())?;
+        for v in &self.deps_committed {
+            os.write_bool(33, *v)?;
         };
         for v in &self.final_deps {
             os.write_tag(41, ::protobuf::wire_format::WireTypeLengthDelimited)?;
@@ -696,10 +694,10 @@ impl ::protobuf::Message for Request {
                     |m: &Request| { &m.initial_deps },
                     |m: &mut Request| { &mut m.initial_deps },
                 ));
-                fields.push(::protobuf::reflect::accessor::make_vec_accessor::<_, ::protobuf::types::ProtobufTypeEnum<super::instance::InstanceStatus>>(
-                    "deps_status",
-                    |m: &Request| { &m.deps_status },
-                    |m: &mut Request| { &mut m.deps_status },
+                fields.push(::protobuf::reflect::accessor::make_vec_accessor::<_, ::protobuf::types::ProtobufTypeBool>(
+                    "deps_committed",
+                    |m: &Request| { &m.deps_committed },
+                    |m: &mut Request| { &mut m.deps_committed },
                 ));
                 fields.push(::protobuf::reflect::accessor::make_repeated_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<super::instance::InstanceID>>(
                     "final_deps",
@@ -734,7 +732,7 @@ impl ::protobuf::Clear for Request {
         self.instance_id.clear();
         self.cmds.clear();
         self.initial_deps.clear();
-        self.deps_status.clear();
+        self.deps_committed.clear();
         self.final_deps.clear();
         self.unknown_fields.clear();
     }
@@ -759,8 +757,9 @@ pub struct Reply {
     pub last_ballot: ::protobuf::SingularPtrField<super::instance::BallotNum>,
     pub instance_id: ::protobuf::SingularPtrField<super::instance::InstanceID>,
     pub deps: ::protobuf::RepeatedField<super::instance::InstanceID>,
-    pub deps_status: ::std::vec::Vec<super::instance::InstanceStatus>,
-    pub status: super::instance::InstanceStatus,
+    pub deps_committed: ::std::vec::Vec<bool>,
+    pub final_deps: ::protobuf::RepeatedField<super::instance::InstanceID>,
+    pub committed: bool,
     // special fields
     pub unknown_fields: ::protobuf::UnknownFields,
     pub cached_size: ::protobuf::CachedSize,
@@ -883,44 +882,69 @@ impl Reply {
         ::std::mem::replace(&mut self.deps, ::protobuf::RepeatedField::new())
     }
 
-    // repeated .InstanceStatus deps_status = 33;
+    // repeated bool deps_committed = 33;
 
 
-    pub fn get_deps_status(&self) -> &[super::instance::InstanceStatus] {
-        &self.deps_status
+    pub fn get_deps_committed(&self) -> &[bool] {
+        &self.deps_committed
     }
-    pub fn clear_deps_status(&mut self) {
-        self.deps_status.clear();
+    pub fn clear_deps_committed(&mut self) {
+        self.deps_committed.clear();
     }
 
     // Param is passed by value, moved
-    pub fn set_deps_status(&mut self, v: ::std::vec::Vec<super::instance::InstanceStatus>) {
-        self.deps_status = v;
+    pub fn set_deps_committed(&mut self, v: ::std::vec::Vec<bool>) {
+        self.deps_committed = v;
     }
 
     // Mutable pointer to the field.
-    pub fn mut_deps_status(&mut self) -> &mut ::std::vec::Vec<super::instance::InstanceStatus> {
-        &mut self.deps_status
+    pub fn mut_deps_committed(&mut self) -> &mut ::std::vec::Vec<bool> {
+        &mut self.deps_committed
     }
 
     // Take field
-    pub fn take_deps_status(&mut self) -> ::std::vec::Vec<super::instance::InstanceStatus> {
-        ::std::mem::replace(&mut self.deps_status, ::std::vec::Vec::new())
+    pub fn take_deps_committed(&mut self) -> ::std::vec::Vec<bool> {
+        ::std::mem::replace(&mut self.deps_committed, ::std::vec::Vec::new())
     }
 
-    // .InstanceStatus status = 51;
+    // repeated .InstanceID final_deps = 41;
 
 
-    pub fn get_status(&self) -> super::instance::InstanceStatus {
-        self.status
+    pub fn get_final_deps(&self) -> &[super::instance::InstanceID] {
+        &self.final_deps
     }
-    pub fn clear_status(&mut self) {
-        self.status = super::instance::InstanceStatus::NA;
+    pub fn clear_final_deps(&mut self) {
+        self.final_deps.clear();
     }
 
     // Param is passed by value, moved
-    pub fn set_status(&mut self, v: super::instance::InstanceStatus) {
-        self.status = v;
+    pub fn set_final_deps(&mut self, v: ::protobuf::RepeatedField<super::instance::InstanceID>) {
+        self.final_deps = v;
+    }
+
+    // Mutable pointer to the field.
+    pub fn mut_final_deps(&mut self) -> &mut ::protobuf::RepeatedField<super::instance::InstanceID> {
+        &mut self.final_deps
+    }
+
+    // Take field
+    pub fn take_final_deps(&mut self) -> ::protobuf::RepeatedField<super::instance::InstanceID> {
+        ::std::mem::replace(&mut self.final_deps, ::protobuf::RepeatedField::new())
+    }
+
+    // bool committed = 51;
+
+
+    pub fn get_committed(&self) -> bool {
+        self.committed
+    }
+    pub fn clear_committed(&mut self) {
+        self.committed = false;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_committed(&mut self, v: bool) {
+        self.committed = v;
     }
 }
 
@@ -937,6 +961,11 @@ impl ::protobuf::Message for Reply {
             }
         };
         for v in &self.deps {
+            if !v.is_initialized() {
+                return false;
+            }
+        };
+        for v in &self.final_deps {
             if !v.is_initialized() {
                 return false;
             }
@@ -961,10 +990,17 @@ impl ::protobuf::Message for Reply {
                     ::protobuf::rt::read_repeated_message_into(wire_type, is, &mut self.deps)?;
                 },
                 33 => {
-                    ::protobuf::rt::read_repeated_enum_with_unknown_fields_into(wire_type, is, &mut self.deps_status, 33, &mut self.unknown_fields)?
+                    ::protobuf::rt::read_repeated_bool_into(wire_type, is, &mut self.deps_committed)?;
+                },
+                41 => {
+                    ::protobuf::rt::read_repeated_message_into(wire_type, is, &mut self.final_deps)?;
                 },
                 51 => {
-                    ::protobuf::rt::read_proto3_enum_with_unknown_fields_into(wire_type, is, &mut self.status, 51, &mut self.unknown_fields)?
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    let tmp = is.read_bool()?;
+                    self.committed = tmp;
                 },
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
@@ -993,11 +1029,13 @@ impl ::protobuf::Message for Reply {
             let len = value.compute_size();
             my_size += 2 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
         };
-        for value in &self.deps_status {
-            my_size += ::protobuf::rt::enum_size(33, *value);
+        my_size += 3 * self.deps_committed.len() as u32;
+        for value in &self.final_deps {
+            let len = value.compute_size();
+            my_size += 2 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
         };
-        if self.status != super::instance::InstanceStatus::NA {
-            my_size += ::protobuf::rt::enum_size(51, self.status);
+        if self.committed != false {
+            my_size += 3;
         }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
@@ -1023,11 +1061,16 @@ impl ::protobuf::Message for Reply {
             os.write_raw_varint32(v.get_cached_size())?;
             v.write_to_with_cached_sizes(os)?;
         };
-        for v in &self.deps_status {
-            os.write_enum(33, v.value())?;
+        for v in &self.deps_committed {
+            os.write_bool(33, *v)?;
         };
-        if self.status != super::instance::InstanceStatus::NA {
-            os.write_enum(51, self.status.value())?;
+        for v in &self.final_deps {
+            os.write_tag(41, ::protobuf::wire_format::WireTypeLengthDelimited)?;
+            os.write_raw_varint32(v.get_cached_size())?;
+            v.write_to_with_cached_sizes(os)?;
+        };
+        if self.committed != false {
+            os.write_bool(51, self.committed)?;
         }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -1091,15 +1134,20 @@ impl ::protobuf::Message for Reply {
                     |m: &Reply| { &m.deps },
                     |m: &mut Reply| { &mut m.deps },
                 ));
-                fields.push(::protobuf::reflect::accessor::make_vec_accessor::<_, ::protobuf::types::ProtobufTypeEnum<super::instance::InstanceStatus>>(
-                    "deps_status",
-                    |m: &Reply| { &m.deps_status },
-                    |m: &mut Reply| { &mut m.deps_status },
+                fields.push(::protobuf::reflect::accessor::make_vec_accessor::<_, ::protobuf::types::ProtobufTypeBool>(
+                    "deps_committed",
+                    |m: &Reply| { &m.deps_committed },
+                    |m: &mut Reply| { &mut m.deps_committed },
                 ));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<super::instance::InstanceStatus>>(
-                    "status",
-                    |m: &Reply| { &m.status },
-                    |m: &mut Reply| { &mut m.status },
+                fields.push(::protobuf::reflect::accessor::make_repeated_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<super::instance::InstanceID>>(
+                    "final_deps",
+                    |m: &Reply| { &m.final_deps },
+                    |m: &mut Reply| { &mut m.final_deps },
+                ));
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBool>(
+                    "committed",
+                    |m: &Reply| { &m.committed },
+                    |m: &mut Reply| { &mut m.committed },
                 ));
                 ::protobuf::reflect::MessageDescriptor::new::<Reply>(
                     "Reply",
@@ -1127,8 +1175,9 @@ impl ::protobuf::Clear for Reply {
         self.last_ballot.clear();
         self.instance_id.clear();
         self.deps.clear();
-        self.deps_status.clear();
-        self.status = super::instance::InstanceStatus::NA;
+        self.deps_committed.clear();
+        self.final_deps.clear();
+        self.committed = false;
         self.unknown_fields.clear();
     }
 }
@@ -4831,72 +4880,72 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     \n\rmessage.proto\x1a\rcommand.proto\x1a\x0einstance.proto\"o\n\x07Messa\
     ge\x12'\n\x08req_type\x18\x02\x20\x01(\x0e2\x0c.RequestTypeR\x07reqType\
     \x12'\n\x08msg_type\x18\x03\x20\x01(\x0e2\x0c.MessageTypeR\x07msgType\
-    \x12\x12\n\x04data\x18\x04\x20\x01(\x0cR\x04data\"\xd4\x02\n\x07Request\
+    \x12\x12\n\x04data\x18\x04\x20\x01(\x0cR\x04data\"\xc9\x02\n\x07Request\
     \x12'\n\x08req_type\x18\x01\x20\x01(\x0e2\x0c.RequestTypeR\x07reqType\
     \x12\"\n\rto_replica_id\x18\x02\x20\x01(\x03R\x0btoReplicaId\x12\"\n\x06\
     ballot\x18\x0c\x20\x01(\x0b2\n.BallotNumR\x06ballot\x12,\n\x0binstance_i\
     d\x18\r\x20\x01(\x0b2\x0b.InstanceIDR\ninstanceId\x12\x1c\n\x04cmds\x18\
     \x15\x20\x03(\x0b2\x08.CommandR\x04cmds\x12.\n\x0cinitial_deps\x18\x1f\
-    \x20\x03(\x0b2\x0b.InstanceIDR\x0binitialDeps\x120\n\x0bdeps_status\x18!\
-    \x20\x03(\x0e2\x0f.InstanceStatusR\ndepsStatus\x12*\n\nfinal_deps\x18)\
-    \x20\x03(\x0b2\x0b.InstanceIDR\tfinalDeps\"\x87\x02\n\x05Reply\x12'\n\
-    \x08req_type\x18\x01\x20\x01(\x0e2\x0c.RequestTypeR\x07reqType\x12+\n\
-    \x0blast_ballot\x18\x0b\x20\x01(\x0b2\n.BallotNumR\nlastBallot\x12,\n\
-    \x0binstance_id\x18\r\x20\x01(\x0b2\x0b.InstanceIDR\ninstanceId\x12\x1f\
-    \n\x04deps\x18\x20\x20\x03(\x0b2\x0b.InstanceIDR\x04deps\x120\n\x0bdeps_\
-    status\x18!\x20\x03(\x0e2\x0f.InstanceStatusR\ndepsStatus\x12'\n\x06stat\
-    us\x183\x20\x01(\x0e2\x0f.InstanceStatusR\x06status\"\x9a\x01\n\nPrepare\
-    Req\x12\x1b\n\tleader_id\x18\x01\x20\x01(\x03R\x08leaderId\x12\x1d\n\nre\
-    plica_id\x18\x02\x20\x01(\x03R\treplicaId\x12,\n\x0binstance_id\x18\x03\
-    \x20\x01(\x0b2\x0b.InstanceIDR\ninstanceId\x12\"\n\x06ballot\x18\x04\x20\
-    \x01(\x0b2\n.BallotNumR\x06ballot\"\xd7\x01\n\x0cPrepareReply\x12\x1f\n\
-    \x0bacceptor_id\x18\x01\x20\x01(\x03R\nacceptorId\x12\x1d\n\nreplica_id\
-    \x18\x02\x20\x01(\x03R\treplicaId\x12,\n\x0binstance_id\x18\x03\x20\x01(\
-    \x0b2\x0b.InstanceIDR\ninstanceId\x12\x0e\n\x02ok\x18\x04\x20\x01(\x08R\
-    \x02ok\x12\"\n\x06ballot\x18\x05\x20\x01(\x0b2\n.BallotNumR\x06ballot\
-    \x12%\n\x08instance\x18\x06\x20\x01(\x0b2\t.InstanceR\x08instance\"\xc3\
-    \x01\n\x0cPreAcceptReq\x12\x1b\n\tleader_id\x18\x01\x20\x01(\x03R\x08lea\
-    derId\x12\x1d\n\nreplica_id\x18\x02\x20\x01(\x03R\treplicaId\x12,\n\x0bi\
-    nstance_id\x18\x03\x20\x01(\x0b2\x0b.InstanceIDR\ninstanceId\x12%\n\x08i\
-    nstance\x18\x04\x20\x01(\x0b2\t.InstanceR\x08instance\x12\"\n\x06ballot\
-    \x18\x05\x20\x01(\x0b2\n.BallotNumR\x06ballot\"\xbe\x01\n\x0ePreAcceptRe\
-    ply\x12\x1d\n\nreplica_id\x18\x01\x20\x01(\x03R\treplicaId\x12%\n\x08ins\
-    tance\x18\x02\x20\x01(\x0b2\t.InstanceR\x08instance\x12\x0e\n\x02ok\x18\
-    \x03\x20\x01(\x08R\x02ok\x12\"\n\x06ballot\x18\x04\x20\x01(\x0b2\n.Ballo\
-    tNumR\x06ballot\x122\n\x0ecommitted_deps\x18\x05\x20\x03(\x0b2\x0b.Insta\
-    nceIDR\rcommittedDeps\"\xa8\x01\n\tAcceptReq\x12\x1b\n\tleader_id\x18\
-    \x01\x20\x01(\x03R\x08leaderId\x12\x1d\n\nreplica_id\x18\x02\x20\x01(\
-    \x03R\treplicaId\x12%\n\x08instance\x18\x03\x20\x01(\x0b2\t.InstanceR\
-    \x08instance\x12\"\n\x06ballot\x18\x04\x20\x01(\x0b2\n.BallotNumR\x06bal\
-    lot\x12\x14\n\x05count\x18\x05\x20\x01(\x05R\x05count\"\x8e\x01\n\x0bAcc\
-    eptReply\x12\x1d\n\nreplica_id\x18\x01\x20\x01(\x03R\treplicaId\x12,\n\
-    \x0binstance_id\x18\x02\x20\x01(\x0b2\x0b.InstanceIDR\ninstanceId\x12\
+    \x20\x03(\x0b2\x0b.InstanceIDR\x0binitialDeps\x12%\n\x0edeps_committed\
+    \x18!\x20\x03(\x08R\rdepsCommitted\x12*\n\nfinal_deps\x18)\x20\x03(\x0b2\
+    \x0b.InstanceIDR\tfinalDeps\"\x9d\x02\n\x05Reply\x12'\n\x08req_type\x18\
+    \x01\x20\x01(\x0e2\x0c.RequestTypeR\x07reqType\x12+\n\x0blast_ballot\x18\
+    \x0b\x20\x01(\x0b2\n.BallotNumR\nlastBallot\x12,\n\x0binstance_id\x18\r\
+    \x20\x01(\x0b2\x0b.InstanceIDR\ninstanceId\x12\x1f\n\x04deps\x18\x20\x20\
+    \x03(\x0b2\x0b.InstanceIDR\x04deps\x12%\n\x0edeps_committed\x18!\x20\x03\
+    (\x08R\rdepsCommitted\x12*\n\nfinal_deps\x18)\x20\x03(\x0b2\x0b.Instance\
+    IDR\tfinalDeps\x12\x1c\n\tcommitted\x183\x20\x01(\x08R\tcommitted\"\x9a\
+    \x01\n\nPrepareReq\x12\x1b\n\tleader_id\x18\x01\x20\x01(\x03R\x08leaderI\
+    d\x12\x1d\n\nreplica_id\x18\x02\x20\x01(\x03R\treplicaId\x12,\n\x0binsta\
+    nce_id\x18\x03\x20\x01(\x0b2\x0b.InstanceIDR\ninstanceId\x12\"\n\x06ball\
+    ot\x18\x04\x20\x01(\x0b2\n.BallotNumR\x06ballot\"\xd7\x01\n\x0cPrepareRe\
+    ply\x12\x1f\n\x0bacceptor_id\x18\x01\x20\x01(\x03R\nacceptorId\x12\x1d\n\
+    \nreplica_id\x18\x02\x20\x01(\x03R\treplicaId\x12,\n\x0binstance_id\x18\
+    \x03\x20\x01(\x0b2\x0b.InstanceIDR\ninstanceId\x12\x0e\n\x02ok\x18\x04\
+    \x20\x01(\x08R\x02ok\x12\"\n\x06ballot\x18\x05\x20\x01(\x0b2\n.BallotNum\
+    R\x06ballot\x12%\n\x08instance\x18\x06\x20\x01(\x0b2\t.InstanceR\x08inst\
+    ance\"\xc3\x01\n\x0cPreAcceptReq\x12\x1b\n\tleader_id\x18\x01\x20\x01(\
+    \x03R\x08leaderId\x12\x1d\n\nreplica_id\x18\x02\x20\x01(\x03R\treplicaId\
+    \x12,\n\x0binstance_id\x18\x03\x20\x01(\x0b2\x0b.InstanceIDR\ninstanceId\
+    \x12%\n\x08instance\x18\x04\x20\x01(\x0b2\t.InstanceR\x08instance\x12\"\
+    \n\x06ballot\x18\x05\x20\x01(\x0b2\n.BallotNumR\x06ballot\"\xbe\x01\n\
+    \x0ePreAcceptReply\x12\x1d\n\nreplica_id\x18\x01\x20\x01(\x03R\treplicaI\
+    d\x12%\n\x08instance\x18\x02\x20\x01(\x0b2\t.InstanceR\x08instance\x12\
     \x0e\n\x02ok\x18\x03\x20\x01(\x08R\x02ok\x12\"\n\x06ballot\x18\x04\x20\
-    \x01(\x0b2\n.BallotNumR\x06ballot\"n\n\tCommitReq\x12\x1b\n\tleader_id\
+    \x01(\x0b2\n.BallotNumR\x06ballot\x122\n\x0ecommitted_deps\x18\x05\x20\
+    \x03(\x0b2\x0b.InstanceIDR\rcommittedDeps\"\xa8\x01\n\tAcceptReq\x12\x1b\
+    \n\tleader_id\x18\x01\x20\x01(\x03R\x08leaderId\x12\x1d\n\nreplica_id\
+    \x18\x02\x20\x01(\x03R\treplicaId\x12%\n\x08instance\x18\x03\x20\x01(\
+    \x0b2\t.InstanceR\x08instance\x12\"\n\x06ballot\x18\x04\x20\x01(\x0b2\n.\
+    BallotNumR\x06ballot\x12\x14\n\x05count\x18\x05\x20\x01(\x05R\x05count\"\
+    \x8e\x01\n\x0bAcceptReply\x12\x1d\n\nreplica_id\x18\x01\x20\x01(\x03R\tr\
+    eplicaId\x12,\n\x0binstance_id\x18\x02\x20\x01(\x0b2\x0b.InstanceIDR\nin\
+    stanceId\x12\x0e\n\x02ok\x18\x03\x20\x01(\x08R\x02ok\x12\"\n\x06ballot\
+    \x18\x04\x20\x01(\x0b2\n.BallotNumR\x06ballot\"n\n\tCommitReq\x12\x1b\n\
+    \tleader_id\x18\x01\x20\x01(\x03R\x08leaderId\x12\x1d\n\nreplica_id\x18\
+    \x02\x20\x01(\x03R\treplicaId\x12%\n\x08instance\x18\x03\x20\x01(\x0b2\t\
+    .InstanceR\x08instance\"\xc0\x01\n\x0bCommitShort\x12\x1b\n\tleader_id\
     \x18\x01\x20\x01(\x03R\x08leaderId\x12\x1d\n\nreplica_id\x18\x02\x20\x01\
-    (\x03R\treplicaId\x12%\n\x08instance\x18\x03\x20\x01(\x0b2\t.InstanceR\
-    \x08instance\"\xc0\x01\n\x0bCommitShort\x12\x1b\n\tleader_id\x18\x01\x20\
-    \x01(\x03R\x08leaderId\x12\x1d\n\nreplica_id\x18\x02\x20\x01(\x03R\trepl\
-    icaId\x12,\n\x0binstance_id\x18\x03\x20\x01(\x0b2\x0b.InstanceIDR\ninsta\
-    nceId\x12\x14\n\x05count\x18\x04\x20\x01(\x05R\x05count\x12\x10\n\x03seq\
-    \x18\x05\x20\x01(\x05R\x03seq\x12\x1f\n\x04deps\x18\x06\x20\x03(\x0b2\
-    \x0b.InstanceIDR\x04deps\"\xc6\x01\n\x0fTryPreAcceptReq\x12\x1b\n\tleade\
-    r_id\x18\x01\x20\x01(\x03R\x08leaderId\x12\x1d\n\nreplica_id\x18\x02\x20\
-    \x01(\x03R\treplicaId\x12,\n\x0binstance_id\x18\x03\x20\x01(\x0b2\x0b.In\
-    stanceIDR\ninstanceId\x12\"\n\x06ballot\x18\x04\x20\x01(\x0b2\n.BallotNu\
-    mR\x06ballot\x12%\n\x08instance\x18\x05\x20\x01(\x0b2\t.InstanceR\x08ins\
-    tance\"\xd9\x02\n\x11TryPreAcceptReply\x12\x1f\n\x0bacceptor_id\x18\x01\
-    \x20\x01(\x03R\nacceptorId\x12\x1d\n\nreplica_id\x18\x02\x20\x01(\x03R\t\
-    replicaId\x12,\n\x0binstance_id\x18\x03\x20\x01(\x0b2\x0b.InstanceIDR\ni\
-    nstanceId\x12\x0e\n\x02ok\x18\x04\x20\x01(\x08R\x02ok\x12\"\n\x06ballot\
-    \x18\x05\x20\x01(\x0b2\n.BallotNumR\x06ballot\x12)\n\x10conflict_replica\
-    \x18\x06\x20\x01(\x03R\x0fconflictReplica\x12=\n\x14conflict_instance_id\
-    \x18\x07\x20\x01(\x0b2\x0b.InstanceIDR\x12conflictInstanceId\x128\n\x0fc\
-    onflict_status\x18\x08\x20\x01(\x0e2\x0f.InstanceStatusR\x0econflictStat\
-    us*S\n\x0bRequestType\x12\x0b\n\x07Prepare\x10\0\x12\x10\n\x0cTryPreAcce\
-    pt\x10\x01\x12\r\n\tPreAccept\x10\x02\x12\n\n\x06Accept\x10\x03\x12\n\n\
-    \x06Commit\x10\x04*-\n\x0bMessageType\x12\x0f\n\x0bTypeRequest\x10\0\x12\
-    \r\n\tTypeReply\x10\x01b\x06proto3\
+    (\x03R\treplicaId\x12,\n\x0binstance_id\x18\x03\x20\x01(\x0b2\x0b.Instan\
+    ceIDR\ninstanceId\x12\x14\n\x05count\x18\x04\x20\x01(\x05R\x05count\x12\
+    \x10\n\x03seq\x18\x05\x20\x01(\x05R\x03seq\x12\x1f\n\x04deps\x18\x06\x20\
+    \x03(\x0b2\x0b.InstanceIDR\x04deps\"\xc6\x01\n\x0fTryPreAcceptReq\x12\
+    \x1b\n\tleader_id\x18\x01\x20\x01(\x03R\x08leaderId\x12\x1d\n\nreplica_i\
+    d\x18\x02\x20\x01(\x03R\treplicaId\x12,\n\x0binstance_id\x18\x03\x20\x01\
+    (\x0b2\x0b.InstanceIDR\ninstanceId\x12\"\n\x06ballot\x18\x04\x20\x01(\
+    \x0b2\n.BallotNumR\x06ballot\x12%\n\x08instance\x18\x05\x20\x01(\x0b2\t.\
+    InstanceR\x08instance\"\xd9\x02\n\x11TryPreAcceptReply\x12\x1f\n\x0bacce\
+    ptor_id\x18\x01\x20\x01(\x03R\nacceptorId\x12\x1d\n\nreplica_id\x18\x02\
+    \x20\x01(\x03R\treplicaId\x12,\n\x0binstance_id\x18\x03\x20\x01(\x0b2\
+    \x0b.InstanceIDR\ninstanceId\x12\x0e\n\x02ok\x18\x04\x20\x01(\x08R\x02ok\
+    \x12\"\n\x06ballot\x18\x05\x20\x01(\x0b2\n.BallotNumR\x06ballot\x12)\n\
+    \x10conflict_replica\x18\x06\x20\x01(\x03R\x0fconflictReplica\x12=\n\x14\
+    conflict_instance_id\x18\x07\x20\x01(\x0b2\x0b.InstanceIDR\x12conflictIn\
+    stanceId\x128\n\x0fconflict_status\x18\x08\x20\x01(\x0e2\x0f.InstanceSta\
+    tusR\x0econflictStatus*S\n\x0bRequestType\x12\x0b\n\x07Prepare\x10\0\x12\
+    \x10\n\x0cTryPreAccept\x10\x01\x12\r\n\tPreAccept\x10\x02\x12\n\n\x06Acc\
+    ept\x10\x03\x12\n\n\x06Commit\x10\x04*-\n\x0bMessageType\x12\x0f\n\x0bTy\
+    peRequest\x10\0\x12\r\n\tTypeReply\x10\x01b\x06proto3\
 ";
 
 static mut file_descriptor_proto_lazy: ::protobuf::lazy::Lazy<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::lazy::Lazy {

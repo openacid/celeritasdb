@@ -46,14 +46,12 @@ pub use data::Instance;
 
 impl Instance {
     pub fn new_instance(
-        status: InstanceStatus,
         cmds: &[Command],
         ballot: &BallotNum,
         deps: &[InstanceID],
     ) -> Instance {
         let mut inst = Instance::new();
 
-        inst.set_status(status);
         inst.set_cmds(RepeatedField::from_slice(cmds));
         inst.set_ballot(ballot.clone());
         inst.set_initial_deps(RepeatedField::from_slice(deps));

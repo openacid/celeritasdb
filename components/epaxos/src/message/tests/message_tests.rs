@@ -14,8 +14,6 @@ fn new_foo_inst() -> Instance {
     let inst_id3 = InstanceID::new_instance_id(3, 30);
     let initial_deps = vec![inst_id1.clone(), inst_id2.clone(), inst_id3.clone()];
 
-    let status = InstanceStatus::NA;
-
     let cmd1 = Command::new_command(OpCode::NoOp, "k1".as_bytes(), "v1".as_bytes());
     let cmd2 = Command::new_command(OpCode::Get, "k2".as_bytes(), "v2".as_bytes());
     let cmds = vec![cmd1, cmd2];
@@ -23,7 +21,7 @@ fn new_foo_inst() -> Instance {
     let ballot = BallotNum::new_ballot_num(0, 0, replica);
     let ballot2 = BallotNum::new_ballot_num(1, 2, replica);
 
-    let mut inst = Instance::new_instance(status, &cmds[..], &ballot, &initial_deps[..]);
+    let mut inst = Instance::new_instance(&cmds[..], &ballot, &initial_deps[..]);
     // TODO move these to Instance::new_instance
     inst.set_instance_id(inst_id1);
     inst.set_deps(RepeatedField::from_slice(&[inst_id2]));
@@ -107,7 +105,8 @@ fn test_reply_prepare_pb() {
 
     test_reply_common_fields(&inst, &pp, RequestType::Prepare);
     assert_eq!(inst.deps, pp.deps);
-    assert_eq!(inst.status, pp.status);
+    assert_eq!(inst.final_deps, pp.final_deps);
+    assert_eq!(inst.committed, pp.committed);
 
     let size = pp.compute_size();
     assert!(size > 0);
@@ -121,13 +120,13 @@ fn test_reply_prepare_pb() {
 fn test_request_preaccpt_pb() {
     let inst = new_foo_inst();
 
-    let deps_status = &[InstanceStatus::Accepted];
-    let pp = Request::preaccept(&inst, deps_status);
+    let deps_committed = &[true, false];
+    let pp = Request::preaccept(&inst, deps_committed);
 
     test_request_common_fields(&inst, &pp, RequestType::PreAccept);
     assert_eq!(inst.cmds, pp.cmds);
     assert_eq!(inst.initial_deps, pp.initial_deps);
-    assert_eq!(deps_status.to_vec(), pp.deps_status);
+    assert_eq!(deps_committed.to_vec(), pp.deps_committed);
 
     let size = pp.compute_size();
     assert!(size > 0);
@@ -141,12 +140,12 @@ fn test_request_preaccpt_pb() {
 fn test_reply_preaccept_pb() {
     let inst = new_foo_inst();
 
-    let deps_status = &[InstanceStatus::Accepted];
-    let pp = Reply::preaccept(&inst, deps_status);
+    let deps_committed = &[true, false];
+    let pp = Reply::preaccept(&inst, deps_committed);
 
     test_reply_common_fields(&inst, &pp, RequestType::PreAccept);
     assert_eq!(inst.deps, pp.deps);
-    assert_eq!(deps_status.to_vec(), pp.deps_status);
+    assert_eq!(deps_committed.to_vec(), pp.deps_committed);
 
     let size = pp.compute_size();
     assert!(size > 0);

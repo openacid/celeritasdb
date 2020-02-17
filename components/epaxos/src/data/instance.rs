@@ -465,7 +465,8 @@ pub struct Instance {
     pub initial_deps: ::protobuf::RepeatedField<InstanceID>,
     pub deps: ::protobuf::RepeatedField<InstanceID>,
     pub final_deps: ::protobuf::RepeatedField<InstanceID>,
-    pub status: InstanceStatus,
+    pub committed: bool,
+    pub executed: bool,
     // special fields
     pub unknown_fields: ::protobuf::UnknownFields,
     pub cached_size: ::protobuf::CachedSize,
@@ -681,19 +682,34 @@ impl Instance {
         ::std::mem::replace(&mut self.final_deps, ::protobuf::RepeatedField::new())
     }
 
-    // .InstanceStatus status = 51;
+    // bool committed = 51;
 
 
-    pub fn get_status(&self) -> InstanceStatus {
-        self.status
+    pub fn get_committed(&self) -> bool {
+        self.committed
     }
-    pub fn clear_status(&mut self) {
-        self.status = InstanceStatus::NA;
+    pub fn clear_committed(&mut self) {
+        self.committed = false;
     }
 
     // Param is passed by value, moved
-    pub fn set_status(&mut self, v: InstanceStatus) {
-        self.status = v;
+    pub fn set_committed(&mut self, v: bool) {
+        self.committed = v;
+    }
+
+    // bool executed = 52;
+
+
+    pub fn get_executed(&self) -> bool {
+        self.executed
+    }
+    pub fn clear_executed(&mut self) {
+        self.executed = false;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_executed(&mut self, v: bool) {
+        self.executed = v;
     }
 }
 
@@ -763,7 +779,18 @@ impl ::protobuf::Message for Instance {
                     ::protobuf::rt::read_repeated_message_into(wire_type, is, &mut self.final_deps)?;
                 },
                 51 => {
-                    ::protobuf::rt::read_proto3_enum_with_unknown_fields_into(wire_type, is, &mut self.status, 51, &mut self.unknown_fields)?
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    let tmp = is.read_bool()?;
+                    self.committed = tmp;
+                },
+                52 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    let tmp = is.read_bool()?;
+                    self.executed = tmp;
                 },
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
@@ -805,8 +832,11 @@ impl ::protobuf::Message for Instance {
             let len = value.compute_size();
             my_size += 2 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
         };
-        if self.status != InstanceStatus::NA {
-            my_size += ::protobuf::rt::enum_size(51, self.status);
+        if self.committed != false {
+            my_size += 3;
+        }
+        if self.executed != false {
+            my_size += 3;
         }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
@@ -849,8 +879,11 @@ impl ::protobuf::Message for Instance {
             os.write_raw_varint32(v.get_cached_size())?;
             v.write_to_with_cached_sizes(os)?;
         };
-        if self.status != InstanceStatus::NA {
-            os.write_enum(51, self.status.value())?;
+        if self.committed != false {
+            os.write_bool(51, self.committed)?;
+        }
+        if self.executed != false {
+            os.write_bool(52, self.executed)?;
         }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -929,10 +962,15 @@ impl ::protobuf::Message for Instance {
                     |m: &Instance| { &m.final_deps },
                     |m: &mut Instance| { &mut m.final_deps },
                 ));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<InstanceStatus>>(
-                    "status",
-                    |m: &Instance| { &m.status },
-                    |m: &mut Instance| { &mut m.status },
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBool>(
+                    "committed",
+                    |m: &Instance| { &m.committed },
+                    |m: &mut Instance| { &mut m.committed },
+                ));
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBool>(
+                    "executed",
+                    |m: &Instance| { &m.executed },
+                    |m: &mut Instance| { &mut m.executed },
                 ));
                 ::protobuf::reflect::MessageDescriptor::new::<Instance>(
                     "Instance",
@@ -963,7 +1001,8 @@ impl ::protobuf::Clear for Instance {
         self.initial_deps.clear();
         self.deps.clear();
         self.final_deps.clear();
-        self.status = InstanceStatus::NA;
+        self.committed = false;
+        self.executed = false;
         self.unknown_fields.clear();
     }
 }
@@ -1049,17 +1088,18 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     ica_id\x18\x01\x20\x01(\x03R\treplicaId\x12\x10\n\x03idx\x18\x02\x20\x01\
     (\x03R\x03idx\"R\n\tBallotNum\x12\x14\n\x05epoch\x18\x01\x20\x01(\x05R\
     \x05epoch\x12\x10\n\x03num\x18\x02\x20\x01(\x05R\x03num\x12\x1d\n\nrepli\
-    ca_id\x18\x03\x20\x01(\x03R\treplicaId\"\xcd\x02\n\x08Instance\x12+\n\
+    ca_id\x18\x03\x20\x01(\x03R\treplicaId\"\xde\x02\n\x08Instance\x12+\n\
     \x0blast_ballot\x18\x0b\x20\x01(\x0b2\n.BallotNumR\nlastBallot\x12\"\n\
     \x06ballot\x18\x0c\x20\x01(\x0b2\n.BallotNumR\x06ballot\x12,\n\x0binstan\
     ce_id\x18\r\x20\x01(\x0b2\x0b.InstanceIDR\ninstanceId\x12\x1c\n\x04cmds\
     \x18\x15\x20\x03(\x0b2\x08.CommandR\x04cmds\x12.\n\x0cinitial_deps\x18\
     \x1f\x20\x03(\x0b2\x0b.InstanceIDR\x0binitialDeps\x12\x1f\n\x04deps\x18\
     \x20\x20\x03(\x0b2\x0b.InstanceIDR\x04deps\x12*\n\nfinal_deps\x18)\x20\
-    \x03(\x0b2\x0b.InstanceIDR\tfinalDeps\x12'\n\x06status\x183\x20\x01(\x0e\
-    2\x0f.InstanceStatusR\x06status*T\n\x0eInstanceStatus\x12\x06\n\x02NA\
-    \x10\0\x12\x0f\n\x0bPreAccepted\x10\x01\x12\x0c\n\x08Accepted\x10\x02\
-    \x12\r\n\tCommitted\x10\x03\x12\x0c\n\x08Executed\x10\x04b\x06proto3\
+    \x03(\x0b2\x0b.InstanceIDR\tfinalDeps\x12\x1c\n\tcommitted\x183\x20\x01(\
+    \x08R\tcommitted\x12\x1a\n\x08executed\x184\x20\x01(\x08R\x08executed*T\
+    \n\x0eInstanceStatus\x12\x06\n\x02NA\x10\0\x12\x0f\n\x0bPreAccepted\x10\
+    \x01\x12\x0c\n\x08Accepted\x10\x02\x12\r\n\tCommitted\x10\x03\x12\x0c\n\
+    \x08Executed\x10\x04b\x06proto3\
 ";
 
 static mut file_descriptor_proto_lazy: ::protobuf::lazy::Lazy<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::lazy::Lazy {
