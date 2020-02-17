@@ -65,11 +65,11 @@ impl Request {
         r
     }
 
-    pub fn preaccept(inst: &Instance, deps_status: &[InstanceStatus]) -> Self {
+    pub fn preaccept(inst: &Instance, deps_committed: &[bool]) -> Self {
         let mut r = Self::of_instance(inst, RequestType::PreAccept);
         r.set_cmds(inst.cmds.clone());
         r.set_initial_deps(inst.initial_deps.clone());
-        r.set_deps_status(deps_status.to_vec());
+        r.set_deps_committed(deps_committed.to_vec());
         r
     }
 
@@ -110,10 +110,10 @@ impl Reply {
         r
     }
 
-    pub fn preaccept(inst: &Instance, deps_status: &[InstanceStatus]) -> Self {
+    pub fn preaccept(inst: &Instance, deps_committed: &[bool]) -> Self {
         let mut r = Self::of_instance(inst, RequestType::PreAccept);
         r.set_deps(inst.deps.clone());
-        r.set_deps_status(deps_status.to_vec());
+        r.set_deps_committed(deps_committed.to_vec());
         r
     }
 
@@ -130,7 +130,8 @@ impl Reply {
     pub fn prepare(inst: &Instance) -> Self {
         let mut r = Self::of_instance(inst, RequestType::Prepare);
         r.set_deps(inst.deps.clone());
-        r.set_status(inst.status);
+        r.set_final_deps(inst.final_deps.clone());
+        r.set_committed(inst.committed);
         r
     }
 }
