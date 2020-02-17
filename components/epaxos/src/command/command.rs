@@ -4,9 +4,8 @@ use super::super::data;
 #[path = "tests/command_tests.rs"]
 mod tests;
 
-// FIXME(lsl): for simplicity, string type for both key and value
-pub type Key = String;
-pub type Value = String;
+pub type Key = [u8];
+pub type Value = [u8];
 
 // re-export enum OpCode in data/command.rs
 pub use data::OpCode;
@@ -15,11 +14,11 @@ pub use data::OpCode;
 pub use data::Command;
 
 impl Command {
-    pub fn new_command(op: OpCode, key: &str, value: &str) -> Command {
+    pub fn new_command(op: OpCode, key: &[u8], value: &[u8]) -> Command {
         let mut cmd = Command::new();
         cmd.set_op(op);
-        cmd.set_key(key.to_string());
-        cmd.set_value(value.to_string());
+        cmd.set_key(key.to_vec());
+        cmd.set_value(value.to_vec());
 
         return cmd;
     }
