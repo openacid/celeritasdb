@@ -43,7 +43,6 @@ impl<'a> ::std::default::Default for &'a Message {
     }
 }
 
-
 impl Message {
     pub fn new() -> Message {
         ::std::default::Default::default()

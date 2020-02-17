@@ -30,8 +30,8 @@ use protobuf::ProtobufEnum as ProtobufEnum_imported_for_functions;
 pub struct Command {
     // message fields
     pub op: OpCode,
-    pub key: ::std::string::String,
-    pub value: ::std::string::String,
+    pub key: ::std::vec::Vec<u8>,
+    pub value: ::std::vec::Vec<u8>,
     // special fields
     pub unknown_fields: ::protobuf::UnknownFields,
     pub cached_size: ::protobuf::CachedSize,
@@ -63,10 +63,10 @@ impl Command {
         self.op = v;
     }
 
-    // string key = 2;
+    // bytes key = 2;
 
 
-    pub fn get_key(&self) -> &str {
+    pub fn get_key(&self) -> &[u8] {
         &self.key
     }
     pub fn clear_key(&mut self) {
@@ -74,25 +74,25 @@ impl Command {
     }
 
     // Param is passed by value, moved
-    pub fn set_key(&mut self, v: ::std::string::String) {
+    pub fn set_key(&mut self, v: ::std::vec::Vec<u8>) {
         self.key = v;
     }
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_key(&mut self) -> &mut ::std::string::String {
+    pub fn mut_key(&mut self) -> &mut ::std::vec::Vec<u8> {
         &mut self.key
     }
 
     // Take field
-    pub fn take_key(&mut self) -> ::std::string::String {
-        ::std::mem::replace(&mut self.key, ::std::string::String::new())
+    pub fn take_key(&mut self) -> ::std::vec::Vec<u8> {
+        ::std::mem::replace(&mut self.key, ::std::vec::Vec::new())
     }
 
-    // string value = 3;
+    // bytes value = 3;
 
 
-    pub fn get_value(&self) -> &str {
+    pub fn get_value(&self) -> &[u8] {
         &self.value
     }
     pub fn clear_value(&mut self) {
@@ -100,19 +100,19 @@ impl Command {
     }
 
     // Param is passed by value, moved
-    pub fn set_value(&mut self, v: ::std::string::String) {
+    pub fn set_value(&mut self, v: ::std::vec::Vec<u8>) {
         self.value = v;
     }
 
     // Mutable pointer to the field.
     // If field is not initialized, it is initialized with default value first.
-    pub fn mut_value(&mut self) -> &mut ::std::string::String {
+    pub fn mut_value(&mut self) -> &mut ::std::vec::Vec<u8> {
         &mut self.value
     }
 
     // Take field
-    pub fn take_value(&mut self) -> ::std::string::String {
-        ::std::mem::replace(&mut self.value, ::std::string::String::new())
+    pub fn take_value(&mut self) -> ::std::vec::Vec<u8> {
+        ::std::mem::replace(&mut self.value, ::std::vec::Vec::new())
     }
 }
 
@@ -129,10 +129,10 @@ impl ::protobuf::Message for Command {
                     ::protobuf::rt::read_proto3_enum_with_unknown_fields_into(wire_type, is, &mut self.op, 1, &mut self.unknown_fields)?
                 },
                 2 => {
-                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.key)?;
+                    ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.key)?;
                 },
                 3 => {
-                    ::protobuf::rt::read_singular_proto3_string_into(wire_type, is, &mut self.value)?;
+                    ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.value)?;
                 },
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
@@ -150,10 +150,10 @@ impl ::protobuf::Message for Command {
             my_size += ::protobuf::rt::enum_size(1, self.op);
         }
         if !self.key.is_empty() {
-            my_size += ::protobuf::rt::string_size(2, &self.key);
+            my_size += ::protobuf::rt::bytes_size(2, &self.key);
         }
         if !self.value.is_empty() {
-            my_size += ::protobuf::rt::string_size(3, &self.value);
+            my_size += ::protobuf::rt::bytes_size(3, &self.value);
         }
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
@@ -165,10 +165,10 @@ impl ::protobuf::Message for Command {
             os.write_enum(1, self.op.value())?;
         }
         if !self.key.is_empty() {
-            os.write_string(2, &self.key)?;
+            os.write_bytes(2, &self.key)?;
         }
         if !self.value.is_empty() {
-            os.write_string(3, &self.value)?;
+            os.write_bytes(3, &self.value)?;
         }
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
@@ -217,12 +217,12 @@ impl ::protobuf::Message for Command {
                     |m: &Command| { &m.op },
                     |m: &mut Command| { &mut m.op },
                 ));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
                     "key",
                     |m: &Command| { &m.key },
                     |m: &mut Command| { &mut m.key },
                 ));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeString>(
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
                     "value",
                     |m: &Command| { &m.value },
                     |m: &mut Command| { &mut m.value },
@@ -331,10 +331,10 @@ impl ::protobuf::reflect::ProtobufValue for OpCode {
 
 static file_descriptor_proto_data: &'static [u8] = b"\
     \n\rcommand.proto\"J\n\x07Command\x12\x17\n\x02op\x18\x01\x20\x01(\x0e2\
-    \x07.OpCodeR\x02op\x12\x10\n\x03key\x18\x02\x20\x01(\tR\x03key\x12\x14\n\
-    \x05value\x18\x03\x20\x01(\tR\x05value*-\n\x06OpCode\x12\x08\n\x04NoOp\
-    \x10\0\x12\x07\n\x03Set\x10\x01\x12\x07\n\x03Put\x10\x02\x12\x07\n\x03Ge\
-    t\x10\x03b\x06proto3\
+    \x07.OpCodeR\x02op\x12\x10\n\x03key\x18\x02\x20\x01(\x0cR\x03key\x12\x14\
+    \n\x05value\x18\x03\x20\x01(\x0cR\x05value*-\n\x06OpCode\x12\x08\n\x04No\
+    Op\x10\0\x12\x07\n\x03Set\x10\x01\x12\x07\n\x03Put\x10\x02\x12\x07\n\x03\
+    Get\x10\x03b\x06proto3\
 ";
 
 static mut file_descriptor_proto_lazy: ::protobuf::lazy::Lazy<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::lazy::Lazy {
