@@ -41,10 +41,10 @@ message Request {
 
     //                                         // required by:
 
-    repeated Command        cmds         = 21; // PreAccept,          Commit, Prepare
-    repeated InstanceID     initial_deps = 31; // PreAccept,
-    repeated InstanceStatus deps_status  = 33; // PreAccept,
-    repeated InstanceID     final_deps   = 41; //             Accept, Commit
+    repeated Command        cmds           = 21; // PreAccept,          Commit, Prepare
+    repeated InstanceID     initial_deps   = 31; // PreAccept,
+    repeated bool           deps_committed = 33; // PreAccept,
+    repeated InstanceID     final_deps     = 41; //             Accept, Commit
 }
 
 message Reply {
@@ -60,9 +60,10 @@ message Reply {
 
     //                                         // required by:
 
-    repeated InstanceID     deps        = 32;  // PreAccept,     Prepare
-    repeated InstanceStatus deps_status = 33;  // PreAccept,
-    InstanceStatus          status      = 51;  //                Prepare
+    repeated InstanceID     deps           = 32;  // PreAccept,     Prepare
+    repeated bool           deps_committed = 33;  // PreAccept,
+    repeated InstanceID     final_deps     = 41;  //                Prepare
+    bool                    committed      = 51;  //                Prepare
 }
 
 

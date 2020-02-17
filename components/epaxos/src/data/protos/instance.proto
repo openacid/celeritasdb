@@ -41,5 +41,13 @@ message Instance {
     // process, and is set by Accept request or Commit request.
     repeated InstanceID final_deps                  = 41;
 
-    InstanceStatus status                           = 51;
+    // An instance has several status thus one status field is not enough.
+    // To determine the instance status:
+    //
+    // - is-preaccepted:  if deps is not empty.
+    // - is-accepted:     if final_deps is not empty and not Instace.committed
+    // - is-committed:    if Instace.committed
+    // - is-executed:     if Instance.executed
+    bool committed                                  = 51;
+    bool executed                                   = 52;
 };
