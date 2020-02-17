@@ -1,7 +1,7 @@
 use super::*;
 use crate::command::{Command, OpCode};
 use crate::instance::{BallotNum, Instance, InstanceID, InstanceStatus};
-use crate::message::{Reply, Request};
+use crate::message::{Reply, Request, RequestType};
 // Message is required to use to use method in trait Message.
 use protobuf::RepeatedField;
 use protobuf::{parse_from_bytes, Message};
@@ -70,19 +70,49 @@ fn test_message_protobuf() {
     assert_eq!(pr1, pr2);
 }
 
+fn test_request_common_fields(inst: &Instance, req: &Request, t: RequestType) {
+    assert_eq!(t, req.req_type);
+    assert_eq!(inst.ballot, req.ballot);
+    assert_eq!(inst.instance_id, req.instance_id);
+}
+
+fn test_reply_common_fields(inst: &Instance, rp: &Reply, t: RequestType) {
+    assert_eq!(t, rp.req_type);
+    assert_eq!(inst.last_ballot, rp.last_ballot);
+    assert_eq!(inst.instance_id, rp.instance_id);
+}
+
 #[test]
 fn test_request_prepare_protobuf() {
-    let req_type = RequestType::Prepare;
-    let msg_type = MessageType::TypeRequest;
-
     let inst = new_foo_inst();
 
-    let pr1 = Request::prepare(&inst);
-    let pr_bytes: Vec<u8> = pr1.write_to_bytes().unwrap();
-    let size = pr1.compute_size();
+    let pp = Request::prepare(&inst);
 
+    test_request_common_fields(&inst, &pp, RequestType::Prepare);
+    // prepare has no other fields.
+
+    let size = pp.compute_size();
     assert_eq!(true, size > 0);
 
-    let pr2 = parse_from_bytes::<Request>(&pr_bytes).unwrap();
-    assert_eq!(pr1, pr2);
+    let byts: Vec<u8> = pp.write_to_bytes().unwrap();
+    let pp2 = parse_from_bytes::<Request>(&byts).unwrap();
+    assert_eq!(pp, pp2);
+}
+
+#[test]
+fn test_reply_prepare_protobuf() {
+    let inst = new_foo_inst();
+
+    let pp = Reply::prepare(&inst);
+
+    test_reply_common_fields(&inst, &pp, RequestType::Prepare);
+    assert_eq!(inst.deps, pp.deps);
+    assert_eq!(inst.status, pp.status);
+
+    let size = pp.compute_size();
+    assert_eq!(true, size > 0);
+
+    let byts: Vec<u8> = pp.write_to_bytes().unwrap();
+    let pp2 = parse_from_bytes::<Reply>(&byts).unwrap();
+    assert_eq!(pp, pp2);
 }
