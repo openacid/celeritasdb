@@ -13,7 +13,7 @@ pub type InstanceIdx = i64;
 pub use data::InstanceID;
 
 impl InstanceID {
-    pub fn new_instance_id(replica_id: i64, idx: i64) -> InstanceID {
+    pub fn of(replica_id: i64, idx: i64) -> InstanceID {
         let mut inst_id = InstanceID::new();
 
         inst_id.set_replica_id(replica_id);
@@ -30,7 +30,7 @@ pub use data::InstanceStatus;
 pub use data::BallotNum;
 
 impl BallotNum {
-    pub fn new_ballot_num(epoch: i32, num: i32, replica_id: i64) -> BallotNum {
+    pub fn of(epoch: i32, num: i32, replica_id: i64) -> BallotNum {
         let mut ballot = BallotNum::new();
 
         ballot.set_epoch(epoch);
@@ -45,7 +45,7 @@ impl BallotNum {
 pub use data::Instance;
 
 impl Instance {
-    pub fn new_instance(cmds: &[Command], ballot: &BallotNum, deps: &[InstanceID]) -> Instance {
+    pub fn of(cmds: &[Command], ballot: &BallotNum, deps: &[InstanceID]) -> Instance {
         let mut inst = Instance::new();
 
         inst.set_cmds(RepeatedField::from_slice(cmds));

@@ -3,7 +3,7 @@ use protobuf::{parse_from_bytes, Message};
 
 #[test]
 fn test_command_protobuf() {
-    let cmd1 = Command::new_command(OpCode::NoOp, "key".as_bytes(), "value".as_bytes());
+    let cmd1 = Command::of(OpCode::NoOp, "key".as_bytes(), "value".as_bytes());
 
     let cmd_bytes: Vec<u8> = cmd1.write_to_bytes().unwrap();
 

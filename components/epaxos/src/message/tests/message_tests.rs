@@ -9,19 +9,18 @@ use protobuf::{parse_from_bytes, Message};
 fn new_foo_inst() -> Instance {
     let replica = 1;
 
-    let inst_id1 = InstanceID::new_instance_id(1, 10);
-    let inst_id2 = InstanceID::new_instance_id(2, 20);
-    let inst_id3 = InstanceID::new_instance_id(3, 30);
+    let inst_id1 = InstanceID::of(1, 10);
+    let inst_id2 = InstanceID::of(2, 20);
+    let inst_id3 = InstanceID::of(3, 30);
     let initial_deps = vec![inst_id1.clone(), inst_id2.clone(), inst_id3.clone()];
 
-    let cmd1 = Command::new_command(OpCode::NoOp, "k1".as_bytes(), "v1".as_bytes());
-    let cmd2 = Command::new_command(OpCode::Get, "k2".as_bytes(), "v2".as_bytes());
+    let cmd1 = Command::of(OpCode::NoOp, "k1".as_bytes(), "v1".as_bytes());
+    let cmd2 = Command::of(OpCode::Get, "k2".as_bytes(), "v2".as_bytes());
     let cmds = vec![cmd1, cmd2];
+    let ballot = BallotNum::of(0, 0, replica);
+    let ballot2 = BallotNum::of(1, 2, replica);
 
-    let ballot = BallotNum::new_ballot_num(0, 0, replica);
-    let ballot2 = BallotNum::new_ballot_num(1, 2, replica);
-
-    let mut inst = Instance::new_instance(&cmds[..], &ballot, &initial_deps[..]);
+    let mut inst = Instance::of(&cmds[..], &ballot, &initial_deps[..]);
     // TODO move these to Instance::new_instance
     inst.set_instance_id(inst_id1);
     inst.set_deps(RepeatedField::from_slice(&[inst_id2]));
@@ -47,8 +46,8 @@ fn test_message_protobuf() {
 
     let leader = 0;
     let replica = 1;
-    let inst_id = InstanceID::new_instance_id(replica, 0);
-    let ballot = BallotNum::new_ballot_num(0, 0, replica);
+    let inst_id = InstanceID::of(replica, 0);
+    let ballot = BallotNum::of(0, 0, replica);
     let pr1 = PrepareReq::new_prepare_req(leader, replica, inst_id, ballot);
     let pr_bytes: Vec<u8> = pr1.write_to_bytes().unwrap();
 
