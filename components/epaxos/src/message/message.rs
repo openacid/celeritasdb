@@ -24,9 +24,6 @@ impl From<MsgStatus> for bool {
 // re-export enum RequestType in data/message.rs
 pub use data::RequestType;
 
-// re-export enum MessageType in data/message.rs
-pub use data::MessageType;
-
 pub use data::Command;
 /// protocol message wrapper used in transmission
 pub use data::Reply;

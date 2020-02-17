@@ -4590,61 +4590,6 @@ impl ::protobuf::reflect::ProtobufValue for RequestType {
     }
 }
 
-#[derive(Clone,PartialEq,Eq,Debug,Hash)]
-pub enum MessageType {
-    TypeRequest = 0,
-    TypeReply = 1,
-}
-
-impl ::protobuf::ProtobufEnum for MessageType {
-    fn value(&self) -> i32 {
-        *self as i32
-    }
-
-    fn from_i32(value: i32) -> ::std::option::Option<MessageType> {
-        match value {
-            0 => ::std::option::Option::Some(MessageType::TypeRequest),
-            1 => ::std::option::Option::Some(MessageType::TypeReply),
-            _ => ::std::option::Option::None
-        }
-    }
-
-    fn values() -> &'static [Self] {
-        static values: &'static [MessageType] = &[
-            MessageType::TypeRequest,
-            MessageType::TypeReply,
-        ];
-        values
-    }
-
-    fn enum_descriptor_static() -> &'static ::protobuf::reflect::EnumDescriptor {
-        static mut descriptor: ::protobuf::lazy::Lazy<::protobuf::reflect::EnumDescriptor> = ::protobuf::lazy::Lazy {
-            lock: ::protobuf::lazy::ONCE_INIT,
-            ptr: 0 as *const ::protobuf::reflect::EnumDescriptor,
-        };
-        unsafe {
-            descriptor.get(|| {
-                ::protobuf::reflect::EnumDescriptor::new("MessageType", file_descriptor_proto())
-            })
-        }
-    }
-}
-
-impl ::std::marker::Copy for MessageType {
-}
-
-impl ::std::default::Default for MessageType {
-    fn default() -> Self {
-        MessageType::TypeRequest
-    }
-}
-
-impl ::protobuf::reflect::ProtobufValue for MessageType {
-    fn as_ref(&self) -> ::protobuf::reflect::ProtobufValueRef {
-        ::protobuf::reflect::ProtobufValueRef::Enum(self.descriptor())
-    }
-}
-
 static file_descriptor_proto_data: &'static [u8] = b"\
     \n\rmessage.proto\x1a\rcommand.proto\x1a\x0einstance.proto\"\xc9\x02\n\
     \x07Request\x12'\n\x08req_type\x18\x01\x20\x01(\x0e2\x0c.RequestTypeR\
@@ -4710,8 +4655,7 @@ static file_descriptor_proto_data: &'static [u8] = b"\
     stanceId\x128\n\x0fconflict_status\x18\x08\x20\x01(\x0e2\x0f.InstanceSta\
     tusR\x0econflictStatus*S\n\x0bRequestType\x12\x0b\n\x07Prepare\x10\0\x12\
     \x10\n\x0cTryPreAccept\x10\x01\x12\r\n\tPreAccept\x10\x02\x12\n\n\x06Acc\
-    ept\x10\x03\x12\n\n\x06Commit\x10\x04*-\n\x0bMessageType\x12\x0f\n\x0bTy\
-    peRequest\x10\0\x12\r\n\tTypeReply\x10\x01b\x06proto3\
+    ept\x10\x03\x12\n\n\x06Commit\x10\x04b\x06proto3\
 ";
 
 static mut file_descriptor_proto_lazy: ::protobuf::lazy::Lazy<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::lazy::Lazy {

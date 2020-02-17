@@ -11,11 +11,6 @@ enum RequestType {
     Commit = 4;
 };
 
-enum MessageType {
-    TypeRequest = 0;
-    TypeReply = 1;
-};
-
 message Request {
 
     // field id:
