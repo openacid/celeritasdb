@@ -1,7 +1,7 @@
 use super::super::data;
 use super::super::instance::{BallotNum, Instance, InstanceID, InstanceStatus};
 use super::super::replica::ReplicaID;
-use protobuf::{RepeatedField};
+use protobuf::RepeatedField;
 
 #[cfg(test)]
 #[path = "./tests/message_tests.rs"]
@@ -27,12 +27,12 @@ pub use data::RequestType;
 // re-export enum MessageType in data/message.rs
 pub use data::MessageType;
 
+pub use data::Command;
 /// protocol message wrapper used in transmission
 // re-export struct Message in data/message.rs
 pub use data::Message;
-pub use data::Request;
 pub use data::Reply;
-pub use data::Command;
+pub use data::Request;
 
 impl Message {
     // data is moved

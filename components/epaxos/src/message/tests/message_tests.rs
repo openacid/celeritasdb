@@ -1,9 +1,9 @@
 use super::*;
-use crate::instance::{BallotNum, InstanceID, Instance, InstanceStatus};
-use crate::message::{Request, Reply};
 use crate::command::{Command, OpCode};
+use crate::instance::{BallotNum, Instance, InstanceID, InstanceStatus};
+use crate::message::{Reply, Request};
+use protobuf::RepeatedField;
 use protobuf::{parse_from_bytes, Message};
-use protobuf::{RepeatedField};
 
 #[test]
 fn test_message_protobuf() {
