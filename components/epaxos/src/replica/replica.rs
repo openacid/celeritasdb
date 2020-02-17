@@ -88,7 +88,7 @@ impl Replica {
     /// if conn is None, make connection
     /// TODO(lsl): we really need something like a request context
     ///            to store conn and anything should be shared in a request or proposing an instance
-    fn send_msg(&mut self, to: ReplicaID, msg: &Message) -> Result<Message, String> {
+    fn send_msg(&mut self, to: ReplicaID, msg: &Request) -> Result<Reply, String> {
         Err("not implemented".to_string())
     }
 
@@ -103,12 +103,6 @@ impl Replica {
     //             so is it good to implement as a method or a function to take Replica as arg?
     //             but for now, it doesn't matter since we just want the interface.
 
-    /// send prepare request and receive reponse, return updated reponse or error.
-    fn make_prepare_req(&mut self, cmds: &Vec<Command>) -> Result<PrepareReply, String> {
-        // ReplicaID and ballot are stored in self.
-        Err("not implemented".to_string())
-    }
-
     // ASK(lsl->xp): is it ok to return a result and ask http-framework to judge type and send
     // reply to requester?
     // I think that would be a great place to do statistics and measurement.
@@ -117,19 +111,7 @@ impl Replica {
         Err("not implemented".to_string())
     }
 
-    fn make_pre_accept_req(&mut self, cmds: &Vec<Command>) -> Result<PreAcceptReply, String> {
-        // instance id, ballot, seq and deps are constructed right here.
-        Err("not implemented".to_string())
-    }
-
     fn handle_pre_accept(&mut self, req: &PreAcceptReq) -> Result<PreAcceptReply, String> {
-        Err("not implemented".to_string())
-    }
-
-    fn make_try_pre_accept_req(
-        &mut self,
-        instance: &Instance,
-    ) -> Result<TryPreAcceptReply, String> {
         Err("not implemented".to_string())
     }
 
@@ -140,15 +122,7 @@ impl Replica {
         Err("not implemented".to_string())
     }
 
-    fn make_accept_req(&mut self, instance: &Instance) -> Result<AcceptReply, String> {
-        Err("not implemented".to_string())
-    }
-
     fn handle_accept(&mut self, req: &AcceptReq) -> Result<AcceptReply, String> {
-        Err("not implemented".to_string())
-    }
-
-    fn make_commit_req(&mut self, instance: &Instance) -> Result<(), String> {
         Err("not implemented".to_string())
     }
 

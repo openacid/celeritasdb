@@ -16,12 +16,6 @@ enum MessageType {
     TypeReply = 1;
 };
 
-message Message {
-    RequestType req_type = 2;
-    MessageType msg_type = 3;
-    bytes data = 4;
-};
-
 message Request {
 
     // field id:

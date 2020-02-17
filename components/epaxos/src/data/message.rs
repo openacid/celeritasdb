@@ -27,237 +27,6 @@ use protobuf::ProtobufEnum as ProtobufEnum_imported_for_functions;
 // const _PROTOBUF_VERSION_CHECK: () = ::protobuf::VERSION_2_10_1;
 
 #[derive(PartialEq,Clone,Default)]
-pub struct Message {
-    // message fields
-    pub req_type: RequestType,
-    pub msg_type: MessageType,
-    pub data: ::std::vec::Vec<u8>,
-    // special fields
-    pub unknown_fields: ::protobuf::UnknownFields,
-    pub cached_size: ::protobuf::CachedSize,
-}
-
-impl<'a> ::std::default::Default for &'a Message {
-    fn default() -> &'a Message {
-        <Message as ::protobuf::Message>::default_instance()
-    }
-}
-
-impl Message {
-    pub fn new() -> Message {
-        ::std::default::Default::default()
-    }
-
-    // .RequestType req_type = 2;
-
-
-    pub fn get_req_type(&self) -> RequestType {
-        self.req_type
-    }
-    pub fn clear_req_type(&mut self) {
-        self.req_type = RequestType::Prepare;
-    }
-
-    // Param is passed by value, moved
-    pub fn set_req_type(&mut self, v: RequestType) {
-        self.req_type = v;
-    }
-
-    // .MessageType msg_type = 3;
-
-
-    pub fn get_msg_type(&self) -> MessageType {
-        self.msg_type
-    }
-    pub fn clear_msg_type(&mut self) {
-        self.msg_type = MessageType::TypeRequest;
-    }
-
-    // Param is passed by value, moved
-    pub fn set_msg_type(&mut self, v: MessageType) {
-        self.msg_type = v;
-    }
-
-    // bytes data = 4;
-
-
-    pub fn get_data(&self) -> &[u8] {
-        &self.data
-    }
-    pub fn clear_data(&mut self) {
-        self.data.clear();
-    }
-
-    // Param is passed by value, moved
-    pub fn set_data(&mut self, v: ::std::vec::Vec<u8>) {
-        self.data = v;
-    }
-
-    // Mutable pointer to the field.
-    // If field is not initialized, it is initialized with default value first.
-    pub fn mut_data(&mut self) -> &mut ::std::vec::Vec<u8> {
-        &mut self.data
-    }
-
-    // Take field
-    pub fn take_data(&mut self) -> ::std::vec::Vec<u8> {
-        ::std::mem::replace(&mut self.data, ::std::vec::Vec::new())
-    }
-}
-
-impl ::protobuf::Message for Message {
-    fn is_initialized(&self) -> bool {
-        true
-    }
-
-    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::ProtobufResult<()> {
-        while !is.eof()? {
-            let (field_number, wire_type) = is.read_tag_unpack()?;
-            match field_number {
-                2 => {
-                    ::protobuf::rt::read_proto3_enum_with_unknown_fields_into(wire_type, is, &mut self.req_type, 2, &mut self.unknown_fields)?
-                },
-                3 => {
-                    ::protobuf::rt::read_proto3_enum_with_unknown_fields_into(wire_type, is, &mut self.msg_type, 3, &mut self.unknown_fields)?
-                },
-                4 => {
-                    ::protobuf::rt::read_singular_proto3_bytes_into(wire_type, is, &mut self.data)?;
-                },
-                _ => {
-                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
-                },
-            };
-        }
-        ::std::result::Result::Ok(())
-    }
-
-    // Compute sizes of nested messages
-    #[allow(unused_variables)]
-    fn compute_size(&self) -> u32 {
-        let mut my_size = 0;
-        if self.req_type != RequestType::Prepare {
-            my_size += ::protobuf::rt::enum_size(2, self.req_type);
-        }
-        if self.msg_type != MessageType::TypeRequest {
-            my_size += ::protobuf::rt::enum_size(3, self.msg_type);
-        }
-        if !self.data.is_empty() {
-            my_size += ::protobuf::rt::bytes_size(4, &self.data);
-        }
-        my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
-        self.cached_size.set(my_size);
-        my_size
-    }
-
-    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
-        if self.req_type != RequestType::Prepare {
-            os.write_enum(2, self.req_type.value())?;
-        }
-        if self.msg_type != MessageType::TypeRequest {
-            os.write_enum(3, self.msg_type.value())?;
-        }
-        if !self.data.is_empty() {
-            os.write_bytes(4, &self.data)?;
-        }
-        os.write_unknown_fields(self.get_unknown_fields())?;
-        ::std::result::Result::Ok(())
-    }
-
-    fn get_cached_size(&self) -> u32 {
-        self.cached_size.get()
-    }
-
-    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
-        &self.unknown_fields
-    }
-
-    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
-        &mut self.unknown_fields
-    }
-
-    fn as_any(&self) -> &dyn (::std::any::Any) {
-        self as &dyn (::std::any::Any)
-    }
-    fn as_any_mut(&mut self) -> &mut dyn (::std::any::Any) {
-        self as &mut dyn (::std::any::Any)
-    }
-    fn into_any(self: Box<Self>) -> ::std::boxed::Box<dyn (::std::any::Any)> {
-        self
-    }
-
-    fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
-        Self::descriptor_static()
-    }
-
-    fn new() -> Message {
-        Message::new()
-    }
-
-    fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
-        static mut descriptor: ::protobuf::lazy::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::lazy::Lazy {
-            lock: ::protobuf::lazy::ONCE_INIT,
-            ptr: 0 as *const ::protobuf::reflect::MessageDescriptor,
-        };
-        unsafe {
-            descriptor.get(|| {
-                let mut fields = ::std::vec::Vec::new();
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<RequestType>>(
-                    "req_type",
-                    |m: &Message| { &m.req_type },
-                    |m: &mut Message| { &mut m.req_type },
-                ));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<MessageType>>(
-                    "msg_type",
-                    |m: &Message| { &m.msg_type },
-                    |m: &mut Message| { &mut m.msg_type },
-                ));
-                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeBytes>(
-                    "data",
-                    |m: &Message| { &m.data },
-                    |m: &mut Message| { &mut m.data },
-                ));
-                ::protobuf::reflect::MessageDescriptor::new::<Message>(
-                    "Message",
-                    fields,
-                    file_descriptor_proto()
-                )
-            })
-        }
-    }
-
-    fn default_instance() -> &'static Message {
-        static mut instance: ::protobuf::lazy::Lazy<Message> = ::protobuf::lazy::Lazy {
-            lock: ::protobuf::lazy::ONCE_INIT,
-            ptr: 0 as *const Message,
-        };
-        unsafe {
-            instance.get(Message::new)
-        }
-    }
-}
-
-impl ::protobuf::Clear for Message {
-    fn clear(&mut self) {
-        self.req_type = RequestType::Prepare;
-        self.msg_type = MessageType::TypeRequest;
-        self.data.clear();
-        self.unknown_fields.clear();
-    }
-}
-
-impl ::std::fmt::Debug for Message {
-    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
-        ::protobuf::text_format::fmt(self, f)
-    }
-}
-
-impl ::protobuf::reflect::ProtobufValue for Message {
-    fn as_ref(&self) -> ::protobuf::reflect::ProtobufValueRef {
-        ::protobuf::reflect::ProtobufValueRef::Message(self)
-    }
-}
-
-#[derive(PartialEq,Clone,Default)]
 pub struct Request {
     // message fields
     pub req_type: RequestType,
@@ -4877,45 +4646,42 @@ impl ::protobuf::reflect::ProtobufValue for MessageType {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\rmessage.proto\x1a\rcommand.proto\x1a\x0einstance.proto\"o\n\x07Messa\
-    ge\x12'\n\x08req_type\x18\x02\x20\x01(\x0e2\x0c.RequestTypeR\x07reqType\
-    \x12'\n\x08msg_type\x18\x03\x20\x01(\x0e2\x0c.MessageTypeR\x07msgType\
-    \x12\x12\n\x04data\x18\x04\x20\x01(\x0cR\x04data\"\xc9\x02\n\x07Request\
-    \x12'\n\x08req_type\x18\x01\x20\x01(\x0e2\x0c.RequestTypeR\x07reqType\
-    \x12\"\n\rto_replica_id\x18\x02\x20\x01(\x03R\x0btoReplicaId\x12\"\n\x06\
-    ballot\x18\x0c\x20\x01(\x0b2\n.BallotNumR\x06ballot\x12,\n\x0binstance_i\
-    d\x18\r\x20\x01(\x0b2\x0b.InstanceIDR\ninstanceId\x12\x1c\n\x04cmds\x18\
-    \x15\x20\x03(\x0b2\x08.CommandR\x04cmds\x12.\n\x0cinitial_deps\x18\x1f\
-    \x20\x03(\x0b2\x0b.InstanceIDR\x0binitialDeps\x12%\n\x0edeps_committed\
-    \x18!\x20\x03(\x08R\rdepsCommitted\x12*\n\nfinal_deps\x18)\x20\x03(\x0b2\
-    \x0b.InstanceIDR\tfinalDeps\"\x9d\x02\n\x05Reply\x12'\n\x08req_type\x18\
-    \x01\x20\x01(\x0e2\x0c.RequestTypeR\x07reqType\x12+\n\x0blast_ballot\x18\
-    \x0b\x20\x01(\x0b2\n.BallotNumR\nlastBallot\x12,\n\x0binstance_id\x18\r\
-    \x20\x01(\x0b2\x0b.InstanceIDR\ninstanceId\x12\x1f\n\x04deps\x18\x20\x20\
-    \x03(\x0b2\x0b.InstanceIDR\x04deps\x12%\n\x0edeps_committed\x18!\x20\x03\
-    (\x08R\rdepsCommitted\x12*\n\nfinal_deps\x18)\x20\x03(\x0b2\x0b.Instance\
-    IDR\tfinalDeps\x12\x1c\n\tcommitted\x183\x20\x01(\x08R\tcommitted\"\x9a\
-    \x01\n\nPrepareReq\x12\x1b\n\tleader_id\x18\x01\x20\x01(\x03R\x08leaderI\
-    d\x12\x1d\n\nreplica_id\x18\x02\x20\x01(\x03R\treplicaId\x12,\n\x0binsta\
-    nce_id\x18\x03\x20\x01(\x0b2\x0b.InstanceIDR\ninstanceId\x12\"\n\x06ball\
-    ot\x18\x04\x20\x01(\x0b2\n.BallotNumR\x06ballot\"\xd7\x01\n\x0cPrepareRe\
-    ply\x12\x1f\n\x0bacceptor_id\x18\x01\x20\x01(\x03R\nacceptorId\x12\x1d\n\
-    \nreplica_id\x18\x02\x20\x01(\x03R\treplicaId\x12,\n\x0binstance_id\x18\
-    \x03\x20\x01(\x0b2\x0b.InstanceIDR\ninstanceId\x12\x0e\n\x02ok\x18\x04\
-    \x20\x01(\x08R\x02ok\x12\"\n\x06ballot\x18\x05\x20\x01(\x0b2\n.BallotNum\
-    R\x06ballot\x12%\n\x08instance\x18\x06\x20\x01(\x0b2\t.InstanceR\x08inst\
-    ance\"\xc3\x01\n\x0cPreAcceptReq\x12\x1b\n\tleader_id\x18\x01\x20\x01(\
-    \x03R\x08leaderId\x12\x1d\n\nreplica_id\x18\x02\x20\x01(\x03R\treplicaId\
-    \x12,\n\x0binstance_id\x18\x03\x20\x01(\x0b2\x0b.InstanceIDR\ninstanceId\
-    \x12%\n\x08instance\x18\x04\x20\x01(\x0b2\t.InstanceR\x08instance\x12\"\
-    \n\x06ballot\x18\x05\x20\x01(\x0b2\n.BallotNumR\x06ballot\"\xbe\x01\n\
-    \x0ePreAcceptReply\x12\x1d\n\nreplica_id\x18\x01\x20\x01(\x03R\treplicaI\
-    d\x12%\n\x08instance\x18\x02\x20\x01(\x0b2\t.InstanceR\x08instance\x12\
-    \x0e\n\x02ok\x18\x03\x20\x01(\x08R\x02ok\x12\"\n\x06ballot\x18\x04\x20\
-    \x01(\x0b2\n.BallotNumR\x06ballot\x122\n\x0ecommitted_deps\x18\x05\x20\
-    \x03(\x0b2\x0b.InstanceIDR\rcommittedDeps\"\xa8\x01\n\tAcceptReq\x12\x1b\
-    \n\tleader_id\x18\x01\x20\x01(\x03R\x08leaderId\x12\x1d\n\nreplica_id\
-    \x18\x02\x20\x01(\x03R\treplicaId\x12%\n\x08instance\x18\x03\x20\x01(\
+    \n\rmessage.proto\x1a\rcommand.proto\x1a\x0einstance.proto\"\xc9\x02\n\
+    \x07Request\x12'\n\x08req_type\x18\x01\x20\x01(\x0e2\x0c.RequestTypeR\
+    \x07reqType\x12\"\n\rto_replica_id\x18\x02\x20\x01(\x03R\x0btoReplicaId\
+    \x12\"\n\x06ballot\x18\x0c\x20\x01(\x0b2\n.BallotNumR\x06ballot\x12,\n\
+    \x0binstance_id\x18\r\x20\x01(\x0b2\x0b.InstanceIDR\ninstanceId\x12\x1c\
+    \n\x04cmds\x18\x15\x20\x03(\x0b2\x08.CommandR\x04cmds\x12.\n\x0cinitial_\
+    deps\x18\x1f\x20\x03(\x0b2\x0b.InstanceIDR\x0binitialDeps\x12%\n\x0edeps\
+    _committed\x18!\x20\x03(\x08R\rdepsCommitted\x12*\n\nfinal_deps\x18)\x20\
+    \x03(\x0b2\x0b.InstanceIDR\tfinalDeps\"\x9d\x02\n\x05Reply\x12'\n\x08req\
+    _type\x18\x01\x20\x01(\x0e2\x0c.RequestTypeR\x07reqType\x12+\n\x0blast_b\
+    allot\x18\x0b\x20\x01(\x0b2\n.BallotNumR\nlastBallot\x12,\n\x0binstance_\
+    id\x18\r\x20\x01(\x0b2\x0b.InstanceIDR\ninstanceId\x12\x1f\n\x04deps\x18\
+    \x20\x20\x03(\x0b2\x0b.InstanceIDR\x04deps\x12%\n\x0edeps_committed\x18!\
+    \x20\x03(\x08R\rdepsCommitted\x12*\n\nfinal_deps\x18)\x20\x03(\x0b2\x0b.\
+    InstanceIDR\tfinalDeps\x12\x1c\n\tcommitted\x183\x20\x01(\x08R\tcommitte\
+    d\"\x9a\x01\n\nPrepareReq\x12\x1b\n\tleader_id\x18\x01\x20\x01(\x03R\x08\
+    leaderId\x12\x1d\n\nreplica_id\x18\x02\x20\x01(\x03R\treplicaId\x12,\n\
+    \x0binstance_id\x18\x03\x20\x01(\x0b2\x0b.InstanceIDR\ninstanceId\x12\"\
+    \n\x06ballot\x18\x04\x20\x01(\x0b2\n.BallotNumR\x06ballot\"\xd7\x01\n\
+    \x0cPrepareReply\x12\x1f\n\x0bacceptor_id\x18\x01\x20\x01(\x03R\naccepto\
+    rId\x12\x1d\n\nreplica_id\x18\x02\x20\x01(\x03R\treplicaId\x12,\n\x0bins\
+    tance_id\x18\x03\x20\x01(\x0b2\x0b.InstanceIDR\ninstanceId\x12\x0e\n\x02\
+    ok\x18\x04\x20\x01(\x08R\x02ok\x12\"\n\x06ballot\x18\x05\x20\x01(\x0b2\n\
+    .BallotNumR\x06ballot\x12%\n\x08instance\x18\x06\x20\x01(\x0b2\t.Instanc\
+    eR\x08instance\"\xc3\x01\n\x0cPreAcceptReq\x12\x1b\n\tleader_id\x18\x01\
+    \x20\x01(\x03R\x08leaderId\x12\x1d\n\nreplica_id\x18\x02\x20\x01(\x03R\t\
+    replicaId\x12,\n\x0binstance_id\x18\x03\x20\x01(\x0b2\x0b.InstanceIDR\ni\
+    nstanceId\x12%\n\x08instance\x18\x04\x20\x01(\x0b2\t.InstanceR\x08instan\
+    ce\x12\"\n\x06ballot\x18\x05\x20\x01(\x0b2\n.BallotNumR\x06ballot\"\xbe\
+    \x01\n\x0ePreAcceptReply\x12\x1d\n\nreplica_id\x18\x01\x20\x01(\x03R\tre\
+    plicaId\x12%\n\x08instance\x18\x02\x20\x01(\x0b2\t.InstanceR\x08instance\
+    \x12\x0e\n\x02ok\x18\x03\x20\x01(\x08R\x02ok\x12\"\n\x06ballot\x18\x04\
+    \x20\x01(\x0b2\n.BallotNumR\x06ballot\x122\n\x0ecommitted_deps\x18\x05\
+    \x20\x03(\x0b2\x0b.InstanceIDR\rcommittedDeps\"\xa8\x01\n\tAcceptReq\x12\
+    \x1b\n\tleader_id\x18\x01\x20\x01(\x03R\x08leaderId\x12\x1d\n\nreplica_i\
+    d\x18\x02\x20\x01(\x03R\treplicaId\x12%\n\x08instance\x18\x03\x20\x01(\
     \x0b2\t.InstanceR\x08instance\x12\"\n\x06ballot\x18\x04\x20\x01(\x0b2\n.\
     BallotNumR\x06ballot\x12\x14\n\x05count\x18\x05\x20\x01(\x05R\x05count\"\
     \x8e\x01\n\x0bAcceptReply\x12\x1d\n\nreplica_id\x18\x01\x20\x01(\x03R\tr\
