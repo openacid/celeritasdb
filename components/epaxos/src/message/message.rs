@@ -1,7 +1,7 @@
 use super::super::data;
 use super::super::instance::{BallotNum, Instance, InstanceID, InstanceStatus};
 use super::super::replica::ReplicaID;
-use protobuf::{RepeatedField};
+use protobuf::RepeatedField;
 
 #[cfg(test)]
 #[path = "./tests/message_tests.rs"]
@@ -27,12 +27,12 @@ pub use data::RequestType;
 // re-export enum MessageType in data/message.rs
 pub use data::MessageType;
 
+pub use data::Command;
 /// protocol message wrapper used in transmission
 // re-export struct Message in data/message.rs
 pub use data::Message;
-pub use data::Request;
 pub use data::Reply;
-pub use data::Command;
+pub use data::Request;
 
 impl Message {
     // data is moved
@@ -44,6 +44,94 @@ impl Message {
         msg.set_data(data);
 
         return msg;
+    }
+}
+
+/// Request is a protobuf message for all kinds of replication request.
+/// See: https://github.com/openacid/celeritasdb/wiki/replication-algo#messages;
+///
+/// ```ignore
+/// // create a `prepare` request for an instance:
+/// let req = Request::prepare(some_instance);
+/// ```
+impl Request {
+    pub fn of_instance(inst: &Instance, t: RequestType) -> Self {
+        let mut r = Self::new();
+
+        // set common fields.
+        r.set_req_type(t);
+        r.set_ballot(inst.ballot.get_ref().clone());
+        r.set_instance_id(inst.instance_id.get_ref().clone());
+        r
+    }
+
+    pub fn preaccept(inst: &Instance, deps_status: &[InstanceStatus]) -> Self {
+        let mut r = Self::of_instance(inst, RequestType::PreAccept);
+        r.set_cmds(inst.cmds.clone());
+        r.set_initial_deps(inst.initial_deps.clone());
+        r.set_deps_status(deps_status.to_vec());
+        r
+    }
+
+    pub fn accept(inst: &Instance) -> Self {
+        let mut r = Self::of_instance(inst, RequestType::Accept);
+        r.set_final_deps(inst.final_deps.clone());
+        r
+    }
+
+    pub fn commit(inst: &Instance) -> Self {
+        let mut r = Self::of_instance(inst, RequestType::Commit);
+        r.set_cmds(inst.cmds.clone());
+        r.set_final_deps(inst.final_deps.clone());
+        r
+    }
+
+    pub fn prepare(inst: &Instance) -> Self {
+        let r = Self::of_instance(inst, RequestType::Commit);
+        r
+    }
+}
+
+/// Reply is a protobuf message for all kinds of replication replies.
+/// See: https://github.com/openacid/celeritasdb/wiki/replication-algo#messages;
+///
+/// ```ignore
+/// // create a `prepare` request for an instance:
+/// let rep = Reply::prepare(some_instance);
+/// ```
+impl Reply {
+    pub fn of_instance(inst: &Instance, t: RequestType) -> Self {
+        let mut r = Self::new();
+
+        // set common fields.
+        r.set_req_type(t);
+        r.set_last_ballot(inst.last_ballot.get_ref().clone());
+        r.set_instance_id(inst.instance_id.get_ref().clone());
+        r
+    }
+
+    pub fn preaccept(inst: &Instance, deps_status: &[InstanceStatus]) -> Self {
+        let mut r = Self::of_instance(inst, RequestType::PreAccept);
+        r.set_deps(inst.deps.clone());
+        r.set_deps_status(deps_status.to_vec());
+        r
+    }
+
+    pub fn accept(inst: &Instance) -> Self {
+        let r = Self::of_instance(inst, RequestType::Accept);
+        r
+    }
+
+    pub fn commit(inst: &Instance) -> Self {
+        let r = Self::of_instance(inst, RequestType::Commit);
+        r
+    }
+
+    pub fn prepare(inst: &Instance) -> Self {
+        let mut r = Self::of_instance(inst, RequestType::Commit);
+        r.set_deps(inst.deps.clone());
+        r.set_status(inst.status);
+        r
     }
 }
 
