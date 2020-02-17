@@ -8,7 +8,7 @@
 - [Definition: depends on](#definition-depends-on)
   - [Examples of relation depends-on](#examples-of-relation-depends-on)
     - [Simple case:](#simple-case)
-    - [Transitive:](#transitive)
+    - [Transitivity:](#transitivity)
     - [Not to override existent replation:](#not-to-override-existent-replation)
     - [Transitive-2: update deps with unknown instances](#transitive-2-update-deps-with-unknown-instances)
   - [Property: antisymmetric](#property-antisymmetric)
@@ -26,6 +26,15 @@
   - [Fast path](#fast-path)
   - [Slow path](#slow-path)
   - [Commit](#commit)
+- [Messages](#messages)
+  - [PreAccept request](#preaccept-request)
+  - [PreAccept reply](#preaccept-reply)
+  - [Accept request](#accept-request)
+  - [Accept reply](#accept-reply)
+  - [Commit request](#commit-request)
+  - [Commit reply](#commit-reply)
+  - [Prepare request](#prepare-request)
+  - [Prepare reply](#prepare-reply)
 - [Execution](#execution)
   - [Execution order](#execution-order)
   - [Guarantees:](#guarantees)
@@ -45,7 +54,7 @@
     - [Case-2: R1 is unreachable, only one possibly committed value of a.deps[1].](#case-2-r1-is-unreachable-only-one-possibly-committed-value-of-adeps1)
     - [Case-3: R1 is reached.](#case-3-r1-is-reached)
 
-<!-- Added by: drdrxp, at: Fri Feb  7 15:22:25 CST 2020 -->
+<!-- Added by: drdrxp, at: Mon Feb 17 15:39:38 CST 2020 -->
 
 <!--te-->
 
