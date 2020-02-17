@@ -16,8 +16,8 @@ fn new_foo_inst() -> Instance {
 
     let status = InstanceStatus::NA;
 
-    let cmd1 = Command::new_command(OpCode::NoOp, "k1", "v1");
-    let cmd2 = Command::new_command(OpCode::Get, "k2", "v2");
+    let cmd1 = Command::new_command(OpCode::NoOp, "k1".as_bytes(), "v1".as_bytes());
+    let cmd2 = Command::new_command(OpCode::Get, "k2".as_bytes(), "v2".as_bytes());
     let cmds = vec![cmd1, cmd2];
 
     let ballot = BallotNum::new_ballot_num(0, 0, replica);
