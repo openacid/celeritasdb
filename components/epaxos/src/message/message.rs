@@ -87,7 +87,7 @@ impl Request {
     }
 
     pub fn prepare(inst: &Instance) -> Self {
-        let r = Self::of_instance(inst, RequestType::Commit);
+        let r = Self::of_instance(inst, RequestType::Prepare);
         r
     }
 }
@@ -128,7 +128,7 @@ impl Reply {
     }
 
     pub fn prepare(inst: &Instance) -> Self {
-        let mut r = Self::of_instance(inst, RequestType::Commit);
+        let mut r = Self::of_instance(inst, RequestType::Prepare);
         r.set_deps(inst.deps.clone());
         r.set_status(inst.status);
         r
