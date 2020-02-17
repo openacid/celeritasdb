@@ -45,11 +45,7 @@ impl BallotNum {
 pub use data::Instance;
 
 impl Instance {
-    pub fn new_instance(
-        cmds: &[Command],
-        ballot: &BallotNum,
-        deps: &[InstanceID],
-    ) -> Instance {
+    pub fn new_instance(cmds: &[Command], ballot: &BallotNum, deps: &[InstanceID]) -> Instance {
         let mut inst = Instance::new();
 
         inst.set_cmds(RepeatedField::from_slice(cmds));
