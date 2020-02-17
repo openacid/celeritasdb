@@ -14,7 +14,7 @@ pub use data::OpCode;
 pub use data::Command;
 
 impl Command {
-    pub fn new_command(op: OpCode, key: &[u8], value: &[u8]) -> Command {
+    pub fn of(op: OpCode, key: &[u8], value: &[u8]) -> Command {
         let mut cmd = Command::new();
         cmd.set_op(op);
         cmd.set_key(key.to_vec());
