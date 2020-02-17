@@ -54,7 +54,7 @@
     - [Case-2: R1 is unreachable, only one possibly committed value of a.deps[1].](#case-2-r1-is-unreachable-only-one-possibly-committed-value-of-adeps1)
     - [Case-3: R1 is reached.](#case-3-r1-is-reached)
 
-<!-- Added by: drdrxp, at: Mon Feb 17 15:39:38 CST 2020 -->
+<!-- Added by: drdrxp, at: Mon Feb 17 20:22:26 CST 2020 -->
 
 <!--te-->
 
@@ -107,7 +107,8 @@ type Instance {
     initialDeps:   Vec<Dep>;
     deps:          Vec<Dep>;
     final_deps:    Vec<Dep>;
-    status:        "committed|acceptted|preaccepted";
+    committed:     bool;
+    executed:      bool;
 
     cmds: Vec<Commands>;
     ballot: BallotNum; // ballot number.
@@ -579,12 +580,12 @@ Just commit.
 
 - `cmds`: the commands to run.
 - `initial_deps`: the deps when leader initiate the instance.
-- `deps_status`: a vector of committed flag of every instance in `initial_deps`
+- `deps_committed`: a vector of committed flag of every instance in `initial_deps`
 
 ## PreAccept reply
 
 - `deps`: udpated deps by a replica.
-- `deps_status`: a vector of committed flag of every instance in `deps`
+- `deps_committed`: a vector of committed flag of every instance in `deps`
 
 ## Accept request
 
@@ -609,7 +610,7 @@ Nothing except the common fileds.
 
 ## Prepare reply
 
-- `status` is the status of the instance on a replica.
+- `committed` is the committed flag of the instance on a replica.
 
 # Execution
 
