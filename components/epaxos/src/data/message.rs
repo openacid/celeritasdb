@@ -43,6 +43,7 @@ impl<'a> ::std::default::Default for &'a Message {
     }
 }
 
+
 impl Message {
     pub fn new() -> Message {
         ::std::default::Default::default()
@@ -70,7 +71,7 @@ impl Message {
         self.msg_type
     }
     pub fn clear_msg_type(&mut self) {
-        self.msg_type = MessageType::Request;
+        self.msg_type = MessageType::TypeRequest;
     }
 
     // Param is passed by value, moved
@@ -138,7 +139,7 @@ impl ::protobuf::Message for Message {
         if self.req_type != RequestType::Prepare {
             my_size += ::protobuf::rt::enum_size(2, self.req_type);
         }
-        if self.msg_type != MessageType::Request {
+        if self.msg_type != MessageType::TypeRequest {
             my_size += ::protobuf::rt::enum_size(3, self.msg_type);
         }
         if !self.data.is_empty() {
@@ -153,7 +154,7 @@ impl ::protobuf::Message for Message {
         if self.req_type != RequestType::Prepare {
             os.write_enum(2, self.req_type.value())?;
         }
-        if self.msg_type != MessageType::Request {
+        if self.msg_type != MessageType::TypeRequest {
             os.write_enum(3, self.msg_type.value())?;
         }
         if !self.data.is_empty() {
@@ -239,7 +240,7 @@ impl ::protobuf::Message for Message {
 impl ::protobuf::Clear for Message {
     fn clear(&mut self) {
         self.req_type = RequestType::Prepare;
-        self.msg_type = MessageType::Request;
+        self.msg_type = MessageType::TypeRequest;
         self.data.clear();
         self.unknown_fields.clear();
     }
@@ -252,6 +253,894 @@ impl ::std::fmt::Debug for Message {
 }
 
 impl ::protobuf::reflect::ProtobufValue for Message {
+    fn as_ref(&self) -> ::protobuf::reflect::ProtobufValueRef {
+        ::protobuf::reflect::ProtobufValueRef::Message(self)
+    }
+}
+
+#[derive(PartialEq,Clone,Default)]
+pub struct Request {
+    // message fields
+    pub req_type: RequestType,
+    pub to_replica_id: i64,
+    pub ballot: ::protobuf::SingularPtrField<super::instance::BallotNum>,
+    pub instance_id: ::protobuf::SingularPtrField<super::instance::InstanceID>,
+    pub cmds: ::protobuf::RepeatedField<super::command::Command>,
+    pub initial_deps: ::protobuf::RepeatedField<super::instance::InstanceID>,
+    pub deps_status: ::std::vec::Vec<super::instance::InstanceStatus>,
+    pub final_deps: ::protobuf::RepeatedField<super::instance::InstanceID>,
+    // special fields
+    pub unknown_fields: ::protobuf::UnknownFields,
+    pub cached_size: ::protobuf::CachedSize,
+}
+
+impl<'a> ::std::default::Default for &'a Request {
+    fn default() -> &'a Request {
+        <Request as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl Request {
+    pub fn new() -> Request {
+        ::std::default::Default::default()
+    }
+
+    // .RequestType req_type = 1;
+
+
+    pub fn get_req_type(&self) -> RequestType {
+        self.req_type
+    }
+    pub fn clear_req_type(&mut self) {
+        self.req_type = RequestType::Prepare;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_req_type(&mut self, v: RequestType) {
+        self.req_type = v;
+    }
+
+    // int64 to_replica_id = 2;
+
+
+    pub fn get_to_replica_id(&self) -> i64 {
+        self.to_replica_id
+    }
+    pub fn clear_to_replica_id(&mut self) {
+        self.to_replica_id = 0;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_to_replica_id(&mut self, v: i64) {
+        self.to_replica_id = v;
+    }
+
+    // .BallotNum ballot = 12;
+
+
+    pub fn get_ballot(&self) -> &super::instance::BallotNum {
+        self.ballot.as_ref().unwrap_or_else(|| super::instance::BallotNum::default_instance())
+    }
+    pub fn clear_ballot(&mut self) {
+        self.ballot.clear();
+    }
+
+    pub fn has_ballot(&self) -> bool {
+        self.ballot.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_ballot(&mut self, v: super::instance::BallotNum) {
+        self.ballot = ::protobuf::SingularPtrField::some(v);
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_ballot(&mut self) -> &mut super::instance::BallotNum {
+        if self.ballot.is_none() {
+            self.ballot.set_default();
+        }
+        self.ballot.as_mut().unwrap()
+    }
+
+    // Take field
+    pub fn take_ballot(&mut self) -> super::instance::BallotNum {
+        self.ballot.take().unwrap_or_else(|| super::instance::BallotNum::new())
+    }
+
+    // .InstanceID instance_id = 13;
+
+
+    pub fn get_instance_id(&self) -> &super::instance::InstanceID {
+        self.instance_id.as_ref().unwrap_or_else(|| super::instance::InstanceID::default_instance())
+    }
+    pub fn clear_instance_id(&mut self) {
+        self.instance_id.clear();
+    }
+
+    pub fn has_instance_id(&self) -> bool {
+        self.instance_id.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_instance_id(&mut self, v: super::instance::InstanceID) {
+        self.instance_id = ::protobuf::SingularPtrField::some(v);
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_instance_id(&mut self) -> &mut super::instance::InstanceID {
+        if self.instance_id.is_none() {
+            self.instance_id.set_default();
+        }
+        self.instance_id.as_mut().unwrap()
+    }
+
+    // Take field
+    pub fn take_instance_id(&mut self) -> super::instance::InstanceID {
+        self.instance_id.take().unwrap_or_else(|| super::instance::InstanceID::new())
+    }
+
+    // repeated .Command cmds = 21;
+
+
+    pub fn get_cmds(&self) -> &[super::command::Command] {
+        &self.cmds
+    }
+    pub fn clear_cmds(&mut self) {
+        self.cmds.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_cmds(&mut self, v: ::protobuf::RepeatedField<super::command::Command>) {
+        self.cmds = v;
+    }
+
+    // Mutable pointer to the field.
+    pub fn mut_cmds(&mut self) -> &mut ::protobuf::RepeatedField<super::command::Command> {
+        &mut self.cmds
+    }
+
+    // Take field
+    pub fn take_cmds(&mut self) -> ::protobuf::RepeatedField<super::command::Command> {
+        ::std::mem::replace(&mut self.cmds, ::protobuf::RepeatedField::new())
+    }
+
+    // repeated .InstanceID initial_deps = 31;
+
+
+    pub fn get_initial_deps(&self) -> &[super::instance::InstanceID] {
+        &self.initial_deps
+    }
+    pub fn clear_initial_deps(&mut self) {
+        self.initial_deps.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_initial_deps(&mut self, v: ::protobuf::RepeatedField<super::instance::InstanceID>) {
+        self.initial_deps = v;
+    }
+
+    // Mutable pointer to the field.
+    pub fn mut_initial_deps(&mut self) -> &mut ::protobuf::RepeatedField<super::instance::InstanceID> {
+        &mut self.initial_deps
+    }
+
+    // Take field
+    pub fn take_initial_deps(&mut self) -> ::protobuf::RepeatedField<super::instance::InstanceID> {
+        ::std::mem::replace(&mut self.initial_deps, ::protobuf::RepeatedField::new())
+    }
+
+    // repeated .InstanceStatus deps_status = 33;
+
+
+    pub fn get_deps_status(&self) -> &[super::instance::InstanceStatus] {
+        &self.deps_status
+    }
+    pub fn clear_deps_status(&mut self) {
+        self.deps_status.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_deps_status(&mut self, v: ::std::vec::Vec<super::instance::InstanceStatus>) {
+        self.deps_status = v;
+    }
+
+    // Mutable pointer to the field.
+    pub fn mut_deps_status(&mut self) -> &mut ::std::vec::Vec<super::instance::InstanceStatus> {
+        &mut self.deps_status
+    }
+
+    // Take field
+    pub fn take_deps_status(&mut self) -> ::std::vec::Vec<super::instance::InstanceStatus> {
+        ::std::mem::replace(&mut self.deps_status, ::std::vec::Vec::new())
+    }
+
+    // repeated .InstanceID final_deps = 41;
+
+
+    pub fn get_final_deps(&self) -> &[super::instance::InstanceID] {
+        &self.final_deps
+    }
+    pub fn clear_final_deps(&mut self) {
+        self.final_deps.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_final_deps(&mut self, v: ::protobuf::RepeatedField<super::instance::InstanceID>) {
+        self.final_deps = v;
+    }
+
+    // Mutable pointer to the field.
+    pub fn mut_final_deps(&mut self) -> &mut ::protobuf::RepeatedField<super::instance::InstanceID> {
+        &mut self.final_deps
+    }
+
+    // Take field
+    pub fn take_final_deps(&mut self) -> ::protobuf::RepeatedField<super::instance::InstanceID> {
+        ::std::mem::replace(&mut self.final_deps, ::protobuf::RepeatedField::new())
+    }
+}
+
+impl ::protobuf::Message for Request {
+    fn is_initialized(&self) -> bool {
+        for v in &self.ballot {
+            if !v.is_initialized() {
+                return false;
+            }
+        };
+        for v in &self.instance_id {
+            if !v.is_initialized() {
+                return false;
+            }
+        };
+        for v in &self.cmds {
+            if !v.is_initialized() {
+                return false;
+            }
+        };
+        for v in &self.initial_deps {
+            if !v.is_initialized() {
+                return false;
+            }
+        };
+        for v in &self.final_deps {
+            if !v.is_initialized() {
+                return false;
+            }
+        };
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        while !is.eof()? {
+            let (field_number, wire_type) = is.read_tag_unpack()?;
+            match field_number {
+                1 => {
+                    ::protobuf::rt::read_proto3_enum_with_unknown_fields_into(wire_type, is, &mut self.req_type, 1, &mut self.unknown_fields)?
+                },
+                2 => {
+                    if wire_type != ::protobuf::wire_format::WireTypeVarint {
+                        return ::std::result::Result::Err(::protobuf::rt::unexpected_wire_type(wire_type));
+                    }
+                    let tmp = is.read_int64()?;
+                    self.to_replica_id = tmp;
+                },
+                12 => {
+                    ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.ballot)?;
+                },
+                13 => {
+                    ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.instance_id)?;
+                },
+                21 => {
+                    ::protobuf::rt::read_repeated_message_into(wire_type, is, &mut self.cmds)?;
+                },
+                31 => {
+                    ::protobuf::rt::read_repeated_message_into(wire_type, is, &mut self.initial_deps)?;
+                },
+                33 => {
+                    ::protobuf::rt::read_repeated_enum_with_unknown_fields_into(wire_type, is, &mut self.deps_status, 33, &mut self.unknown_fields)?
+                },
+                41 => {
+                    ::protobuf::rt::read_repeated_message_into(wire_type, is, &mut self.final_deps)?;
+                },
+                _ => {
+                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u32 {
+        let mut my_size = 0;
+        if self.req_type != RequestType::Prepare {
+            my_size += ::protobuf::rt::enum_size(1, self.req_type);
+        }
+        if self.to_replica_id != 0 {
+            my_size += ::protobuf::rt::value_size(2, self.to_replica_id, ::protobuf::wire_format::WireTypeVarint);
+        }
+        if let Some(ref v) = self.ballot.as_ref() {
+            let len = v.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
+        }
+        if let Some(ref v) = self.instance_id.as_ref() {
+            let len = v.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
+        }
+        for value in &self.cmds {
+            let len = value.compute_size();
+            my_size += 2 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
+        };
+        for value in &self.initial_deps {
+            let len = value.compute_size();
+            my_size += 2 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
+        };
+        for value in &self.deps_status {
+            my_size += ::protobuf::rt::enum_size(33, *value);
+        };
+        for value in &self.final_deps {
+            let len = value.compute_size();
+            my_size += 2 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
+        };
+        my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
+        self.cached_size.set(my_size);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if self.req_type != RequestType::Prepare {
+            os.write_enum(1, self.req_type.value())?;
+        }
+        if self.to_replica_id != 0 {
+            os.write_int64(2, self.to_replica_id)?;
+        }
+        if let Some(ref v) = self.ballot.as_ref() {
+            os.write_tag(12, ::protobuf::wire_format::WireTypeLengthDelimited)?;
+            os.write_raw_varint32(v.get_cached_size())?;
+            v.write_to_with_cached_sizes(os)?;
+        }
+        if let Some(ref v) = self.instance_id.as_ref() {
+            os.write_tag(13, ::protobuf::wire_format::WireTypeLengthDelimited)?;
+            os.write_raw_varint32(v.get_cached_size())?;
+            v.write_to_with_cached_sizes(os)?;
+        }
+        for v in &self.cmds {
+            os.write_tag(21, ::protobuf::wire_format::WireTypeLengthDelimited)?;
+            os.write_raw_varint32(v.get_cached_size())?;
+            v.write_to_with_cached_sizes(os)?;
+        };
+        for v in &self.initial_deps {
+            os.write_tag(31, ::protobuf::wire_format::WireTypeLengthDelimited)?;
+            os.write_raw_varint32(v.get_cached_size())?;
+            v.write_to_with_cached_sizes(os)?;
+        };
+        for v in &self.deps_status {
+            os.write_enum(33, v.value())?;
+        };
+        for v in &self.final_deps {
+            os.write_tag(41, ::protobuf::wire_format::WireTypeLengthDelimited)?;
+            os.write_raw_varint32(v.get_cached_size())?;
+            v.write_to_with_cached_sizes(os)?;
+        };
+        os.write_unknown_fields(self.get_unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn get_cached_size(&self) -> u32 {
+        self.cached_size.get()
+    }
+
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
+        &self.unknown_fields
+    }
+
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
+        &mut self.unknown_fields
+    }
+
+    fn as_any(&self) -> &dyn (::std::any::Any) {
+        self as &dyn (::std::any::Any)
+    }
+    fn as_any_mut(&mut self) -> &mut dyn (::std::any::Any) {
+        self as &mut dyn (::std::any::Any)
+    }
+    fn into_any(self: Box<Self>) -> ::std::boxed::Box<dyn (::std::any::Any)> {
+        self
+    }
+
+    fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
+        Self::descriptor_static()
+    }
+
+    fn new() -> Request {
+        Request::new()
+    }
+
+    fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
+        static mut descriptor: ::protobuf::lazy::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::lazy::Lazy {
+            lock: ::protobuf::lazy::ONCE_INIT,
+            ptr: 0 as *const ::protobuf::reflect::MessageDescriptor,
+        };
+        unsafe {
+            descriptor.get(|| {
+                let mut fields = ::std::vec::Vec::new();
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<RequestType>>(
+                    "req_type",
+                    |m: &Request| { &m.req_type },
+                    |m: &mut Request| { &mut m.req_type },
+                ));
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeInt64>(
+                    "to_replica_id",
+                    |m: &Request| { &m.to_replica_id },
+                    |m: &mut Request| { &mut m.to_replica_id },
+                ));
+                fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<super::instance::BallotNum>>(
+                    "ballot",
+                    |m: &Request| { &m.ballot },
+                    |m: &mut Request| { &mut m.ballot },
+                ));
+                fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<super::instance::InstanceID>>(
+                    "instance_id",
+                    |m: &Request| { &m.instance_id },
+                    |m: &mut Request| { &mut m.instance_id },
+                ));
+                fields.push(::protobuf::reflect::accessor::make_repeated_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<super::command::Command>>(
+                    "cmds",
+                    |m: &Request| { &m.cmds },
+                    |m: &mut Request| { &mut m.cmds },
+                ));
+                fields.push(::protobuf::reflect::accessor::make_repeated_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<super::instance::InstanceID>>(
+                    "initial_deps",
+                    |m: &Request| { &m.initial_deps },
+                    |m: &mut Request| { &mut m.initial_deps },
+                ));
+                fields.push(::protobuf::reflect::accessor::make_vec_accessor::<_, ::protobuf::types::ProtobufTypeEnum<super::instance::InstanceStatus>>(
+                    "deps_status",
+                    |m: &Request| { &m.deps_status },
+                    |m: &mut Request| { &mut m.deps_status },
+                ));
+                fields.push(::protobuf::reflect::accessor::make_repeated_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<super::instance::InstanceID>>(
+                    "final_deps",
+                    |m: &Request| { &m.final_deps },
+                    |m: &mut Request| { &mut m.final_deps },
+                ));
+                ::protobuf::reflect::MessageDescriptor::new::<Request>(
+                    "Request",
+                    fields,
+                    file_descriptor_proto()
+                )
+            })
+        }
+    }
+
+    fn default_instance() -> &'static Request {
+        static mut instance: ::protobuf::lazy::Lazy<Request> = ::protobuf::lazy::Lazy {
+            lock: ::protobuf::lazy::ONCE_INIT,
+            ptr: 0 as *const Request,
+        };
+        unsafe {
+            instance.get(Request::new)
+        }
+    }
+}
+
+impl ::protobuf::Clear for Request {
+    fn clear(&mut self) {
+        self.req_type = RequestType::Prepare;
+        self.to_replica_id = 0;
+        self.ballot.clear();
+        self.instance_id.clear();
+        self.cmds.clear();
+        self.initial_deps.clear();
+        self.deps_status.clear();
+        self.final_deps.clear();
+        self.unknown_fields.clear();
+    }
+}
+
+impl ::std::fmt::Debug for Request {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for Request {
+    fn as_ref(&self) -> ::protobuf::reflect::ProtobufValueRef {
+        ::protobuf::reflect::ProtobufValueRef::Message(self)
+    }
+}
+
+#[derive(PartialEq,Clone,Default)]
+pub struct Reply {
+    // message fields
+    pub req_type: RequestType,
+    pub last_ballot: ::protobuf::SingularPtrField<super::instance::BallotNum>,
+    pub instance_id: ::protobuf::SingularPtrField<super::instance::InstanceID>,
+    pub deps: ::protobuf::RepeatedField<super::instance::InstanceID>,
+    pub deps_status: ::std::vec::Vec<super::instance::InstanceStatus>,
+    pub status: super::instance::InstanceStatus,
+    // special fields
+    pub unknown_fields: ::protobuf::UnknownFields,
+    pub cached_size: ::protobuf::CachedSize,
+}
+
+impl<'a> ::std::default::Default for &'a Reply {
+    fn default() -> &'a Reply {
+        <Reply as ::protobuf::Message>::default_instance()
+    }
+}
+
+impl Reply {
+    pub fn new() -> Reply {
+        ::std::default::Default::default()
+    }
+
+    // .RequestType req_type = 1;
+
+
+    pub fn get_req_type(&self) -> RequestType {
+        self.req_type
+    }
+    pub fn clear_req_type(&mut self) {
+        self.req_type = RequestType::Prepare;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_req_type(&mut self, v: RequestType) {
+        self.req_type = v;
+    }
+
+    // .BallotNum last_ballot = 11;
+
+
+    pub fn get_last_ballot(&self) -> &super::instance::BallotNum {
+        self.last_ballot.as_ref().unwrap_or_else(|| super::instance::BallotNum::default_instance())
+    }
+    pub fn clear_last_ballot(&mut self) {
+        self.last_ballot.clear();
+    }
+
+    pub fn has_last_ballot(&self) -> bool {
+        self.last_ballot.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_last_ballot(&mut self, v: super::instance::BallotNum) {
+        self.last_ballot = ::protobuf::SingularPtrField::some(v);
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_last_ballot(&mut self) -> &mut super::instance::BallotNum {
+        if self.last_ballot.is_none() {
+            self.last_ballot.set_default();
+        }
+        self.last_ballot.as_mut().unwrap()
+    }
+
+    // Take field
+    pub fn take_last_ballot(&mut self) -> super::instance::BallotNum {
+        self.last_ballot.take().unwrap_or_else(|| super::instance::BallotNum::new())
+    }
+
+    // .InstanceID instance_id = 13;
+
+
+    pub fn get_instance_id(&self) -> &super::instance::InstanceID {
+        self.instance_id.as_ref().unwrap_or_else(|| super::instance::InstanceID::default_instance())
+    }
+    pub fn clear_instance_id(&mut self) {
+        self.instance_id.clear();
+    }
+
+    pub fn has_instance_id(&self) -> bool {
+        self.instance_id.is_some()
+    }
+
+    // Param is passed by value, moved
+    pub fn set_instance_id(&mut self, v: super::instance::InstanceID) {
+        self.instance_id = ::protobuf::SingularPtrField::some(v);
+    }
+
+    // Mutable pointer to the field.
+    // If field is not initialized, it is initialized with default value first.
+    pub fn mut_instance_id(&mut self) -> &mut super::instance::InstanceID {
+        if self.instance_id.is_none() {
+            self.instance_id.set_default();
+        }
+        self.instance_id.as_mut().unwrap()
+    }
+
+    // Take field
+    pub fn take_instance_id(&mut self) -> super::instance::InstanceID {
+        self.instance_id.take().unwrap_or_else(|| super::instance::InstanceID::new())
+    }
+
+    // repeated .InstanceID deps = 32;
+
+
+    pub fn get_deps(&self) -> &[super::instance::InstanceID] {
+        &self.deps
+    }
+    pub fn clear_deps(&mut self) {
+        self.deps.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_deps(&mut self, v: ::protobuf::RepeatedField<super::instance::InstanceID>) {
+        self.deps = v;
+    }
+
+    // Mutable pointer to the field.
+    pub fn mut_deps(&mut self) -> &mut ::protobuf::RepeatedField<super::instance::InstanceID> {
+        &mut self.deps
+    }
+
+    // Take field
+    pub fn take_deps(&mut self) -> ::protobuf::RepeatedField<super::instance::InstanceID> {
+        ::std::mem::replace(&mut self.deps, ::protobuf::RepeatedField::new())
+    }
+
+    // repeated .InstanceStatus deps_status = 33;
+
+
+    pub fn get_deps_status(&self) -> &[super::instance::InstanceStatus] {
+        &self.deps_status
+    }
+    pub fn clear_deps_status(&mut self) {
+        self.deps_status.clear();
+    }
+
+    // Param is passed by value, moved
+    pub fn set_deps_status(&mut self, v: ::std::vec::Vec<super::instance::InstanceStatus>) {
+        self.deps_status = v;
+    }
+
+    // Mutable pointer to the field.
+    pub fn mut_deps_status(&mut self) -> &mut ::std::vec::Vec<super::instance::InstanceStatus> {
+        &mut self.deps_status
+    }
+
+    // Take field
+    pub fn take_deps_status(&mut self) -> ::std::vec::Vec<super::instance::InstanceStatus> {
+        ::std::mem::replace(&mut self.deps_status, ::std::vec::Vec::new())
+    }
+
+    // .InstanceStatus status = 51;
+
+
+    pub fn get_status(&self) -> super::instance::InstanceStatus {
+        self.status
+    }
+    pub fn clear_status(&mut self) {
+        self.status = super::instance::InstanceStatus::NA;
+    }
+
+    // Param is passed by value, moved
+    pub fn set_status(&mut self, v: super::instance::InstanceStatus) {
+        self.status = v;
+    }
+}
+
+impl ::protobuf::Message for Reply {
+    fn is_initialized(&self) -> bool {
+        for v in &self.last_ballot {
+            if !v.is_initialized() {
+                return false;
+            }
+        };
+        for v in &self.instance_id {
+            if !v.is_initialized() {
+                return false;
+            }
+        };
+        for v in &self.deps {
+            if !v.is_initialized() {
+                return false;
+            }
+        };
+        true
+    }
+
+    fn merge_from(&mut self, is: &mut ::protobuf::CodedInputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        while !is.eof()? {
+            let (field_number, wire_type) = is.read_tag_unpack()?;
+            match field_number {
+                1 => {
+                    ::protobuf::rt::read_proto3_enum_with_unknown_fields_into(wire_type, is, &mut self.req_type, 1, &mut self.unknown_fields)?
+                },
+                11 => {
+                    ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.last_ballot)?;
+                },
+                13 => {
+                    ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.instance_id)?;
+                },
+                32 => {
+                    ::protobuf::rt::read_repeated_message_into(wire_type, is, &mut self.deps)?;
+                },
+                33 => {
+                    ::protobuf::rt::read_repeated_enum_with_unknown_fields_into(wire_type, is, &mut self.deps_status, 33, &mut self.unknown_fields)?
+                },
+                51 => {
+                    ::protobuf::rt::read_proto3_enum_with_unknown_fields_into(wire_type, is, &mut self.status, 51, &mut self.unknown_fields)?
+                },
+                _ => {
+                    ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
+                },
+            };
+        }
+        ::std::result::Result::Ok(())
+    }
+
+    // Compute sizes of nested messages
+    #[allow(unused_variables)]
+    fn compute_size(&self) -> u32 {
+        let mut my_size = 0;
+        if self.req_type != RequestType::Prepare {
+            my_size += ::protobuf::rt::enum_size(1, self.req_type);
+        }
+        if let Some(ref v) = self.last_ballot.as_ref() {
+            let len = v.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
+        }
+        if let Some(ref v) = self.instance_id.as_ref() {
+            let len = v.compute_size();
+            my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
+        }
+        for value in &self.deps {
+            let len = value.compute_size();
+            my_size += 2 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
+        };
+        for value in &self.deps_status {
+            my_size += ::protobuf::rt::enum_size(33, *value);
+        };
+        if self.status != super::instance::InstanceStatus::NA {
+            my_size += ::protobuf::rt::enum_size(51, self.status);
+        }
+        my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
+        self.cached_size.set(my_size);
+        my_size
+    }
+
+    fn write_to_with_cached_sizes(&self, os: &mut ::protobuf::CodedOutputStream<'_>) -> ::protobuf::ProtobufResult<()> {
+        if self.req_type != RequestType::Prepare {
+            os.write_enum(1, self.req_type.value())?;
+        }
+        if let Some(ref v) = self.last_ballot.as_ref() {
+            os.write_tag(11, ::protobuf::wire_format::WireTypeLengthDelimited)?;
+            os.write_raw_varint32(v.get_cached_size())?;
+            v.write_to_with_cached_sizes(os)?;
+        }
+        if let Some(ref v) = self.instance_id.as_ref() {
+            os.write_tag(13, ::protobuf::wire_format::WireTypeLengthDelimited)?;
+            os.write_raw_varint32(v.get_cached_size())?;
+            v.write_to_with_cached_sizes(os)?;
+        }
+        for v in &self.deps {
+            os.write_tag(32, ::protobuf::wire_format::WireTypeLengthDelimited)?;
+            os.write_raw_varint32(v.get_cached_size())?;
+            v.write_to_with_cached_sizes(os)?;
+        };
+        for v in &self.deps_status {
+            os.write_enum(33, v.value())?;
+        };
+        if self.status != super::instance::InstanceStatus::NA {
+            os.write_enum(51, self.status.value())?;
+        }
+        os.write_unknown_fields(self.get_unknown_fields())?;
+        ::std::result::Result::Ok(())
+    }
+
+    fn get_cached_size(&self) -> u32 {
+        self.cached_size.get()
+    }
+
+    fn get_unknown_fields(&self) -> &::protobuf::UnknownFields {
+        &self.unknown_fields
+    }
+
+    fn mut_unknown_fields(&mut self) -> &mut ::protobuf::UnknownFields {
+        &mut self.unknown_fields
+    }
+
+    fn as_any(&self) -> &dyn (::std::any::Any) {
+        self as &dyn (::std::any::Any)
+    }
+    fn as_any_mut(&mut self) -> &mut dyn (::std::any::Any) {
+        self as &mut dyn (::std::any::Any)
+    }
+    fn into_any(self: Box<Self>) -> ::std::boxed::Box<dyn (::std::any::Any)> {
+        self
+    }
+
+    fn descriptor(&self) -> &'static ::protobuf::reflect::MessageDescriptor {
+        Self::descriptor_static()
+    }
+
+    fn new() -> Reply {
+        Reply::new()
+    }
+
+    fn descriptor_static() -> &'static ::protobuf::reflect::MessageDescriptor {
+        static mut descriptor: ::protobuf::lazy::Lazy<::protobuf::reflect::MessageDescriptor> = ::protobuf::lazy::Lazy {
+            lock: ::protobuf::lazy::ONCE_INIT,
+            ptr: 0 as *const ::protobuf::reflect::MessageDescriptor,
+        };
+        unsafe {
+            descriptor.get(|| {
+                let mut fields = ::std::vec::Vec::new();
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<RequestType>>(
+                    "req_type",
+                    |m: &Reply| { &m.req_type },
+                    |m: &mut Reply| { &mut m.req_type },
+                ));
+                fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<super::instance::BallotNum>>(
+                    "last_ballot",
+                    |m: &Reply| { &m.last_ballot },
+                    |m: &mut Reply| { &mut m.last_ballot },
+                ));
+                fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<super::instance::InstanceID>>(
+                    "instance_id",
+                    |m: &Reply| { &m.instance_id },
+                    |m: &mut Reply| { &mut m.instance_id },
+                ));
+                fields.push(::protobuf::reflect::accessor::make_repeated_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<super::instance::InstanceID>>(
+                    "deps",
+                    |m: &Reply| { &m.deps },
+                    |m: &mut Reply| { &mut m.deps },
+                ));
+                fields.push(::protobuf::reflect::accessor::make_vec_accessor::<_, ::protobuf::types::ProtobufTypeEnum<super::instance::InstanceStatus>>(
+                    "deps_status",
+                    |m: &Reply| { &m.deps_status },
+                    |m: &mut Reply| { &mut m.deps_status },
+                ));
+                fields.push(::protobuf::reflect::accessor::make_simple_field_accessor::<_, ::protobuf::types::ProtobufTypeEnum<super::instance::InstanceStatus>>(
+                    "status",
+                    |m: &Reply| { &m.status },
+                    |m: &mut Reply| { &mut m.status },
+                ));
+                ::protobuf::reflect::MessageDescriptor::new::<Reply>(
+                    "Reply",
+                    fields,
+                    file_descriptor_proto()
+                )
+            })
+        }
+    }
+
+    fn default_instance() -> &'static Reply {
+        static mut instance: ::protobuf::lazy::Lazy<Reply> = ::protobuf::lazy::Lazy {
+            lock: ::protobuf::lazy::ONCE_INIT,
+            ptr: 0 as *const Reply,
+        };
+        unsafe {
+            instance.get(Reply::new)
+        }
+    }
+}
+
+impl ::protobuf::Clear for Reply {
+    fn clear(&mut self) {
+        self.req_type = RequestType::Prepare;
+        self.last_ballot.clear();
+        self.instance_id.clear();
+        self.deps.clear();
+        self.deps_status.clear();
+        self.status = super::instance::InstanceStatus::NA;
+        self.unknown_fields.clear();
+    }
+}
+
+impl ::std::fmt::Debug for Reply {
+    fn fmt(&self, f: &mut ::std::fmt::Formatter<'_>) -> ::std::fmt::Result {
+        ::protobuf::text_format::fmt(self, f)
+    }
+}
+
+impl ::protobuf::reflect::ProtobufValue for Reply {
     fn as_ref(&self) -> ::protobuf::reflect::ProtobufValueRef {
         ::protobuf::reflect::ProtobufValueRef::Message(self)
     }
@@ -1346,7 +2235,7 @@ pub struct PreAcceptReply {
     pub instance: ::protobuf::SingularPtrField<super::instance::Instance>,
     pub ok: bool,
     pub ballot: ::protobuf::SingularPtrField<super::instance::BallotNum>,
-    pub committed_deps: ::protobuf::SingularPtrField<super::instance::InstIDs>,
+    pub committed_deps: ::protobuf::RepeatedField<super::instance::InstanceID>,
     // special fields
     pub unknown_fields: ::protobuf::UnknownFields,
     pub cached_size: ::protobuf::CachedSize,
@@ -1459,37 +2348,29 @@ impl PreAcceptReply {
         self.ballot.take().unwrap_or_else(|| super::instance::BallotNum::new())
     }
 
-    // .InstIDs committed_deps = 5;
+    // repeated .InstanceID committed_deps = 5;
 
 
-    pub fn get_committed_deps(&self) -> &super::instance::InstIDs {
-        self.committed_deps.as_ref().unwrap_or_else(|| super::instance::InstIDs::default_instance())
+    pub fn get_committed_deps(&self) -> &[super::instance::InstanceID] {
+        &self.committed_deps
     }
     pub fn clear_committed_deps(&mut self) {
         self.committed_deps.clear();
     }
 
-    pub fn has_committed_deps(&self) -> bool {
-        self.committed_deps.is_some()
-    }
-
     // Param is passed by value, moved
-    pub fn set_committed_deps(&mut self, v: super::instance::InstIDs) {
-        self.committed_deps = ::protobuf::SingularPtrField::some(v);
+    pub fn set_committed_deps(&mut self, v: ::protobuf::RepeatedField<super::instance::InstanceID>) {
+        self.committed_deps = v;
     }
 
     // Mutable pointer to the field.
-    // If field is not initialized, it is initialized with default value first.
-    pub fn mut_committed_deps(&mut self) -> &mut super::instance::InstIDs {
-        if self.committed_deps.is_none() {
-            self.committed_deps.set_default();
-        }
-        self.committed_deps.as_mut().unwrap()
+    pub fn mut_committed_deps(&mut self) -> &mut ::protobuf::RepeatedField<super::instance::InstanceID> {
+        &mut self.committed_deps
     }
 
     // Take field
-    pub fn take_committed_deps(&mut self) -> super::instance::InstIDs {
-        self.committed_deps.take().unwrap_or_else(|| super::instance::InstIDs::new())
+    pub fn take_committed_deps(&mut self) -> ::protobuf::RepeatedField<super::instance::InstanceID> {
+        ::std::mem::replace(&mut self.committed_deps, ::protobuf::RepeatedField::new())
     }
 }
 
@@ -1538,7 +2419,7 @@ impl ::protobuf::Message for PreAcceptReply {
                     ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.ballot)?;
                 },
                 5 => {
-                    ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.committed_deps)?;
+                    ::protobuf::rt::read_repeated_message_into(wire_type, is, &mut self.committed_deps)?;
                 },
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
@@ -1566,10 +2447,10 @@ impl ::protobuf::Message for PreAcceptReply {
             let len = v.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
         }
-        if let Some(ref v) = self.committed_deps.as_ref() {
-            let len = v.compute_size();
+        for value in &self.committed_deps {
+            let len = value.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
-        }
+        };
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
         my_size
@@ -1592,11 +2473,11 @@ impl ::protobuf::Message for PreAcceptReply {
             os.write_raw_varint32(v.get_cached_size())?;
             v.write_to_with_cached_sizes(os)?;
         }
-        if let Some(ref v) = self.committed_deps.as_ref() {
+        for v in &self.committed_deps {
             os.write_tag(5, ::protobuf::wire_format::WireTypeLengthDelimited)?;
             os.write_raw_varint32(v.get_cached_size())?;
             v.write_to_with_cached_sizes(os)?;
-        }
+        };
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
     }
@@ -1659,7 +2540,7 @@ impl ::protobuf::Message for PreAcceptReply {
                     |m: &PreAcceptReply| { &m.ballot },
                     |m: &mut PreAcceptReply| { &mut m.ballot },
                 ));
-                fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<super::instance::InstIDs>>(
+                fields.push(::protobuf::reflect::accessor::make_repeated_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<super::instance::InstanceID>>(
                     "committed_deps",
                     |m: &PreAcceptReply| { &m.committed_deps },
                     |m: &mut PreAcceptReply| { &mut m.committed_deps },
@@ -2626,7 +3507,7 @@ pub struct CommitShort {
     pub instance_id: ::protobuf::SingularPtrField<super::instance::InstanceID>,
     pub count: i32,
     pub seq: i32,
-    pub deps: ::protobuf::SingularPtrField<super::instance::InstIDs>,
+    pub deps: ::protobuf::RepeatedField<super::instance::InstanceID>,
     // special fields
     pub unknown_fields: ::protobuf::UnknownFields,
     pub cached_size: ::protobuf::CachedSize,
@@ -2736,37 +3617,29 @@ impl CommitShort {
         self.seq = v;
     }
 
-    // .InstIDs deps = 6;
+    // repeated .InstanceID deps = 6;
 
 
-    pub fn get_deps(&self) -> &super::instance::InstIDs {
-        self.deps.as_ref().unwrap_or_else(|| super::instance::InstIDs::default_instance())
+    pub fn get_deps(&self) -> &[super::instance::InstanceID] {
+        &self.deps
     }
     pub fn clear_deps(&mut self) {
         self.deps.clear();
     }
 
-    pub fn has_deps(&self) -> bool {
-        self.deps.is_some()
-    }
-
     // Param is passed by value, moved
-    pub fn set_deps(&mut self, v: super::instance::InstIDs) {
-        self.deps = ::protobuf::SingularPtrField::some(v);
+    pub fn set_deps(&mut self, v: ::protobuf::RepeatedField<super::instance::InstanceID>) {
+        self.deps = v;
     }
 
     // Mutable pointer to the field.
-    // If field is not initialized, it is initialized with default value first.
-    pub fn mut_deps(&mut self) -> &mut super::instance::InstIDs {
-        if self.deps.is_none() {
-            self.deps.set_default();
-        }
-        self.deps.as_mut().unwrap()
+    pub fn mut_deps(&mut self) -> &mut ::protobuf::RepeatedField<super::instance::InstanceID> {
+        &mut self.deps
     }
 
     // Take field
-    pub fn take_deps(&mut self) -> super::instance::InstIDs {
-        self.deps.take().unwrap_or_else(|| super::instance::InstIDs::new())
+    pub fn take_deps(&mut self) -> ::protobuf::RepeatedField<super::instance::InstanceID> {
+        ::std::mem::replace(&mut self.deps, ::protobuf::RepeatedField::new())
     }
 }
 
@@ -2821,7 +3694,7 @@ impl ::protobuf::Message for CommitShort {
                     self.seq = tmp;
                 },
                 6 => {
-                    ::protobuf::rt::read_singular_message_into(wire_type, is, &mut self.deps)?;
+                    ::protobuf::rt::read_repeated_message_into(wire_type, is, &mut self.deps)?;
                 },
                 _ => {
                     ::protobuf::rt::read_unknown_or_skip_group(field_number, wire_type, is, self.mut_unknown_fields())?;
@@ -2851,10 +3724,10 @@ impl ::protobuf::Message for CommitShort {
         if self.seq != 0 {
             my_size += ::protobuf::rt::value_size(5, self.seq, ::protobuf::wire_format::WireTypeVarint);
         }
-        if let Some(ref v) = self.deps.as_ref() {
-            let len = v.compute_size();
+        for value in &self.deps {
+            let len = value.compute_size();
             my_size += 1 + ::protobuf::rt::compute_raw_varint32_size(len) + len;
-        }
+        };
         my_size += ::protobuf::rt::unknown_fields_size(self.get_unknown_fields());
         self.cached_size.set(my_size);
         my_size
@@ -2878,11 +3751,11 @@ impl ::protobuf::Message for CommitShort {
         if self.seq != 0 {
             os.write_int32(5, self.seq)?;
         }
-        if let Some(ref v) = self.deps.as_ref() {
+        for v in &self.deps {
             os.write_tag(6, ::protobuf::wire_format::WireTypeLengthDelimited)?;
             os.write_raw_varint32(v.get_cached_size())?;
             v.write_to_with_cached_sizes(os)?;
-        }
+        };
         os.write_unknown_fields(self.get_unknown_fields())?;
         ::std::result::Result::Ok(())
     }
@@ -2950,7 +3823,7 @@ impl ::protobuf::Message for CommitShort {
                     |m: &CommitShort| { &m.seq },
                     |m: &mut CommitShort| { &mut m.seq },
                 ));
-                fields.push(::protobuf::reflect::accessor::make_singular_ptr_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<super::instance::InstIDs>>(
+                fields.push(::protobuf::reflect::accessor::make_repeated_field_accessor::<_, ::protobuf::types::ProtobufTypeMessage<super::instance::InstanceID>>(
                     "deps",
                     |m: &CommitShort| { &m.deps },
                     |m: &mut CommitShort| { &mut m.deps },
@@ -3902,8 +4775,8 @@ impl ::protobuf::reflect::ProtobufValue for RequestType {
 
 #[derive(Clone,PartialEq,Eq,Debug,Hash)]
 pub enum MessageType {
-    Request = 0,
-    Reply = 1,
+    TypeRequest = 0,
+    TypeReply = 1,
 }
 
 impl ::protobuf::ProtobufEnum for MessageType {
@@ -3913,16 +4786,16 @@ impl ::protobuf::ProtobufEnum for MessageType {
 
     fn from_i32(value: i32) -> ::std::option::Option<MessageType> {
         match value {
-            0 => ::std::option::Option::Some(MessageType::Request),
-            1 => ::std::option::Option::Some(MessageType::Reply),
+            0 => ::std::option::Option::Some(MessageType::TypeRequest),
+            1 => ::std::option::Option::Some(MessageType::TypeReply),
             _ => ::std::option::Option::None
         }
     }
 
     fn values() -> &'static [Self] {
         static values: &'static [MessageType] = &[
-            MessageType::Request,
-            MessageType::Reply,
+            MessageType::TypeRequest,
+            MessageType::TypeReply,
         ];
         values
     }
@@ -3945,7 +4818,7 @@ impl ::std::marker::Copy for MessageType {
 
 impl ::std::default::Default for MessageType {
     fn default() -> Self {
-        MessageType::Request
+        MessageType::TypeRequest
     }
 }
 
@@ -3956,60 +4829,75 @@ impl ::protobuf::reflect::ProtobufValue for MessageType {
 }
 
 static file_descriptor_proto_data: &'static [u8] = b"\
-    \n\rmessage.proto\x1a\x0einstance.proto\"o\n\x07Message\x12'\n\x08req_ty\
-    pe\x18\x02\x20\x01(\x0e2\x0c.RequestTypeR\x07reqType\x12'\n\x08msg_type\
-    \x18\x03\x20\x01(\x0e2\x0c.MessageTypeR\x07msgType\x12\x12\n\x04data\x18\
-    \x04\x20\x01(\x0cR\x04data\"\x9a\x01\n\nPrepareReq\x12\x1b\n\tleader_id\
+    \n\rmessage.proto\x1a\rcommand.proto\x1a\x0einstance.proto\"o\n\x07Messa\
+    ge\x12'\n\x08req_type\x18\x02\x20\x01(\x0e2\x0c.RequestTypeR\x07reqType\
+    \x12'\n\x08msg_type\x18\x03\x20\x01(\x0e2\x0c.MessageTypeR\x07msgType\
+    \x12\x12\n\x04data\x18\x04\x20\x01(\x0cR\x04data\"\xd4\x02\n\x07Request\
+    \x12'\n\x08req_type\x18\x01\x20\x01(\x0e2\x0c.RequestTypeR\x07reqType\
+    \x12\"\n\rto_replica_id\x18\x02\x20\x01(\x03R\x0btoReplicaId\x12\"\n\x06\
+    ballot\x18\x0c\x20\x01(\x0b2\n.BallotNumR\x06ballot\x12,\n\x0binstance_i\
+    d\x18\r\x20\x01(\x0b2\x0b.InstanceIDR\ninstanceId\x12\x1c\n\x04cmds\x18\
+    \x15\x20\x03(\x0b2\x08.CommandR\x04cmds\x12.\n\x0cinitial_deps\x18\x1f\
+    \x20\x03(\x0b2\x0b.InstanceIDR\x0binitialDeps\x120\n\x0bdeps_status\x18!\
+    \x20\x03(\x0e2\x0f.InstanceStatusR\ndepsStatus\x12*\n\nfinal_deps\x18)\
+    \x20\x03(\x0b2\x0b.InstanceIDR\tfinalDeps\"\x87\x02\n\x05Reply\x12'\n\
+    \x08req_type\x18\x01\x20\x01(\x0e2\x0c.RequestTypeR\x07reqType\x12+\n\
+    \x0blast_ballot\x18\x0b\x20\x01(\x0b2\n.BallotNumR\nlastBallot\x12,\n\
+    \x0binstance_id\x18\r\x20\x01(\x0b2\x0b.InstanceIDR\ninstanceId\x12\x1f\
+    \n\x04deps\x18\x20\x20\x03(\x0b2\x0b.InstanceIDR\x04deps\x120\n\x0bdeps_\
+    status\x18!\x20\x03(\x0e2\x0f.InstanceStatusR\ndepsStatus\x12'\n\x06stat\
+    us\x183\x20\x01(\x0e2\x0f.InstanceStatusR\x06status\"\x9a\x01\n\nPrepare\
+    Req\x12\x1b\n\tleader_id\x18\x01\x20\x01(\x03R\x08leaderId\x12\x1d\n\nre\
+    plica_id\x18\x02\x20\x01(\x03R\treplicaId\x12,\n\x0binstance_id\x18\x03\
+    \x20\x01(\x0b2\x0b.InstanceIDR\ninstanceId\x12\"\n\x06ballot\x18\x04\x20\
+    \x01(\x0b2\n.BallotNumR\x06ballot\"\xd7\x01\n\x0cPrepareReply\x12\x1f\n\
+    \x0bacceptor_id\x18\x01\x20\x01(\x03R\nacceptorId\x12\x1d\n\nreplica_id\
+    \x18\x02\x20\x01(\x03R\treplicaId\x12,\n\x0binstance_id\x18\x03\x20\x01(\
+    \x0b2\x0b.InstanceIDR\ninstanceId\x12\x0e\n\x02ok\x18\x04\x20\x01(\x08R\
+    \x02ok\x12\"\n\x06ballot\x18\x05\x20\x01(\x0b2\n.BallotNumR\x06ballot\
+    \x12%\n\x08instance\x18\x06\x20\x01(\x0b2\t.InstanceR\x08instance\"\xc3\
+    \x01\n\x0cPreAcceptReq\x12\x1b\n\tleader_id\x18\x01\x20\x01(\x03R\x08lea\
+    derId\x12\x1d\n\nreplica_id\x18\x02\x20\x01(\x03R\treplicaId\x12,\n\x0bi\
+    nstance_id\x18\x03\x20\x01(\x0b2\x0b.InstanceIDR\ninstanceId\x12%\n\x08i\
+    nstance\x18\x04\x20\x01(\x0b2\t.InstanceR\x08instance\x12\"\n\x06ballot\
+    \x18\x05\x20\x01(\x0b2\n.BallotNumR\x06ballot\"\xbe\x01\n\x0ePreAcceptRe\
+    ply\x12\x1d\n\nreplica_id\x18\x01\x20\x01(\x03R\treplicaId\x12%\n\x08ins\
+    tance\x18\x02\x20\x01(\x0b2\t.InstanceR\x08instance\x12\x0e\n\x02ok\x18\
+    \x03\x20\x01(\x08R\x02ok\x12\"\n\x06ballot\x18\x04\x20\x01(\x0b2\n.Ballo\
+    tNumR\x06ballot\x122\n\x0ecommitted_deps\x18\x05\x20\x03(\x0b2\x0b.Insta\
+    nceIDR\rcommittedDeps\"\xa8\x01\n\tAcceptReq\x12\x1b\n\tleader_id\x18\
+    \x01\x20\x01(\x03R\x08leaderId\x12\x1d\n\nreplica_id\x18\x02\x20\x01(\
+    \x03R\treplicaId\x12%\n\x08instance\x18\x03\x20\x01(\x0b2\t.InstanceR\
+    \x08instance\x12\"\n\x06ballot\x18\x04\x20\x01(\x0b2\n.BallotNumR\x06bal\
+    lot\x12\x14\n\x05count\x18\x05\x20\x01(\x05R\x05count\"\x8e\x01\n\x0bAcc\
+    eptReply\x12\x1d\n\nreplica_id\x18\x01\x20\x01(\x03R\treplicaId\x12,\n\
+    \x0binstance_id\x18\x02\x20\x01(\x0b2\x0b.InstanceIDR\ninstanceId\x12\
+    \x0e\n\x02ok\x18\x03\x20\x01(\x08R\x02ok\x12\"\n\x06ballot\x18\x04\x20\
+    \x01(\x0b2\n.BallotNumR\x06ballot\"n\n\tCommitReq\x12\x1b\n\tleader_id\
     \x18\x01\x20\x01(\x03R\x08leaderId\x12\x1d\n\nreplica_id\x18\x02\x20\x01\
-    (\x03R\treplicaId\x12,\n\x0binstance_id\x18\x03\x20\x01(\x0b2\x0b.Instan\
-    ceIDR\ninstanceId\x12\"\n\x06ballot\x18\x04\x20\x01(\x0b2\n.BallotNumR\
-    \x06ballot\"\xd7\x01\n\x0cPrepareReply\x12\x1f\n\x0bacceptor_id\x18\x01\
+    (\x03R\treplicaId\x12%\n\x08instance\x18\x03\x20\x01(\x0b2\t.InstanceR\
+    \x08instance\"\xc0\x01\n\x0bCommitShort\x12\x1b\n\tleader_id\x18\x01\x20\
+    \x01(\x03R\x08leaderId\x12\x1d\n\nreplica_id\x18\x02\x20\x01(\x03R\trepl\
+    icaId\x12,\n\x0binstance_id\x18\x03\x20\x01(\x0b2\x0b.InstanceIDR\ninsta\
+    nceId\x12\x14\n\x05count\x18\x04\x20\x01(\x05R\x05count\x12\x10\n\x03seq\
+    \x18\x05\x20\x01(\x05R\x03seq\x12\x1f\n\x04deps\x18\x06\x20\x03(\x0b2\
+    \x0b.InstanceIDR\x04deps\"\xc6\x01\n\x0fTryPreAcceptReq\x12\x1b\n\tleade\
+    r_id\x18\x01\x20\x01(\x03R\x08leaderId\x12\x1d\n\nreplica_id\x18\x02\x20\
+    \x01(\x03R\treplicaId\x12,\n\x0binstance_id\x18\x03\x20\x01(\x0b2\x0b.In\
+    stanceIDR\ninstanceId\x12\"\n\x06ballot\x18\x04\x20\x01(\x0b2\n.BallotNu\
+    mR\x06ballot\x12%\n\x08instance\x18\x05\x20\x01(\x0b2\t.InstanceR\x08ins\
+    tance\"\xd9\x02\n\x11TryPreAcceptReply\x12\x1f\n\x0bacceptor_id\x18\x01\
     \x20\x01(\x03R\nacceptorId\x12\x1d\n\nreplica_id\x18\x02\x20\x01(\x03R\t\
     replicaId\x12,\n\x0binstance_id\x18\x03\x20\x01(\x0b2\x0b.InstanceIDR\ni\
     nstanceId\x12\x0e\n\x02ok\x18\x04\x20\x01(\x08R\x02ok\x12\"\n\x06ballot\
-    \x18\x05\x20\x01(\x0b2\n.BallotNumR\x06ballot\x12%\n\x08instance\x18\x06\
-    \x20\x01(\x0b2\t.InstanceR\x08instance\"\xc3\x01\n\x0cPreAcceptReq\x12\
-    \x1b\n\tleader_id\x18\x01\x20\x01(\x03R\x08leaderId\x12\x1d\n\nreplica_i\
-    d\x18\x02\x20\x01(\x03R\treplicaId\x12,\n\x0binstance_id\x18\x03\x20\x01\
-    (\x0b2\x0b.InstanceIDR\ninstanceId\x12%\n\x08instance\x18\x04\x20\x01(\
-    \x0b2\t.InstanceR\x08instance\x12\"\n\x06ballot\x18\x05\x20\x01(\x0b2\n.\
-    BallotNumR\x06ballot\"\xbb\x01\n\x0ePreAcceptReply\x12\x1d\n\nreplica_id\
-    \x18\x01\x20\x01(\x03R\treplicaId\x12%\n\x08instance\x18\x02\x20\x01(\
-    \x0b2\t.InstanceR\x08instance\x12\x0e\n\x02ok\x18\x03\x20\x01(\x08R\x02o\
-    k\x12\"\n\x06ballot\x18\x04\x20\x01(\x0b2\n.BallotNumR\x06ballot\x12/\n\
-    \x0ecommitted_deps\x18\x05\x20\x01(\x0b2\x08.InstIDsR\rcommittedDeps\"\
-    \xa8\x01\n\tAcceptReq\x12\x1b\n\tleader_id\x18\x01\x20\x01(\x03R\x08lead\
-    erId\x12\x1d\n\nreplica_id\x18\x02\x20\x01(\x03R\treplicaId\x12%\n\x08in\
-    stance\x18\x03\x20\x01(\x0b2\t.InstanceR\x08instance\x12\"\n\x06ballot\
-    \x18\x04\x20\x01(\x0b2\n.BallotNumR\x06ballot\x12\x14\n\x05count\x18\x05\
-    \x20\x01(\x05R\x05count\"\x8e\x01\n\x0bAcceptReply\x12\x1d\n\nreplica_id\
-    \x18\x01\x20\x01(\x03R\treplicaId\x12,\n\x0binstance_id\x18\x02\x20\x01(\
-    \x0b2\x0b.InstanceIDR\ninstanceId\x12\x0e\n\x02ok\x18\x03\x20\x01(\x08R\
-    \x02ok\x12\"\n\x06ballot\x18\x04\x20\x01(\x0b2\n.BallotNumR\x06ballot\"n\
-    \n\tCommitReq\x12\x1b\n\tleader_id\x18\x01\x20\x01(\x03R\x08leaderId\x12\
-    \x1d\n\nreplica_id\x18\x02\x20\x01(\x03R\treplicaId\x12%\n\x08instance\
-    \x18\x03\x20\x01(\x0b2\t.InstanceR\x08instance\"\xbd\x01\n\x0bCommitShor\
-    t\x12\x1b\n\tleader_id\x18\x01\x20\x01(\x03R\x08leaderId\x12\x1d\n\nrepl\
-    ica_id\x18\x02\x20\x01(\x03R\treplicaId\x12,\n\x0binstance_id\x18\x03\
-    \x20\x01(\x0b2\x0b.InstanceIDR\ninstanceId\x12\x14\n\x05count\x18\x04\
-    \x20\x01(\x05R\x05count\x12\x10\n\x03seq\x18\x05\x20\x01(\x05R\x03seq\
-    \x12\x1c\n\x04deps\x18\x06\x20\x01(\x0b2\x08.InstIDsR\x04deps\"\xc6\x01\
-    \n\x0fTryPreAcceptReq\x12\x1b\n\tleader_id\x18\x01\x20\x01(\x03R\x08lead\
-    erId\x12\x1d\n\nreplica_id\x18\x02\x20\x01(\x03R\treplicaId\x12,\n\x0bin\
-    stance_id\x18\x03\x20\x01(\x0b2\x0b.InstanceIDR\ninstanceId\x12\"\n\x06b\
-    allot\x18\x04\x20\x01(\x0b2\n.BallotNumR\x06ballot\x12%\n\x08instance\
-    \x18\x05\x20\x01(\x0b2\t.InstanceR\x08instance\"\xd9\x02\n\x11TryPreAcce\
-    ptReply\x12\x1f\n\x0bacceptor_id\x18\x01\x20\x01(\x03R\nacceptorId\x12\
-    \x1d\n\nreplica_id\x18\x02\x20\x01(\x03R\treplicaId\x12,\n\x0binstance_i\
-    d\x18\x03\x20\x01(\x0b2\x0b.InstanceIDR\ninstanceId\x12\x0e\n\x02ok\x18\
-    \x04\x20\x01(\x08R\x02ok\x12\"\n\x06ballot\x18\x05\x20\x01(\x0b2\n.Ballo\
-    tNumR\x06ballot\x12)\n\x10conflict_replica\x18\x06\x20\x01(\x03R\x0fconf\
-    lictReplica\x12=\n\x14conflict_instance_id\x18\x07\x20\x01(\x0b2\x0b.Ins\
-    tanceIDR\x12conflictInstanceId\x128\n\x0fconflict_status\x18\x08\x20\x01\
-    (\x0e2\x0f.InstanceStatusR\x0econflictStatus*S\n\x0bRequestType\x12\x0b\
-    \n\x07Prepare\x10\0\x12\x10\n\x0cTryPreAccept\x10\x01\x12\r\n\tPreAccept\
-    \x10\x02\x12\n\n\x06Accept\x10\x03\x12\n\n\x06Commit\x10\x04*%\n\x0bMess\
-    ageType\x12\x0b\n\x07Request\x10\0\x12\t\n\x05Reply\x10\x01b\x06proto3\
+    \x18\x05\x20\x01(\x0b2\n.BallotNumR\x06ballot\x12)\n\x10conflict_replica\
+    \x18\x06\x20\x01(\x03R\x0fconflictReplica\x12=\n\x14conflict_instance_id\
+    \x18\x07\x20\x01(\x0b2\x0b.InstanceIDR\x12conflictInstanceId\x128\n\x0fc\
+    onflict_status\x18\x08\x20\x01(\x0e2\x0f.InstanceStatusR\x0econflictStat\
+    us*S\n\x0bRequestType\x12\x0b\n\x07Prepare\x10\0\x12\x10\n\x0cTryPreAcce\
+    pt\x10\x01\x12\r\n\tPreAccept\x10\x02\x12\n\n\x06Accept\x10\x03\x12\n\n\
+    \x06Commit\x10\x04*-\n\x0bMessageType\x12\x0f\n\x0bTypeRequest\x10\0\x12\
+    \r\n\tTypeReply\x10\x01b\x06proto3\
 ";
 
 static mut file_descriptor_proto_lazy: ::protobuf::lazy::Lazy<::protobuf::descriptor::FileDescriptorProto> = ::protobuf::lazy::Lazy {
