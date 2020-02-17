@@ -3,7 +3,8 @@ use std::thread::JoinHandle;
 
 use super::super::command::Command;
 use super::super::conf::ClusterInfo;
-use super::super::instance::{InstIDs, Instance, InstanceID, InstanceIdx};
+use super::super::instance::{Instance, InstanceID, InstanceIdx};
+
 use super::super::message::*;
 
 #[cfg(test)]
@@ -51,9 +52,9 @@ pub struct Replica {
     pub smr: SMR, // state machine replication
 
     pub inst_idx: InstanceIdx,
-    pub crt_inst: InstIDs, // highest active instance numbers that this replica knows
-    pub replica_committed: InstIDs, // highest continuous committed instance per replica that known
-    pub replica_executed: InstIDs, // highest executed instance per replica that known
+    // pub crt_inst: InstIDs, // highest active instance numbers that this replica knows
+    // pub replica_committed: InstIDs, // highest continuous committed instance per replica that known
+    // pub replica_executed: InstIDs, // highest executed instance per replica that known
 
     // TODO(lsl): get exec thread handle from @baohai
     pub exec_worker: JoinHandle<()>, // handle of exec thread

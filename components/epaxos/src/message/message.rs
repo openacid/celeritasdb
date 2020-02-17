@@ -1,6 +1,7 @@
 use super::super::data;
-use super::super::instance::{BallotNum, InstIDs, Instance, InstanceID, InstanceStatus};
+use super::super::instance::{BallotNum, Instance, InstanceID, InstanceStatus};
 use super::super::replica::ReplicaID;
+use protobuf::{RepeatedField};
 
 #[cfg(test)]
 #[path = "./tests/message_tests.rs"]
@@ -29,6 +30,10 @@ pub use data::MessageType;
 /// protocol message wrapper used in transmission
 // re-export struct Message in data/message.rs
 pub use data::Message;
+pub use data::Request;
+pub use data::Reply;
+pub use data::Command;
+
 impl Message {
     // data is moved
     pub fn new_message(req_type: RequestType, msg_type: MessageType, data: Vec<u8>) -> Message {
@@ -135,7 +140,7 @@ impl PreAcceptReply {
         pa_reply.set_instance(inst);
         pa_reply.set_ok(bool::from(ok));
         pa_reply.set_ballot(ballot);
-        pa_reply.set_committed_deps(InstIDs::new_instance_ids(committed_deps));
+        pa_reply.set_committed_deps(RepeatedField::from_slice(committed_deps));
 
         return pa_reply;
     }
@@ -225,7 +230,7 @@ impl CommitShort {
         cs.set_instance_id(inst_id);
         cs.set_count(count);
         cs.set_seq(seq);
-        cs.set_deps(InstIDs::new_instance_ids(deps));
+        cs.set_deps(RepeatedField::from_slice(deps));
 
         return cs;
     }

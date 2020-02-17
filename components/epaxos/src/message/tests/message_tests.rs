@@ -1,6 +1,9 @@
 use super::*;
-use crate::instance::{BallotNum, InstanceID};
+use crate::instance::{BallotNum, InstanceID, Instance, InstanceStatus};
+use crate::message::{Request, Reply};
+use crate::command::{Command, OpCode};
 use protobuf::{parse_from_bytes, Message};
+use protobuf::{RepeatedField};
 
 #[test]
 fn test_message_protobuf() {
@@ -24,7 +27,7 @@ fn test_message_protobuf() {
     let pr_bytes: Vec<u8> = pr1.write_to_bytes().unwrap();
 
     let req_type = RequestType::Prepare;
-    let msg_type = MessageType::Request;
+    let msg_type = MessageType::TypeRequest;
 
     let msg1 = super::Message::new_message(req_type, msg_type, pr_bytes);
     let size = msg1.compute_size();

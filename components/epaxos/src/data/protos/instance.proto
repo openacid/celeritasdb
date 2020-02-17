@@ -24,19 +24,22 @@ message BallotNum {
 // Instance is the internal representation of a client request.
 message Instance {
 
+    BallotNum last_ballot  = 11;
+    BallotNum ballot       = 12;
+    InstanceID instance_id = 13;
+    repeated Command cmds  = 21;
+
     // initial_deps is the dependent instance ids when an instance is created.
-    repeated InstanceID initial_deps                = 1;
+    repeated InstanceID initial_deps                = 31;
 
     // deps is the updated instance ids on a replica when handling PreAccept
     // request.
     // When an instance is intiated, it is same as initial_deps.
-    repeated InstanceID deps                        = 2;
+    repeated InstanceID deps                        = 32;
 
     // final_deps is the final dependency chosen by instance leader or recover
     // process, and is set by Accept request or Commit request.
-    repeated InstanceID final_deps                  = 4;
+    repeated InstanceID final_deps                  = 41;
 
-    InstanceStatus status               = 21;
-    repeated Command cmds               = 31;
-    BallotNum ballot                    = 41;
+    InstanceStatus status                           = 51;
 };

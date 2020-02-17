@@ -26,7 +26,7 @@ fn test_instance_protobuf() {
     assert_eq!(inst2.status, status);
     assert_eq!(inst2.cmds.into_vec(), cmds);
     assert_eq!(*inst2.ballot.get_ref(), ballot);
-    for (idx, inst_id) in inst2.initial_deps.get_ref().ids.iter().enumerate() {
+    for (idx, inst_id) in inst2.initial_deps.iter().enumerate() {
         assert_eq!(*inst_id, initial_deps[idx]);
     }
 }
