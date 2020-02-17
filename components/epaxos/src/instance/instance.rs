@@ -9,20 +9,6 @@ mod tests;
 
 pub type InstanceIdx = i64;
 
-/// protocol buffer serialized
-// re-export struct InstIDs in data/instance.rs
-pub use data::InstIDs;
-
-impl InstIDs {
-    pub fn new_instance_ids(ids: &[InstanceID]) -> InstIDs {
-        let mut inst_ids = InstIDs::new();
-
-        inst_ids.set_ids(RepeatedField::from_slice(ids));
-
-        return inst_ids;
-    }
-}
-
 // re-export struct OpCode in data/instance.rs
 pub use data::InstanceID;
 
@@ -70,7 +56,7 @@ impl Instance {
         inst.set_status(status);
         inst.set_cmds(RepeatedField::from_slice(cmds));
         inst.set_ballot(ballot.clone());
-        inst.set_initial_deps(InstIDs::new_instance_ids(deps));
+        inst.set_initial_deps(RepeatedField::from_slice(deps));
 
         return inst;
     }

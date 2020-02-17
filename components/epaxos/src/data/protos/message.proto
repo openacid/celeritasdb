@@ -1,5 +1,6 @@
 syntax = "proto3";
 
+import "command.proto";
 import "instance.proto";
 
 enum RequestType {
@@ -11,8 +12,8 @@ enum RequestType {
 };
 
 enum MessageType {
-    Request = 0;
-    Reply = 1;
+    TypeRequest = 0;
+    TypeReply = 1;
 };
 
 message Message {
@@ -32,10 +33,11 @@ message Request {
     // 51~60: for commit.
 
     RequestType req_type = 1;
+    int64 to_replica_id = 2;
 
     // Sender's ballot
-    BallotNum ballot = 11;
-    InstanceID instance_id = 12;
+    BallotNum ballot = 12;
+    InstanceID instance_id = 13;
 
     //                                         // required by:
 
@@ -51,14 +53,14 @@ message Reply {
 
     // The ballot stored on acceptor before handling a request.
     BallotNum last_ballot = 11;
-    InstanceID instance_id = 12;
+    InstanceID instance_id = 13;
 
     // deps_status describe what status a dependent instance is in.
     // Only `deps` needs these information in order to commit on fast-path.
 
     //                                         // required by:
 
-    repeated InstanceID     deps        = 31;  // PreAccept,     Prepare
+    repeated InstanceID     deps        = 32;  // PreAccept,     Prepare
     repeated InstanceStatus deps_status = 33;  // PreAccept,
     InstanceStatus          status      = 51;  //                Prepare
 }
@@ -95,7 +97,7 @@ message PreAcceptReply {
     Instance instance = 2;
     bool ok = 3;
     BallotNum ballot = 4;
-    InstIDs committed_deps = 5;
+    repeated InstanceID committed_deps = 5;
 };
 
 // used in Paxos-Accept
@@ -128,7 +130,7 @@ message CommitShort {
     int32 count = 4;
 
     int32 seq = 5;
-    InstIDs deps = 6;
+    repeated InstanceID deps = 6;
 }
 
 message TryPreAcceptReq {
