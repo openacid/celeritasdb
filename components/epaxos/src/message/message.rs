@@ -29,23 +29,8 @@ pub use data::MessageType;
 
 pub use data::Command;
 /// protocol message wrapper used in transmission
-// re-export struct Message in data/message.rs
-pub use data::Message;
 pub use data::Reply;
 pub use data::Request;
-
-impl Message {
-    // data is moved
-    pub fn new_message(req_type: RequestType, msg_type: MessageType, data: Vec<u8>) -> Message {
-        let mut msg = Message::new();
-
-        msg.set_req_type(req_type);
-        msg.set_msg_type(msg_type);
-        msg.set_data(data);
-
-        return msg;
-    }
-}
 
 /// Request is a protobuf message for all kinds of replication request.
 /// See: https://github.com/openacid/celeritasdb/wiki/replication-algo#messages;
