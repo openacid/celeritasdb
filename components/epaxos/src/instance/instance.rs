@@ -1,4 +1,5 @@
 use super::super::command::Command;
+use super::super::tokey::ToKey;
 use protobuf::RepeatedField;
 use protobuf::SingularPtrField;
 
@@ -12,6 +13,12 @@ pub type InstanceIdx = i64;
 
 // re-export struct OpCode in data/instance.rs
 pub use data::InstanceID;
+
+impl ToKey for InstanceID {
+    fn to_key(&self) -> Vec<u8> {
+        format!("/instance/{:016x}/{:016x}", self.replica_id, self.idx).into_bytes()
+    }
+}
 
 impl InstanceID {
     pub fn of(replica_id: i64, idx: i64) -> InstanceID {
@@ -42,6 +49,12 @@ impl BallotNum {
 
 // re-export struct Instance in data/instance.rs
 pub use data::Instance;
+
+impl ToKey for Instance {
+    fn to_key(&self) -> Vec<u8> {
+        self.instance_id.get_ref().to_key()
+    }
+}
 
 impl Instance {
     pub fn of(cmds: &[Command], ballot: &BallotNum, deps: &[InstanceID]) -> Instance {
