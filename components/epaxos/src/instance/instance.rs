@@ -1,5 +1,6 @@
 use super::super::command::Command;
 use protobuf::RepeatedField;
+use protobuf::SingularPtrField;
 
 use super::super::data;
 
@@ -14,12 +15,11 @@ pub use data::InstanceID;
 
 impl InstanceID {
     pub fn of(replica_id: i64, idx: i64) -> InstanceID {
-        let mut inst_id = InstanceID::new();
-
-        inst_id.set_replica_id(replica_id);
-        inst_id.set_idx(idx);
-
-        return inst_id;
+        InstanceID {
+            replica_id: replica_id,
+            idx: idx,
+            ..Default::default()
+        }
     }
 }
 
@@ -31,13 +31,12 @@ pub use data::BallotNum;
 
 impl BallotNum {
     pub fn of(epoch: i32, num: i32, replica_id: i64) -> BallotNum {
-        let mut ballot = BallotNum::new();
-
-        ballot.set_epoch(epoch);
-        ballot.set_num(num);
-        ballot.set_replica_id(replica_id);
-
-        return ballot;
+        BallotNum {
+            epoch: epoch,
+            num: num,
+            replica_id: replica_id,
+            ..Default::default()
+        }
     }
 }
 
@@ -46,12 +45,11 @@ pub use data::Instance;
 
 impl Instance {
     pub fn of(cmds: &[Command], ballot: &BallotNum, deps: &[InstanceID]) -> Instance {
-        let mut inst = Instance::new();
-
-        inst.set_cmds(RepeatedField::from_slice(cmds));
-        inst.set_ballot(ballot.clone());
-        inst.set_initial_deps(RepeatedField::from_slice(deps));
-
-        return inst;
+        Instance {
+            cmds: cmds.into(),
+            ballot: SingularPtrField::some(ballot.clone()),
+            initial_deps: deps.into(),
+            ..Default::default()
+        }
     }
 }
