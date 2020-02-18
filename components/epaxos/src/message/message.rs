@@ -38,39 +38,40 @@ pub use data::Request;
 /// ```
 impl Request {
     pub fn of_instance(inst: &Instance, t: RequestType) -> Self {
-        let mut r = Self::new();
-
-        // set common fields.
-        r.set_req_type(t);
-        r.set_ballot(inst.ballot.get_ref().clone());
-        r.set_instance_id(inst.instance_id.get_ref().clone());
-        r
+        Self {
+            req_type: t,
+            ballot: inst.ballot.clone(),
+            instance_id: inst.instance_id.clone(),
+            ..Default::default()
+        }
     }
 
     pub fn preaccept(inst: &Instance, deps_committed: &[bool]) -> Self {
-        let mut r = Self::of_instance(inst, RequestType::PreAccept);
-        r.set_cmds(inst.cmds.clone());
-        r.set_initial_deps(inst.initial_deps.clone());
-        r.set_deps_committed(deps_committed.to_vec());
-        r
+        Self {
+            cmds: inst.cmds.clone(),
+            initial_deps: inst.initial_deps.clone(),
+            deps_committed: deps_committed.into(),
+            ..Self::of_instance(inst, RequestType::PreAccept)
+        }
     }
 
     pub fn accept(inst: &Instance) -> Self {
-        let mut r = Self::of_instance(inst, RequestType::Accept);
-        r.set_final_deps(inst.final_deps.clone());
-        r
+        Self {
+            final_deps: inst.final_deps.clone(),
+            ..Self::of_instance(inst, RequestType::Accept)
+        }
     }
 
     pub fn commit(inst: &Instance) -> Self {
-        let mut r = Self::of_instance(inst, RequestType::Commit);
-        r.set_cmds(inst.cmds.clone());
-        r.set_final_deps(inst.final_deps.clone());
-        r
+        Self {
+            cmds: inst.cmds.clone(),
+            final_deps: inst.final_deps.clone(),
+            ..Self::of_instance(inst, RequestType::Commit)
+        }
     }
 
     pub fn prepare(inst: &Instance) -> Self {
-        let r = Self::of_instance(inst, RequestType::Prepare);
-        r
+        Self::of_instance(inst, RequestType::Prepare)
     }
 }
 
@@ -83,38 +84,37 @@ impl Request {
 /// ```
 impl Reply {
     pub fn of_instance(inst: &Instance, t: RequestType) -> Self {
-        let mut r = Self::new();
-
-        // set common fields.
-        r.set_req_type(t);
-        r.set_last_ballot(inst.last_ballot.get_ref().clone());
-        r.set_instance_id(inst.instance_id.get_ref().clone());
-        r
+        Self {
+            req_type: t,
+            last_ballot: inst.last_ballot.clone(),
+            instance_id: inst.instance_id.clone(),
+            ..Default::default()
+        }
     }
 
     pub fn preaccept(inst: &Instance, deps_committed: &[bool]) -> Self {
-        let mut r = Self::of_instance(inst, RequestType::PreAccept);
-        r.set_deps(inst.deps.clone());
-        r.set_deps_committed(deps_committed.to_vec());
-        r
+        Self {
+            deps: inst.deps.clone(),
+            deps_committed: deps_committed.into(),
+            ..Self::of_instance(inst, RequestType::PreAccept)
+        }
     }
 
     pub fn accept(inst: &Instance) -> Self {
-        let r = Self::of_instance(inst, RequestType::Accept);
-        r
+        Self::of_instance(inst, RequestType::Accept)
     }
 
     pub fn commit(inst: &Instance) -> Self {
-        let r = Self::of_instance(inst, RequestType::Commit);
-        r
+        Self::of_instance(inst, RequestType::Commit)
     }
 
     pub fn prepare(inst: &Instance) -> Self {
-        let mut r = Self::of_instance(inst, RequestType::Prepare);
-        r.set_deps(inst.deps.clone());
-        r.set_final_deps(inst.final_deps.clone());
-        r.set_committed(inst.committed);
-        r
+        Self {
+            deps: inst.deps.clone(),
+            final_deps: inst.final_deps.clone(),
+            committed: inst.committed,
+            ..Self::of_instance(inst, RequestType::Prepare)
+        }
     }
 }
 

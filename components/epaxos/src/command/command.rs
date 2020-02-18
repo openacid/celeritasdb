@@ -15,11 +15,11 @@ pub use data::Command;
 
 impl Command {
     pub fn of(op: OpCode, key: &[u8], value: &[u8]) -> Command {
-        let mut cmd = Command::new();
-        cmd.set_op(op);
-        cmd.set_key(key.to_vec());
-        cmd.set_value(value.to_vec());
-
-        return cmd;
+        Command {
+            op: op,
+            key: key.to_vec(),
+            value: value.to_vec(),
+            ..Default::default()
+        }
     }
 }
