@@ -1,6 +1,7 @@
 use super::*;
 use crate::command::{Command, OpCode};
 use protobuf::{parse_from_bytes, Message};
+use std::str;
 
 #[test]
 fn test_instance_protobuf() {
@@ -25,4 +26,19 @@ fn test_instance_protobuf() {
     for (idx, inst_id) in inst2.initial_deps.iter().enumerate() {
         assert_eq!(*inst_id, initial_deps[idx]);
     }
+}
+
+#[test]
+fn test_instance_id_to_key() {
+    let k = InstanceID::of(1, 10).to_key();
+    assert_eq!(
+        "/instance/0000000000000001/000000000000000a",
+        str::from_utf8(&k).unwrap()
+    );
+
+    let k = InstanceID::of(-1, -10).to_key();
+    assert_eq!(
+        "/instance/ffffffffffffffff/fffffffffffffff6",
+        str::from_utf8(&k).unwrap()
+    );
 }

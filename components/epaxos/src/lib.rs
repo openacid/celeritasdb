@@ -8,6 +8,7 @@ pub mod instance;
 pub mod message;
 pub mod replica;
 pub mod snapshot;
+pub mod tokey;
 
 #[cfg(test)]
 mod tests {
