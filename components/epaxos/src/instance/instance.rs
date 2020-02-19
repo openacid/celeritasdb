@@ -23,8 +23,8 @@ impl ToKey for InstanceID {
 impl InstanceID {
     pub fn of(replica_id: i64, idx: i64) -> InstanceID {
         InstanceID {
-            replica_id: replica_id,
-            idx: idx,
+            replica_id,
+            idx,
             ..Default::default()
         }
     }
@@ -39,9 +39,9 @@ pub use data::BallotNum;
 impl BallotNum {
     pub fn of(epoch: i32, num: i32, replica_id: i64) -> BallotNum {
         BallotNum {
-            epoch: epoch,
-            num: num,
-            replica_id: replica_id,
+            epoch,
+            num,
+            replica_id,
             ..Default::default()
         }
     }
