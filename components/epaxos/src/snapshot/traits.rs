@@ -17,7 +17,7 @@ pub trait KVEngine {
 /// InstanceEngine offer functions to operate snapshot instances
 pub trait InstanceEngine<T>: KVEngine {
     /// set a new instance
-    fn set_instance(&mut self, iid: &InstanceID, inst: Instance) -> Result<(), Error>;
+    fn set_instance(&mut self, iid: &InstanceID , inst: Instance) -> Result<(), Error>;
     /// update an existing instance with instance id
     fn update_instance(&mut self, iid: &InstanceID, inst: Instance) -> Result<(), Error>;
     /// get an instance with instance id
@@ -25,9 +25,6 @@ pub trait InstanceEngine<T>: KVEngine {
     /// get an iterator to scan all instances with a leader replica id
     fn get_instance_iter(&self, rid: ReplicaID) -> Result<InstanceIter<T>, Error>;
 
-    fn instance_id_to_key(&self, iid : &InstanceID) -> Vec<u8> {
-        format!("/instance/{:x}/{:x}", iid.replica_id, iid.idx).into_bytes()
-    }
 }
 
 /// StatusEngine offer functions to operate snapshot status
@@ -35,14 +32,8 @@ pub trait StatusEngine : KVEngine {
     /// get current maximum instance id with a leader replica
     fn get_max_instance_id(&self, rid: ReplicaID) -> Result<InstanceID, Error>;
 
-    /// set current maximum instance id with a leader replica
-    fn set_max_instance_id(&mut self, rid: ReplicaID, iid: InstanceID) -> Result<(), Error>;
-
     /// get executed maximum continuous instance id with a leader replica
     fn get_max_exec_instance_id(&self, rid: ReplicaID) -> Result<InstanceID, Error>;
-
-    /// set executed maximum continuous instance id with a leader replica
-    fn set_max_exec_instance_id(&mut self, rid: ReplicaID, iid: InstanceID) -> Result<(), Error>;
 
     fn max_instance_id_key(&self, rid: ReplicaID) -> Vec<u8> {
         format!("/status/max_instance_id/{:x}", rid).into_bytes()
@@ -50,6 +41,11 @@ pub trait StatusEngine : KVEngine {
 
     fn max_exec_instance_id_key(&self, rid: ReplicaID) -> Vec<u8> {
         format!("/status/max_exec_instance_id/{:x}", rid).into_bytes()
+    }
+
+    fn set_instance_id(&mut self, key: &Vec<u8>, iid: InstanceID) -> Result<(), Error>{
+        let value: Vec<u8> = iid.write_to_bytes().unwrap();
+        self.set_kv(&key, &value)
     }
 }
 

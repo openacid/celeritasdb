@@ -1,24 +1,35 @@
 use crate::instance::{InstanceID, Instance};
-use super::MemEngine;
-use super::InstanceEngine;
+use super::{MemEngine, InstanceEngine};
 use protobuf::{parse_from_bytes, Message};
+
+use super::super::tokey::ToKey;
 
 pub struct InstanceIter<'a, T> {
     pub curr_inst_id: InstanceID,
+    pub include: bool,
     pub engine: &'a T,
 }
-
-// TODO impl Iterator for MemEngine
 
 impl <'a> Iterator for InstanceIter<'a, MemEngine> {
     type Item = Instance;
 
     fn next(&mut self) -> Option<Instance> {
-        let k = self.engine.instance_id_to_key(&self.curr_inst_id);
-        let val_bytes = self.engine.next_kv(&k).unwrap();
+        let k = self.curr_inst_id.to_key();
+        let (key_bytes, val_bytes) = self.engine.next_kv(&k, self.include)?;
+
+        let key = String::from_utf8(key_bytes).unwrap();
+        let iid = InstanceID::of_key(&key[..])?;
 
         match parse_from_bytes::<Instance>(&val_bytes) {
-            Ok(v) => Some(v),
+            Ok(v) => {
+                if iid.replica_id == self.curr_inst_id.replica_id {
+                    self.curr_inst_id = iid;
+                    self.include = false;
+                    Some(v)
+                }else{
+                    None
+                }
+            },
             Err(_) => None,
         }
     }
