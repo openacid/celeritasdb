@@ -1,31 +1,32 @@
-use super::{DBColumnFamily, Engine, Error};
+use super::{Error, RocksDBEngine};
 
 mod dbutil;
 use dbutil::*;
 
-impl Engine {
-    /// Open a new Engine to use snapshot.
-    ///
-    /// # Examples:
-    /// ```
-    /// use tempfile::Builder;
-    /// use crate::epaxos::snapshot::{DBColumnFamily, Engine};
-    ///
-    /// let tmp_root = Builder::new().tempdir().unwrap();
-    /// let db_path = format!("{}/test", tmp_root.path().display());
-    ///
-    /// let my_eng;
-    /// match Engine::new(&db_path, DBColumnFamily::Default) {
-    ///     Ok(eng) => my_eng = eng,
-    ///     Err(err) => println!("failed to get snapshot engine, failed: {}", err),
-    /// };
-    /// ```
-    pub fn new(path: &str, cf: DBColumnFamily) -> Result<Engine, Error> {
-        let db = open(path)?;
+mod engine;
+pub use engine::*;
 
-        Ok(Engine {
-            _db: db,
-            _cf: cf.as_str(),
-        })
+enum_str! {
+    pub DBColumnFamily {
+        Default("default")
+        Instance("instance")
+        Status("status")
     }
+}
+
+impl DBColumnFamily {
+    fn all<'a>() -> Vec<&'a str> {
+        vec![
+            DBColumnFamily::Default.as_str(),
+            DBColumnFamily::Instance.as_str(),
+            DBColumnFamily::Status.as_str(),
+        ]
+    }
+}
+
+#[test]
+fn test_db_columnfamily() {
+    let exp = vec!["default", "instance", "status"];
+
+    assert_eq!(exp, DBColumnFamily::all());
 }

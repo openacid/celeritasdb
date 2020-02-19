@@ -11,7 +11,7 @@ struct CFOptions<'a> {
 }
 
 impl<'a> CFOptions<'a> {
-    pub fn new(cf: &'a str, options: ColumnFamilyOptions) -> CFOptions<'a> {
+    fn new(cf: &'a str, options: ColumnFamilyOptions) -> CFOptions<'a> {
         CFOptions { cf, options }
     }
 }
