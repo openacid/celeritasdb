@@ -1,6 +1,11 @@
+use std::cmp::min;
 use std::collections::{HashMap, HashSet};
 use std::fmt;
 use std::hash::Hash;
+
+#[cfg(test)]
+#[path = "./tests/exec_tests.rs"]
+mod tests;
 
 trait Edge<N> {
     fn target(&self) -> N;
@@ -40,10 +45,15 @@ trait Graph {
     type Edge: Copy + Eq + Edge<Self::Node>;
 
     fn nodes<'a>(&'a self) -> Box<dyn Iterator<Item = Self::Node> + 'a>;
+
     fn edges<'a>(&'a self, u: &Self::Node) -> Box<dyn Iterator<Item = Self::Edge> + 'a>;
 
     fn dfs<'a>(&'a self) -> Dfs<'a, Self> {
         Dfs::new(self)
+    }
+
+    fn find_sccs(&self) -> Vec<Vec<Self::Node>> {
+        Tarjan::from_graph(self).find_sccs()
     }
 }
 
@@ -129,94 +139,89 @@ impl<'a, G: Graph + ?Sized> Iterator for Dfs<'a, G> {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::Graph;
-    use super::Status::*;
-    use super::Visit::*;
-    use std::collections::HashMap;
+struct NodeState {
+    on_stack: bool,
+    index: i32,
+    lowlink: i32,
+}
 
-    #[derive(Debug)]
-    struct TestNode {
-        next: Vec<usize>,
-    }
-
-    #[derive(Debug)]
-    struct GraphData {
-        nodes: HashMap<usize, TestNode>,
-        keys: Vec<usize>,
-    }
-
-    impl Graph for GraphData {
-        type Node = usize;
-        type Edge = usize;
-
-        fn nodes<'a>(&'a self) -> Box<dyn Iterator<Item = usize> + 'a> {
-            Box::new(self.keys.iter().cloned())
-        }
-
-        fn edges<'a>(&'a self, u: &usize) -> Box<dyn Iterator<Item = usize> + 'a> {
-            Box::new(self.nodes[u].next.iter().cloned())
+impl NodeState {
+    fn new(idx: i32) -> NodeState {
+        NodeState {
+            on_stack: true,
+            index: idx,
+            lowlink: idx,
         }
     }
+}
 
-    // Given a string like "0-3, 1-2, 3-4, 2-3", creates a graph.
-    fn graph(s: &str) -> GraphData {
-        let mut ret = GraphData {
-            nodes: HashMap::new(),
-            keys: vec![],
-        };
+struct Tarjan<'a, G: Graph + ?Sized> {
+    dfs: Dfs<'a, G>,
+    stack: Vec<G::Node>,
+    node_states: HashMap<G::Node, NodeState>,
+    next_index: i32,
+}
 
-        for e in s.split(',') {
-            let dash_idx = e.find('-').unwrap();
-            let u: usize = e[..dash_idx].trim().parse().unwrap();
-            let v: usize = e[(dash_idx + 1)..].trim().parse().unwrap();
+impl<'a, G: Graph + ?Sized> Tarjan<'a, G> {
+    fn from_graph(g: &'a G) -> Self {
+        Tarjan {
+            dfs: g.dfs(),
+            stack: Vec::new(),
+            node_states: HashMap::new(),
+            next_index: 0,
+        }
+    }
 
-            ret.nodes.entry(u).or_insert(TestNode { next: Vec::new() });
-            ret.nodes.entry(v).or_insert(TestNode { next: Vec::new() });
-            ret.nodes.get_mut(&u).unwrap().next.push(v);
+    fn find_sccs(mut self) -> Vec<Vec<G::Node>> {
+        let mut ret = Vec::new();
 
-            if let None = ret.keys.iter().find(|&&x| x == u) {
-                ret.keys.push(u)
+        for visit in self.dfs {
+            match visit {
+                Visit::Retreat { u, parent } => {
+                    let lowlink = self.node_states[&u].lowlink;
+                    let index = self.node_states[&u].index;
+
+                    if let Some(p) = parent {
+                        self.node_states
+                            .entry(p)
+                            .and_modify(|s| s.lowlink = min(s.lowlink, lowlink));
+                    }
+
+                    if lowlink == index {
+                        let mut scc = Vec::new();
+                        loop {
+                            let v = self.stack.pop().unwrap();
+                            self.node_states.entry(v).and_modify(|s| s.on_stack = false);
+                            scc.push(v.clone());
+                            if v == u {
+                                break;
+                            }
+                        }
+                        ret.push(scc);
+                    }
+                }
+                Visit::Root(u) => {
+                    self.stack.push(u.clone());
+                    self.node_states.insert(u, NodeState::new(self.next_index));
+                    self.next_index += 1;
+                }
+                Visit::Edge { src, dst, status } => {
+                    if status == Status::New {
+                        self.stack.push(dst.clone());
+                        self.node_states
+                            .insert(dst, NodeState::new(self.next_index));
+                        self.next_index += 1;
+                    } else if self.node_states[&dst].on_stack {
+                        // dst is on the stack implies that there is a path from dst to src
+                        let index = self.node_states[&dst].index;
+                        self.node_states
+                            .entry(src)
+                            .and_modify(|s| s.lowlink = min(s.lowlink, index));
+                    }
+                }
             }
-
-            if let None = ret.keys.iter().find(|&&x| x == v) {
-                ret.keys.push(v)
-            }
-            ret.keys.sort();
         }
 
         ret
-    }
-
-    #[test]
-    fn test_dfs() {
-        let cases = vec![
-            (
-                // visited order
-                "0-1, 0-3, 0-2",
-                "R(0),e(0-1),r(1),e(0-3),r(3),e(0-2),r(2),r(0)",
-            ),
-            (
-                // repeat visit
-                "0-1, 0-2, 1-2",
-                "R(0),e(0-1),e(1-2),r(2),r(1),e(0-2),r(0)",
-            ),
-            (
-                // multi root nodes
-                "0-1, 2-3, 4-5",
-                "R(0),e(0-1),r(1),r(0),R(2),e(2-3),r(3),r(2),R(4),e(4-5),r(5),r(4)",
-            ),
-            (
-                // loop
-                "0-1, 1-2, 2-0",
-                "R(0),e(0-1),e(1-2),e(2-0),r(2),r(1),r(0)",
-            ),
-        ];
-        for case in cases {
-            let g = graph(case.0);
-            let dfs: Vec<String> = g.dfs().map(|x| format!("{}", x)).collect();
-            assert_eq!(dfs.join(","), case.1);
-        }
     }
 }
