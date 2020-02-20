@@ -1,10 +1,15 @@
-use super::{Error, RocksDBEngine};
+use rocksdb::DB;
+use super::{Error};
 
 mod dbutil;
 use dbutil::*;
 
-mod engine;
-pub use engine::*;
+mod rocks;
+pub use rocks::*;
+
+pub struct RocksDBEngine {
+    db: DB,
+}
 
 enum_str! {
     pub DBColumnFamily {
