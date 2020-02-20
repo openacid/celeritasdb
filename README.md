@@ -15,4 +15,5 @@ A database
 ```
 make pb
 ```
-See: [[pbbuild]]
+
+See: [pbbuild](pbbuild)
