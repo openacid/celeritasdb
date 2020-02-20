@@ -3,3 +3,16 @@
 # celeritasdb
 
 A database
+
+# Build
+
+## Build protobuf
+
+> Compiled `*.rs` from protobuf file are already checked in.
+> Unless you modify `components/epaxos/src/data/protos/*.proto`,
+> you do not need this step.
+
+```
+make pb
+```
+See: [[pbbuild]]

@@ -32,3 +32,6 @@ members = [
   "components/protobuf-gen-rust",
   "components/cele_threads",
 ]
+exclude = [
+    "pbbuild",
+]
