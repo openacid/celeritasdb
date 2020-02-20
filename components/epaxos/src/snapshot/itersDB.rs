@@ -1,5 +1,5 @@
-use crate::instance::{InstanceID, Instance};
-use super::{MemEngine, InstanceEngine};
+use super::{InstanceEngine, MemEngine};
+use crate::instance::{Instance, InstanceID};
 use protobuf::{parse_from_bytes, Message};
 
 use super::super::tokey::ToKey;
@@ -10,7 +10,7 @@ pub struct InstanceIter<'a, T> {
     pub engine: &'a T,
 }
 
-impl <'a> Iterator for InstanceIter<'a, MemEngine> {
+impl<'a> Iterator for InstanceIter<'a, MemEngine> {
     type Item = Instance;
 
     fn next(&mut self) -> Option<Instance> {
@@ -26,10 +26,10 @@ impl <'a> Iterator for InstanceIter<'a, MemEngine> {
                     self.curr_inst_id = iid;
                     self.include = false;
                     Some(v)
-                }else{
+                } else {
                     None
                 }
-            },
+            }
             Err(_) => None,
         }
     }

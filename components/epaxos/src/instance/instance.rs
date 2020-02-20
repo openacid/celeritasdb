@@ -30,15 +30,14 @@ impl InstanceID {
     }
 
     pub fn of_key(s: &str) -> Option<InstanceID> {
-        let items:Vec<&str> = s.split("/").collect();
+        let items: Vec<&str> = s.split("/").collect();
         if items[1] == "instance" && items.len() == 4 {
-
-            let rid = match items[2].parse::<i64>(){
+            let rid = match items[2].parse::<i64>() {
                 Ok(v) => v,
                 Err(_) => return None,
             };
 
-            let idx = match items[3].parse::<i64>(){
+            let idx = match items[3].parse::<i64>() {
                 Ok(v) => v,
                 Err(_) => return None,
             };
@@ -47,10 +46,10 @@ impl InstanceID {
                 replica_id: rid,
                 idx: idx,
                 ..Default::default()
-            })
+            });
         }
 
-        return None
+        return None;
     }
 }
 

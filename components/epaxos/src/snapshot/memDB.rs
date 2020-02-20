@@ -2,10 +2,10 @@ use std::collections::BTreeMap;
 use std::ops::Bound::Excluded;
 use std::sync::Mutex;
 
-use super::super::replica::ReplicaID;
 use super::super::command::{Command, OpCode};
-use super::super::instance::{Instance, InstanceID, InstanceStatus, BallotNum};
-use super::{Error, KVEngine, InstanceEngine, StatusEngine, InstanceIter};
+use super::super::instance::{BallotNum, Instance, InstanceID, InstanceStatus};
+use super::super::replica::ReplicaID;
+use super::{Error, InstanceEngine, InstanceIter, KVEngine, StatusEngine};
 
 use super::super::tokey::ToKey;
 use protobuf::{parse_from_bytes, Message};
@@ -15,21 +15,22 @@ pub struct MemEngine {
     pub _mutex: Mutex<i32>,
 }
 
-
 impl MemEngine {
     pub fn new() -> Result<MemEngine, Error> {
         let db = BTreeMap::new();
-        Ok(MemEngine{_db: db, _mutex: Mutex::new(0)})
+        Ok(MemEngine {
+            _db: db,
+            _mutex: Mutex::new(0),
+        })
     }
 
-    pub fn next_kv(&self, key:&Vec<u8>, include: bool) -> Option<(Vec<u8>, Vec<u8>)>{
-        for (k, v) in self._db.range(key.to_vec()..){
-
+    pub fn next_kv(&self, key: &Vec<u8>, include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
+        for (k, v) in self._db.range(key.to_vec()..) {
             if include == false && key == k {
-                continue
+                continue;
             }
 
-            return Some((k.to_vec(), v.to_vec()))
+            return Some((k.to_vec(), v.to_vec()));
         }
 
         None
@@ -37,22 +38,22 @@ impl MemEngine {
 }
 
 impl KVEngine for MemEngine {
-    fn set_kv(&mut self, key: &Vec<u8>, value: &Vec<u8>) -> Result<(), Error>{
+    fn set_kv(&mut self, key: &Vec<u8>, value: &Vec<u8>) -> Result<(), Error> {
         self._db.insert(key.to_vec(), value.to_vec());
         Ok(())
     }
 
-    fn get_kv(&self, key: &Vec<u8>) -> Result<Vec<u8>, Error>{
+    fn get_kv(&self, key: &Vec<u8>) -> Result<Vec<u8>, Error> {
         if let Some(v) = self._db.get(key) {
             Ok(v.to_vec())
         } else {
-            Err(Error::NotFound{})
+            Err(Error::NotFound {})
         }
     }
 }
 
 impl InstanceEngine<MemEngine> for MemEngine {
-    fn set_instance(&mut self, iid: &InstanceID, inst: Instance) -> Result<(), Error>{
+    fn set_instance(&mut self, iid: &InstanceID, inst: Instance) -> Result<(), Error> {
         // does not guarantee in a transaction
         let _ = self._mutex.lock().unwrap();
 
@@ -69,7 +70,7 @@ impl InstanceEngine<MemEngine> for MemEngine {
                 } else {
                     return Err(err);
                 }
-            },
+            }
         };
 
         // TODO use if max_iid < iid, after impl Ord for InstanceID
@@ -86,44 +87,54 @@ impl InstanceEngine<MemEngine> for MemEngine {
         Ok(())
     }
 
-    fn update_instance(&mut self,iid: &InstanceID, inst: Instance) -> Result<(), Error>{
+    fn update_instance(&mut self, iid: &InstanceID, inst: Instance) -> Result<(), Error> {
         self.set_instance(iid, inst)
     }
 
-    fn get_instance(&self, iid: &InstanceID) -> Result<Instance, Error>{
+    fn get_instance(&self, iid: &InstanceID) -> Result<Instance, Error> {
         let key = iid.to_key();
         let val_bytes: Vec<u8> = self.get_kv(&key)?;
 
         match parse_from_bytes::<Instance>(&val_bytes) {
             Ok(v) => Ok(v),
-            Err(_) => Err(Error::DBError{msg: "parse instance error".to_string()}),
+            Err(_) => Err(Error::DBError {
+                msg: "parse instance error".to_string(),
+            }),
         }
     }
 
-    fn get_instance_iter(&self, rid: ReplicaID) -> Result<InstanceIter<MemEngine>, Error>{
+    fn get_instance_iter(&self, rid: ReplicaID) -> Result<InstanceIter<MemEngine>, Error> {
         let iid = InstanceID::of(rid.clone(), 0);
-        Ok(InstanceIter{curr_inst_id: iid, include: true, engine: self})
+        Ok(InstanceIter {
+            curr_inst_id: iid,
+            include: true,
+            engine: self,
+        })
     }
 }
 
 impl StatusEngine for MemEngine {
-    fn get_max_instance_id(&self, rid: ReplicaID) -> Result<InstanceID, Error>{
+    fn get_max_instance_id(&self, rid: ReplicaID) -> Result<InstanceID, Error> {
         let key = self.max_instance_id_key(rid);
         let val_bytes: Vec<u8> = self.get_kv(&key)?;
 
         match parse_from_bytes::<InstanceID>(&val_bytes) {
             Ok(v) => Ok(v),
-            Err(_) => Err(Error::DBError{msg:"parse instance id error".to_string()}),
+            Err(_) => Err(Error::DBError {
+                msg: "parse instance id error".to_string(),
+            }),
         }
     }
 
-    fn get_max_exec_instance_id(&self, rid: ReplicaID) -> Result<InstanceID, Error>{
+    fn get_max_exec_instance_id(&self, rid: ReplicaID) -> Result<InstanceID, Error> {
         let key = self.max_exec_instance_id_key(rid);
         let val_bytes: Vec<u8> = self.get_kv(&key)?;
 
         match parse_from_bytes::<InstanceID>(&val_bytes) {
             Ok(v) => Ok(v),
-            Err(_) => Err(Error::DBError{msg:"parse instance id error".to_string()}),
+            Err(_) => Err(Error::DBError {
+                msg: "parse instance id error".to_string(),
+            }),
         }
     }
 }
@@ -134,16 +145,7 @@ mod tests {
 
     #[test]
     fn test_kv() {
-        let cases = vec![
-            (
-                "key1",
-                "val1"
-            ),
-            (
-                "key2",
-                "val2"
-            ),
-        ];
+        let cases = vec![("key1", "val1"), ("key2", "val2")];
 
         for case in cases {
             let mut engine = MemEngine::new().unwrap();
@@ -168,19 +170,15 @@ mod tests {
             for idx in 0..10 {
                 let iid = InstanceID::of(rid, idx);
 
-                let cmds = vec![
-                    Command::of(
-                            OpCode::NoOp,
-                            format!("k1{:}", rid*idx).as_bytes(),
-                            format!("v1{:}", rid*idx).as_bytes(),
-                        ),
-                ];
+                let cmds = vec![Command::of(
+                    OpCode::NoOp,
+                    format!("k1{:}", rid * idx).as_bytes(),
+                    format!("v1{:}", rid * idx).as_bytes(),
+                )];
 
                 let ballot = BallotNum::of(rid as i32, idx as i32, 0);
 
-                let deps = vec![
-                    InstanceID::of(rid+1, idx+1),
-                ];
+                let deps = vec![InstanceID::of(rid + 1, idx + 1)];
 
                 let inst = Instance::of(&cmds[..], &ballot, &deps[..]);
 
@@ -203,22 +201,12 @@ mod tests {
         }
 
         let cases = vec![
-           (
-                0,
-                &ints[..10],
-           ),
-           (
-                2,
-                &ints[20..3*10],
-           ),
-           (
-                4,
-                &ints[ints.len()..],
-           ),
+            (0, &ints[..10]),
+            (2, &ints[20..3 * 10]),
+            (4, &ints[ints.len()..]),
         ];
 
         for (rid, exp_insts) in cases {
-
             let mut n = 0;
             for act_inst in engine.get_instance_iter(rid).unwrap() {
                 assert_eq!(act_inst.cmds, exp_insts[n].cmds);
@@ -235,14 +223,7 @@ mod tests {
 
     #[test]
     fn test_status() {
-        let cases = vec![
-            (
-                1i64, 2,
-            ),
-            (
-                2i64, 3,
-            ),
-        ];
+        let cases = vec![(1i64, 2), (2i64, 3)];
 
         for (rid, idx) in cases {
             let mut engine = MemEngine::new().unwrap();
