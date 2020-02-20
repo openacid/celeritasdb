@@ -21,4 +21,3 @@ pub use iters::*;
 pub struct RocksDBEngine {
     db: DB,
 }
-
