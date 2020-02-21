@@ -3,6 +3,12 @@ use super::{DBColumnFamily, Error, RocksDBEngine};
 use rocksdb::{CFHandle, Writable, WriteBatch};
 use std::str;
 
+struct CfKV<'a> {
+    cf: &'a DBColumnFamily,
+    k: &'a [u8],
+    v: &'a [u8],
+}
+
 impl RocksDBEngine {
     /// Open a Engine base on rocksdb to use snapshot.
     ///
@@ -37,9 +43,9 @@ impl RocksDBEngine {
     }
 
     /// Set a key-value pair to rocksdb.
-    fn _set(&mut self, cf: &DBColumnFamily, k: &[u8], v: &[u8]) -> Result<(), Error> {
-        let cfh = self._make_cf_handle(cf)?;
-        Ok(self.db.put_cf(cfh, k, v)?)
+    fn _set(&mut self, cfkv: &CfKV) -> Result<(), Error> {
+        let cfh = self._make_cf_handle(cfkv.cf)?;
+        Ok(self.db.put_cf(cfh, cfkv.k, cfkv.v)?)
     }
 
     /// Get a value from rocksdb with it's key.
@@ -82,23 +88,13 @@ impl RocksDBEngine {
     }
 
     /// Set multi keys-values to rocksdb atomically.
-    fn _mset(
-        &mut self,
-        cfs: &Vec<&DBColumnFamily>,
-        keys: &Vec<&[u8]>,
-        values: &Vec<&[u8]>,
-    ) -> Result<(), Error> {
+    fn _mset(&mut self, cfkvs: &Vec<CfKV>) -> Result<(), Error> {
         let wb = WriteBatch::new();
-        let len = keys.len();
 
-        for i in 0..len {
-            let cf = &cfs[i];
-            let k = keys[i];
-            let v = values[i];
+        for cfkv in cfkvs {
+            let cfh = self._make_cf_handle(cfkv.cf)?;
 
-            let cfh = self._make_cf_handle(cf)?;
-
-            wb.put_cf(cfh, k, v)?;
+            wb.put_cf(cfh, cfkv.k, cfkv.v)?;
         }
 
         Ok(self.db.write(wb)?)
@@ -117,27 +113,38 @@ fn test_rocks_engine() {
     let k0 = "key0";
     let v0 = "value0";
 
-    eng._set(&DBColumnFamily::Default, k0.as_bytes(), v0.as_bytes())
-        .unwrap();
+    eng._set(&CfKV {
+        cf: &DBColumnFamily::Default,
+        k: k0.as_bytes(),
+        v: v0.as_bytes(),
+    })
+    .unwrap();
+
     let v_get = eng._get(&DBColumnFamily::Default, k0.as_bytes()).unwrap();
     assert_eq!(v_get, v0.as_bytes());
 
-    let cfs = vec![
-        &DBColumnFamily::Default,
-        &DBColumnFamily::Instance,
-        &DBColumnFamily::Status,
-    ];
-    let ks = vec!["key1".as_bytes(), "key2".as_bytes(), "key3".as_bytes()];
-    let vs = vec![
-        "value1".as_bytes(),
-        "value2".as_bytes(),
-        "value3".as_bytes(),
+    let cfkvs = vec![
+        CfKV {
+            cf: &DBColumnFamily::Default,
+            k: "key1".as_bytes(),
+            v: "value1".as_bytes(),
+        },
+        CfKV {
+            cf: &DBColumnFamily::Instance,
+            k: "key2".as_bytes(),
+            v: "value2".as_bytes(),
+        },
+        CfKV {
+            cf: &DBColumnFamily::Status,
+            k: "key3".as_bytes(),
+            v: "value3".as_bytes(),
+        },
     ];
 
-    eng._mset(&cfs, &ks, &vs).unwrap();
+    eng._mset(&cfkvs).unwrap();
 
-    for i in 0..3 {
-        let v_get = eng._get(&cfs[i], ks[i]).unwrap();
-        assert_eq!(v_get, vs[i]);
+    for cfkv in cfkvs {
+        let v_get = eng._get(cfkv.cf, cfkv.k).unwrap();
+        assert_eq!(v_get, cfkv.v);
     }
 }
