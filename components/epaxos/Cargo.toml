@@ -17,3 +17,4 @@ protobuf = { version = "2", features = ["with-bytes"] }
 quick-error = { version = "1.2.2" }
 rocksdb = { git = "https://github.com/tikv/rust-rocksdb.git", branch = "release-2.0" }
 tempfile = { version = "3.1.0" }
+yaml-rust = { version = "0.4" }
