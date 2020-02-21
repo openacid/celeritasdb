@@ -42,3 +42,30 @@ fn test_instance_id_to_key() {
         str::from_utf8(&k).unwrap()
     );
 }
+
+#[test]
+fn test_cmp_instance_id() {
+    let cases = vec![
+        (InstanceID::of(1, 10), InstanceID::of(1, 10), "="),
+        (InstanceID::of(1, 10), InstanceID::of(1, 10), "<="),
+        (InstanceID::of(1, 10), InstanceID::of(1, 10), ">="),
+        (InstanceID::of(2, 10), InstanceID::of(1, 10), ">"),
+        (InstanceID::of(2, 11), InstanceID::of(1, 10), ">"),
+        (InstanceID::of(1, 10), InstanceID::of(1, 11), "<"),
+        (InstanceID::of(1, 10), InstanceID::of(2, 10), "<"),
+        (InstanceID::of(1, 10), InstanceID::of(2, 12), "<"),
+    ];
+
+    for (i1, i2, op) in cases {
+        match op {
+            "=" => assert_eq!(i1 == i2, true),
+            "<=" => assert_eq!(i1 <= i2, true),
+            ">=" => assert_eq!(i1 >= i2, true),
+            "<" => assert_eq!(i1 < i2, true),
+            ">" => assert_eq!(i1 > i2, true),
+            _ => {
+                assert!(false, format!("Unknown op: {}", op));
+            }
+        };
+    }
+}

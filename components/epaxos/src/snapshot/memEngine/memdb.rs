@@ -69,13 +69,12 @@ impl InstanceEngine<MemEngine> for MemEngine {
             }
         };
 
-        // TODO use if max_iid < iid, after impl Ord for InstanceID
-        if max_iid.idx < iid.idx {
+        if &max_iid < iid {
             let key = self.max_instance_id_key(iid.replica_id);
             let _ = self.set_instance_id(&key, iid.clone())?;
         }
 
-        if inst.executed && max_iid.idx < iid.idx {
+        if inst.executed && &max_iid < iid {
             let key = self.max_exec_instance_id_key(iid.replica_id);
             let _ = self.set_instance_id(&key, iid.clone())?;
         }

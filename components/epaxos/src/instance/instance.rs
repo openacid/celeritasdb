@@ -2,6 +2,7 @@ use super::super::command::Command;
 use super::super::tokey::ToKey;
 use protobuf::RepeatedField;
 use protobuf::SingularPtrField;
+use std::cmp::{Ord, Ordering};
 
 use super::super::data;
 
@@ -17,6 +18,26 @@ pub use data::InstanceID;
 impl ToKey for InstanceID {
     fn to_key(&self) -> Vec<u8> {
         format!("/instance/{:016x}/{:016x}", self.replica_id, self.idx).into_bytes()
+    }
+}
+
+impl Eq for InstanceID {}
+
+impl Ord for InstanceID {
+    fn cmp(&self, other: &Self) -> Ordering {
+        let _ = match self.replica_id.cmp(&other.replica_id) {
+            Ordering::Greater => return Ordering::Greater,
+            Ordering::Less => return Ordering::Less,
+            Ordering::Equal => Ordering::Equal,
+        };
+
+        self.idx.cmp(&other.idx)
+    }
+}
+
+impl PartialOrd for InstanceID {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
     }
 }
 
