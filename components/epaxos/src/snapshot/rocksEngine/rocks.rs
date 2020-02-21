@@ -1,143 +1,133 @@
-use super::open;
-use super::{DBColumnFamily, Error, RocksDBEngine};
-use rocksdb::{CFHandle, Writable, WriteBatch};
-use std::str;
+use std::fs;
+use std::path::Path;
 
-impl RocksDBEngine {
-    /// Open a Engine base on rocksdb to use snapshot.
-    ///
-    /// # Examples:
-    /// ```
-    /// use tempfile::Builder;
-    /// use crate::epaxos::snapshot::RocksDBEngine;
-    ///
-    /// let tmp_root = Builder::new().tempdir().unwrap();
-    /// let db_path = format!("{}/test", tmp_root.path().display());
-    ///
-    /// let my_eng;
-    /// match RocksDBEngine::new(&db_path) {
-    ///     Ok(eng) => my_eng = eng,
-    ///     Err(err) => println!("failed to get rocksdb engine, failed: {}", err),
-    /// };
-    /// ```
-    pub fn new(path: &str) -> Result<RocksDBEngine, Error> {
-        let db = open(path)?;
+use rocksdb::{ColumnFamilyOptions, DBOptions, DB};
 
-        Ok(RocksDBEngine { db: db })
-    }
+use super::DBColumnFamily;
 
-    /// make rocksdb column family handle
-    fn _make_cf_handle(&self, cf: &DBColumnFamily) -> Result<&CFHandle, Error> {
-        match self.db.cf_handle(cf.as_str()) {
-            Some(h) => Ok(h),
-            None => Err(Error::DBError {
-                msg: format!("got column family {} handle failed", cf.as_str()),
-            }),
-        }
-    }
+struct CFOptions<'a> {
+    cf: &'a str,
+    options: ColumnFamilyOptions,
+}
 
-    /// Set a key-value pair to rocksdb.
-    fn _set(&mut self, cf: &DBColumnFamily, k: &[u8], v: &[u8]) -> Result<(), Error> {
-        let cfh = self._make_cf_handle(cf)?;
-        Ok(self.db.put_cf(cfh, k, v)?)
-    }
-
-    /// Get a value from rocksdb with it's key.
-    fn _get(&self, cf: &DBColumnFamily, k: &[u8]) -> Result<Vec<u8>, Error> {
-        let cfh = self._make_cf_handle(cf)?;
-
-        match self.db.get_cf(cfh, k) {
-            Ok(option_val) => match option_val {
-                Some(val) => {
-                    return Ok(val.to_vec());
-                }
-                None => {
-                    let k_str = match str::from_utf8(k) {
-                        Ok(s) => s,
-                        Err(err) => {
-                            return Err(Error::DBError {
-                                msg: format!("{} while converting utf8 to str", err),
-                            });
-                        }
-                    };
-                    return Err(Error::DBError {
-                        msg: format!("key not found: {}", k_str),
-                    });
-                }
-            },
-            Err(err) => {
-                let k_str = match str::from_utf8(k) {
-                    Ok(s) => s,
-                    Err(err) => {
-                        return Err(Error::DBError {
-                            msg: format!("{} while converting utf8 to str", err),
-                        });
-                    }
-                };
-                return Err(Error::DBError {
-                    msg: format!("{} while loading key {}", err, k_str),
-                });
-            }
-        };
-    }
-
-    /// Set multi keys-values to rocksdb atomically.
-    fn _mset(
-        &mut self,
-        cfs: &Vec<&DBColumnFamily>,
-        keys: &Vec<&[u8]>,
-        values: &Vec<&[u8]>,
-    ) -> Result<(), Error> {
-        let wb = WriteBatch::new();
-        let len = keys.len();
-
-        for i in 0..len {
-            let cf = &cfs[i];
-            let k = keys[i];
-            let v = values[i];
-
-            let cfh = self._make_cf_handle(cf)?;
-
-            wb.put_cf(cfh, k, v)?;
-        }
-
-        Ok(self.db.write(wb)?)
+impl<'a> CFOptions<'a> {
+    fn new(cf: &'a str, options: ColumnFamilyOptions) -> CFOptions<'a> {
+        CFOptions { cf, options }
     }
 }
 
+fn get_all_cfs_opts<'a>() -> Vec<CFOptions<'a>> {
+    let mut cfs_opts = Vec::with_capacity(DBColumnFamily::all().len());
+
+    for cf in DBColumnFamily::all() {
+        cfs_opts.push(CFOptions::new(cf, ColumnFamilyOptions::new()));
+    }
+
+    return cfs_opts;
+}
+
+fn db_exists(path: &str) -> Result<bool, String> {
+    let db_path = Path::new(path);
+    if !db_path.exists() || !db_path.is_dir() {
+        return Ok(false);
+    }
+
+    match fs::read_dir(path) {
+        Ok(mut dir) => {
+            return Ok(dir.next().is_some());
+        }
+        Err(err) => return Err(format!("read path {} failed, got error: {}", path, err)),
+    }
+}
+
+pub fn open(path: &str) -> Result<DB, String> {
+    let mut db_opt = DBOptions::new();
+
+    let cfs_opts = get_all_cfs_opts();
+
+    let mut exist_cfs_opts = vec![];
+    let mut new_cfs_opts = vec![];
+
+    if !db_exists(path)? {
+        db_opt.create_if_missing(true);
+
+        for x in cfs_opts {
+            if x.cf == DBColumnFamily::Default.as_str() {
+                exist_cfs_opts.push(CFOptions::new(x.cf, x.options.clone()));
+            } else {
+                new_cfs_opts.push(CFOptions::new(x.cf, x.options.clone()));
+            }
+        }
+
+        return open_db_cfs(path, db_opt, new_cfs_opts, exist_cfs_opts);
+    }
+
+    db_opt.create_if_missing(false);
+
+    let cf_list = DB::list_column_families(&db_opt, path)?;
+    let existed: Vec<&str> = cf_list.iter().map(|v| v.as_str()).collect();
+    let needed: Vec<&str> = cfs_opts.iter().map(|x| x.cf).collect();
+
+    if existed == needed {
+        return open_db_cfs(path, db_opt, vec![], cfs_opts);
+    }
+
+    for x in cfs_opts {
+        if existed.contains(&x.cf) {
+            exist_cfs_opts.push(CFOptions::new(x.cf, x.options.clone()));
+        } else {
+            new_cfs_opts.push(CFOptions::new(x.cf, x.options.clone()));
+        }
+    }
+
+    return open_db_cfs(path, db_opt, new_cfs_opts, exist_cfs_opts);
+}
+
+fn open_db_cfs(
+    path: &str,
+    db_opt: DBOptions,
+    new_cfs_opts: Vec<CFOptions<'_>>,
+    exist_cfs_opts: Vec<CFOptions<'_>>,
+) -> Result<DB, String> {
+    let len_exist_cf = exist_cfs_opts.len();
+    let len_new_cf = new_cfs_opts.len();
+
+    if len_exist_cf + len_new_cf == 0 {
+        return Err(format!("no column family specified"));
+    }
+
+    let mut exist_cfs_v = Vec::with_capacity(len_exist_cf);
+    let mut exist_opts_v = Vec::with_capacity(len_exist_cf);
+
+    for x in exist_cfs_opts {
+        exist_cfs_v.push(x.cf);
+        exist_opts_v.push(x.options);
+    }
+
+    let mut db = DB::open_cf(
+        db_opt,
+        path,
+        exist_cfs_v.into_iter().zip(exist_opts_v).collect(),
+    )?;
+
+    for x in new_cfs_opts {
+        db.create_cf((x.cf, x.options))?;
+    }
+
+    return Ok(db);
+}
+
 #[test]
-fn test_rocks_engine() {
+fn test_open() {
     use tempfile::Builder;
 
     let tmp_root = Builder::new().tempdir().unwrap();
     let db_path = format!("{}/test", tmp_root.path().display());
+    let db = open(&db_path).unwrap();
 
-    let mut eng = RocksDBEngine::new(&db_path).unwrap();
+    assert_eq!(db.path(), db_path);
 
-    let k0 = "key0";
-    let v0 = "value0";
+    let mut cfs = db.cf_names();
 
-    eng._set(&DBColumnFamily::Default, k0.as_bytes(), v0.as_bytes())
-        .unwrap();
-    let v_get = eng._get(&DBColumnFamily::Default, k0.as_bytes()).unwrap();
-    assert_eq!(v_get, v0.as_bytes());
-
-    let cfs = vec![
-        &DBColumnFamily::Default,
-        &DBColumnFamily::Instance,
-        &DBColumnFamily::Status,
-    ];
-    let ks = vec!["key1".as_bytes(), "key2".as_bytes(), "key3".as_bytes()];
-    let vs = vec![
-        "value1".as_bytes(),
-        "value2".as_bytes(),
-        "value3".as_bytes(),
-    ];
-
-    eng._mset(&cfs, &ks, &vs).unwrap();
-
-    for i in 0..3 {
-        let v_get = eng._get(&cfs[i], ks[i]).unwrap();
-        assert_eq!(v_get, vs[i]);
-    }
+    assert_eq!(cfs.sort(), DBColumnFamily::all().sort());
 }

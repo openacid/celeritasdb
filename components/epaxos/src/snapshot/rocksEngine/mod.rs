@@ -1,11 +1,11 @@
+use super::Error;
 use rocksdb::DB;
-use super::{Error};
-
-mod dbutil;
-use dbutil::*;
 
 mod rocks;
-pub use rocks::*;
+use rocks::*;
+
+mod engine;
+pub use engine::*;
 
 pub struct RocksDBEngine {
     db: DB,
