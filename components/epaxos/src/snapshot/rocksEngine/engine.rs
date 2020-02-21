@@ -3,10 +3,34 @@ use super::{DBColumnFamily, Error, RocksDBEngine};
 use rocksdb::{CFHandle, Writable, WriteBatch};
 use std::str;
 
+#[allow(dead_code)]
 struct CfKV<'a> {
     cf: &'a DBColumnFamily,
     k: &'a [u8],
     v: &'a [u8],
+}
+
+impl<'a> From<(&'a DBColumnFamily, &'a [u8], &'a [u8])> for CfKV<'a> {
+    fn from(cfkv: (&'a DBColumnFamily, &'a [u8], &'a [u8])) -> CfKV<'a> {
+        CfKV {
+            cf: cfkv.0,
+            k: cfkv.1,
+            v: cfkv.2,
+        }
+    }
+}
+
+// just for test
+impl<'a> From<(&'a str, &'a str, &'a str)> for CfKV<'a> {
+    fn from(cfkv: (&'a str, &'a str, &'a str)) -> CfKV<'a> {
+        let cf = DBColumnFamily::from_str(cfkv.0).unwrap();
+
+        CfKV {
+            cf: cf,
+            k: cfkv.1.as_bytes(),
+            v: cfkv.2.as_bytes(),
+        }
+    }
 }
 
 impl RocksDBEngine {
@@ -113,32 +137,15 @@ fn test_rocks_engine() {
     let k0 = "key0";
     let v0 = "value0";
 
-    eng._set(&CfKV {
-        cf: &DBColumnFamily::Default,
-        k: k0.as_bytes(),
-        v: v0.as_bytes(),
-    })
-    .unwrap();
+    eng._set(&("default", k0, v0).into()).unwrap();
 
     let v_get = eng._get(&DBColumnFamily::Default, k0.as_bytes()).unwrap();
     assert_eq!(v_get, v0.as_bytes());
 
     let cfkvs = vec![
-        CfKV {
-            cf: &DBColumnFamily::Default,
-            k: "key1".as_bytes(),
-            v: "value1".as_bytes(),
-        },
-        CfKV {
-            cf: &DBColumnFamily::Instance,
-            k: "key2".as_bytes(),
-            v: "value2".as_bytes(),
-        },
-        CfKV {
-            cf: &DBColumnFamily::Status,
-            k: "key3".as_bytes(),
-            v: "value3".as_bytes(),
-        },
+        ("default", "key1", "value1").into(),
+        ("instance", "key2", "value2").into(),
+        ("status", "key3", "value3").into(),
     ];
 
     eng._mset(&cfkvs).unwrap();
