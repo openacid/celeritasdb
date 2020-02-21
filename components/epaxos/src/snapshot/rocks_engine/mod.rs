@@ -1,4 +1,4 @@
-use super::Error;
+use super::{Base, BaseIter, Error};
 use rocksdb::DB;
 
 mod rocks;
@@ -6,6 +6,9 @@ use rocks::*;
 
 mod engine;
 pub use engine::*;
+
+#[cfg(test)]
+mod test_engine;
 
 pub struct RocksDBEngine {
     db: DB,

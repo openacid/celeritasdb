@@ -1,6 +1,6 @@
 use super::open;
-use super::{DBColumnFamily, Error, RocksDBEngine};
-use rocksdb::{CFHandle, Writable, WriteBatch};
+use super::{Base, BaseIter, DBColumnFamily, Error, RocksDBEngine};
+use rocksdb::{CFHandle, SeekKey, Writable, WriteBatch};
 use std::str;
 
 #[allow(dead_code)]
@@ -67,13 +67,13 @@ impl RocksDBEngine {
     }
 
     /// Set a key-value pair to rocksdb.
-    fn _set(&mut self, cfkv: &CfKV) -> Result<(), Error> {
+    fn set(&mut self, cfkv: &CfKV) -> Result<(), Error> {
         let cfh = self._make_cf_handle(cfkv.cf)?;
         Ok(self.db.put_cf(cfh, cfkv.k, cfkv.v)?)
     }
 
     /// Get a value from rocksdb with it's key.
-    fn _get(&self, cf: &DBColumnFamily, k: &[u8]) -> Result<Vec<u8>, Error> {
+    fn get(&self, cf: &DBColumnFamily, k: &[u8]) -> Result<Vec<u8>, Error> {
         let cfh = self._make_cf_handle(cf)?;
 
         match self.db.get_cf(cfh, k) {
@@ -125,6 +125,59 @@ impl RocksDBEngine {
     }
 }
 
+impl Base for RocksDBEngine {
+    fn set_kv(&mut self, key: Vec<u8>, value: Vec<u8>) -> Result<(), Error> {
+        self.set(&CfKV {
+            cf: &DBColumnFamily::Default,
+            k: &key,
+            v: &value,
+        })
+    }
+
+    fn get_kv(&self, key: &Vec<u8>) -> Result<Vec<u8>, Error> {
+        self.get(&DBColumnFamily::Default, key)
+    }
+
+    fn next_kv(&self, key: &Vec<u8>, include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
+        let mut iter = self.db.iter();
+
+        iter.seek(SeekKey::from(&key[..]));
+        if !iter.valid() {
+            // TODO may be a rocksdb panic here
+            return None;
+        }
+
+        match iter.kv() {
+            Some(kv) => {
+                if include {
+                    return Some(kv);
+                };
+
+                if &kv.0 != key {
+                    return Some(kv);
+                };
+            }
+            None => return None,
+        }
+
+        iter.next();
+        if !iter.valid() {
+            // TODO may be a rocksdb panic here
+            return None;
+        }
+
+        return iter.kv();
+    }
+
+    fn get_iter(&self, key: Vec<u8>, include: bool) -> BaseIter {
+        return BaseIter {
+            cursor: key,
+            include: include,
+            engine: self,
+        };
+    }
+}
+
 #[test]
 fn test_rocks_engine() {
     use tempfile::Builder;
@@ -137,9 +190,9 @@ fn test_rocks_engine() {
     let k0 = "key0";
     let v0 = "value0";
 
-    eng._set(&("default", k0, v0).into()).unwrap();
+    eng.set(&("default", k0, v0).into()).unwrap();
 
-    let v_get = eng._get(&DBColumnFamily::Default, k0.as_bytes()).unwrap();
+    let v_get = eng.get(&DBColumnFamily::Default, k0.as_bytes()).unwrap();
     assert_eq!(v_get, v0.as_bytes());
 
     let cfkvs = vec![
@@ -151,7 +204,7 @@ fn test_rocks_engine() {
     eng._mset(&cfkvs).unwrap();
 
     for cfkv in cfkvs {
-        let v_get = eng._get(cfkv.cf, cfkv.k).unwrap();
+        let v_get = eng.get(cfkv.cf, cfkv.k).unwrap();
         assert_eq!(v_get, cfkv.v);
     }
 }
