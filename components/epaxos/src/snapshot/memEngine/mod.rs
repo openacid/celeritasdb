@@ -1,5 +1,5 @@
-use std::sync::Mutex;
 use std::collections::BTreeMap;
+use std::sync::Mutex;
 
 mod memdb;
 pub use memdb::*;

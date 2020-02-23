@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+package command;
+
 enum OpCode {
     NoOp = 0;
     Set = 1;

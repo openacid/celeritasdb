@@ -1,7 +1,7 @@
 use crate::instance::{Instance, InstanceID};
 use crate::replica::ReplicaID;
 
-use protobuf::{parse_from_bytes, Message};
+use prost::Message;
 
 use super::Error;
 use super::InstanceIter;
@@ -43,7 +43,8 @@ pub trait StatusEngine: KVEngine {
     }
 
     fn set_instance_id(&mut self, key: &Vec<u8>, iid: InstanceID) -> Result<(), Error> {
-        let value: Vec<u8> = iid.write_to_bytes().unwrap();
+        let mut value = vec![];
+        iid.encode(&mut value).unwrap();
         self.set_kv(&key, &value)
     }
 }

@@ -1,13 +1,14 @@
 use super::*;
-use protobuf::{parse_from_bytes, Message};
+use prost::Message;
 
 #[test]
 fn test_command_protobuf() {
     let cmd1 = Command::of(OpCode::NoOp, "key".as_bytes(), "value".as_bytes());
 
-    let cmd_bytes: Vec<u8> = cmd1.write_to_bytes().unwrap();
+    let mut cmd_bytes = vec![];
+    cmd1.encode(&mut cmd_bytes).unwrap();
 
-    let cmd2 = parse_from_bytes::<Command>(&cmd_bytes).unwrap();
+    let cmd2 = Command::decode(cmd_bytes.as_slice()).unwrap();
 
     assert_eq!(cmd1.op, cmd2.op);
     assert_eq!(cmd1.key, cmd2.key);

@@ -1,6 +1,6 @@
 use super::*;
 use crate::command::{Command, OpCode};
-use protobuf::{parse_from_bytes, Message};
+use prost::Message;
 use std::str;
 
 #[test]
@@ -17,12 +17,13 @@ fn test_instance_protobuf() {
 
     let inst1 = Instance::of(&cmds[..], &ballot, &initial_deps[..]);
 
-    let inst_bytes: Vec<u8> = inst1.write_to_bytes().unwrap();
+    let mut inst_bytes = vec![];
+    inst1.encode(&mut inst_bytes).unwrap();
 
-    let inst2 = parse_from_bytes::<Instance>(&inst_bytes).unwrap();
+    let inst2 = Instance::decode(inst_bytes.as_slice()).unwrap();
 
-    assert_eq!(inst2.cmds.into_vec(), cmds);
-    assert_eq!(*inst2.ballot.get_ref(), ballot);
+    assert_eq!(inst2.cmds, cmds);
+    assert_eq!(inst2.ballot, Some(ballot));
     for (idx, inst_id) in inst2.initial_deps.iter().enumerate() {
         assert_eq!(*inst_id, initial_deps[idx]);
     }

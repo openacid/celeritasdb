@@ -1,5 +1,7 @@
 syntax = "proto3";
 
+package message;
+
 import "command.proto";
 import "instance.proto";
 
@@ -25,15 +27,15 @@ message Request {
     int64 to_replica_id = 2;
 
     // Sender's ballot
-    BallotNum ballot = 12;
-    InstanceID instance_id = 13;
+    instance.BallotNum ballot = 12;
+    instance.InstanceID instance_id = 13;
 
     //                                         // required by:
 
-    repeated Command        cmds           = 21; // PreAccept,          Commit, Prepare
-    repeated InstanceID     initial_deps   = 31; // PreAccept,
+    repeated command.Command        cmds           = 21; // PreAccept,          Commit, Prepare
+    repeated instance.InstanceID     initial_deps   = 31; // PreAccept,
     repeated bool           deps_committed = 33; // PreAccept,
-    repeated InstanceID     final_deps     = 41; //             Accept, Commit
+    repeated instance.InstanceID     final_deps     = 41; //             Accept, Commit
 }
 
 message Reply {
@@ -41,17 +43,17 @@ message Reply {
     RequestType req_type = 1;
 
     // The ballot stored on acceptor before handling a request.
-    BallotNum last_ballot = 11;
-    InstanceID instance_id = 13;
+    instance.BallotNum last_ballot = 11;
+    instance.InstanceID instance_id = 13;
 
     // deps_status describe what status a dependent instance is in.
     // Only `deps` needs these information in order to commit on fast-path.
 
     //                                         // required by:
 
-    repeated InstanceID     deps           = 32;  // PreAccept,     Prepare
+    repeated instance.InstanceID     deps           = 32;  // PreAccept,     Prepare
     repeated bool           deps_committed = 33;  // PreAccept,
-    repeated InstanceID     final_deps     = 41;  //                Prepare
+    repeated instance.InstanceID     final_deps     = 41;  //                Prepare
     bool                    committed      = 51;  //                Prepare
 }
 
@@ -59,85 +61,85 @@ message Reply {
 message PrepareReq {
     int64 leader_id = 1;  // the replica owns the instance
     int64 replica_id = 2; // the replica who starts the explict prepare
-    InstanceID instance_id = 3;
-    BallotNum ballot = 4;
+    instance.InstanceID instance_id = 3;
+    instance.BallotNum ballot = 4;
 };
 
 message PrepareReply {
     int64 acceptor_id = 1;
     int64 replica_id = 2; // the replica who starts the explict prepare
-    InstanceID instance_id = 3;
+    instance.InstanceID instance_id = 3;
     // successful(true), or failed(false) in case ballot number of msg
     // smaller than that in instance
     bool ok = 4;
-    BallotNum ballot = 5;
-    Instance instance = 6;
+    instance.BallotNum ballot = 5;
+    instance.Instance instance = 6;
 };
 
 message PreAcceptReq {
     int64 leader_id = 1;
     int64 replica_id = 2; // the same value with leader_id, weird!
-    InstanceID instance_id = 3;
-    Instance instance = 4;
-    BallotNum ballot = 5;
+    instance.InstanceID instance_id = 3;
+    instance.Instance instance = 4;
+    instance.BallotNum ballot = 5;
 };
 
 message PreAcceptReply {
     int64 replica_id = 1;
-    Instance instance = 2;
+    instance.Instance instance = 2;
     bool ok = 3;
-    BallotNum ballot = 4;
-    repeated InstanceID committed_deps = 5;
+    instance.BallotNum ballot = 4;
+    repeated instance.InstanceID committed_deps = 5;
 };
 
 // used in Paxos-Accept
 message AcceptReq {
     int64 leader_id = 1;  // the replica who sends the msg
     int64 replica_id = 2; // the replica who starts the explicit_prepare or who starts the preaccept or who starts the try-preaccept
-    Instance instance = 3;
-    BallotNum ballot = 4;
+    instance.Instance instance = 3;
+    instance.BallotNum ballot = 4;
     int32 count = 5;
 };
 
 message AcceptReply {
     int64 replica_id = 1;
-    InstanceID instance_id = 2;
+    instance.InstanceID instance_id = 2;
     bool ok = 3;
-    BallotNum ballot = 4;
+    instance.BallotNum ballot = 4;
 };
 
 // used in commit phase
 message CommitReq {
     int64 leader_id = 1;
     int64 replica_id = 2;
-    Instance instance = 3;
+    instance.Instance instance = 3;
 };
 
 message CommitShort {
     int64 leader_id = 1;
     int64 replica_id = 2;
-    InstanceID instance_id = 3;
+    instance.InstanceID instance_id = 3;
     int32 count = 4;
 
     int32 seq = 5;
-    repeated InstanceID deps = 6;
+    repeated instance.InstanceID deps = 6;
 }
 
 message TryPreAcceptReq {
     int64 leader_id = 1;
     int64 replica_id = 2;
-    InstanceID instance_id = 3;
-    BallotNum ballot = 4;
-    Instance instance = 5;
+    instance.InstanceID instance_id = 3;
+    instance.BallotNum ballot = 4;
+    instance.Instance instance = 5;
 };
 
 message TryPreAcceptReply {
     int64 acceptor_id = 1;
     int64 replica_id = 2;
-    InstanceID instance_id = 3;
+    instance.InstanceID instance_id = 3;
     bool ok = 4;
-    BallotNum ballot = 5;
+    instance.BallotNum ballot = 5;
     int64 conflict_replica = 6;
-    InstanceID conflict_instance_id = 7;
-    InstanceStatus conflict_status = 8;
+    instance.InstanceID conflict_instance_id = 7;
+    instance.InstanceStatus conflict_status = 8;
 };

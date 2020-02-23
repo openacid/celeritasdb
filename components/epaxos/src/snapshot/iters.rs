@@ -1,6 +1,6 @@
 use super::memEngine::*;
 use crate::instance::{Instance, InstanceID};
-use protobuf::parse_from_bytes;
+use prost::Message;
 
 use super::super::tokey::ToKey;
 
@@ -20,7 +20,7 @@ impl<'a> Iterator for InstanceIter<'a, MemEngine> {
         let key = String::from_utf8(key_bytes).unwrap();
         let iid = InstanceID::of_key(&key[..])?;
 
-        match parse_from_bytes::<Instance>(&val_bytes) {
+        match Instance::decode(val_bytes.as_slice()) {
             Ok(v) => {
                 if iid.replica_id == self.curr_inst_id.replica_id {
                     self.curr_inst_id = iid;

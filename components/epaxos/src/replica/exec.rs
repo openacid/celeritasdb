@@ -1,4 +1,4 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 use std::fmt;
 use std::hash::Hash;
 
@@ -28,8 +28,12 @@ enum Visit<N> {
 impl<T: fmt::Display> fmt::Display for Visit<T> {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         match self {
-            Visit::Edge { src, dst, status } => write!(f, "e({}-{})", src, dst),
-            Visit::Retreat { u, parent } => write!(f, "r({})", u),
+            Visit::Edge {
+                src,
+                dst,
+                status: _,
+            } => write!(f, "e({}-{})", src, dst),
+            Visit::Retreat { u, parent: _ } => write!(f, "r({})", u),
             Visit::Root(r) => write!(f, "R({})", r),
         }
     }

@@ -2,14 +2,14 @@ use std::collections::BTreeMap;
 use std::sync::Mutex;
 
 use super::MemEngine;
+use prost::Message;
 
 use super::super::super::command::{Command, OpCode};
-use super::super::super::instance::{BallotNum, Instance, InstanceID, InstanceStatus};
+use super::super::super::instance::{BallotNum, Instance, InstanceID};
 use super::super::super::replica::ReplicaID;
 use super::super::{Error, InstanceEngine, InstanceIter, KVEngine, StatusEngine};
 
 use super::super::super::tokey::ToKey;
-use protobuf::{parse_from_bytes, Message};
 
 impl MemEngine {
     pub fn new() -> Result<MemEngine, Error> {
@@ -54,7 +54,8 @@ impl InstanceEngine<MemEngine> for MemEngine {
         let _ = self._mutex.lock().unwrap();
 
         let key = iid.to_key();
-        let value: Vec<u8> = inst.write_to_bytes().unwrap();
+        let mut value = vec![];
+        inst.encode(&mut value).unwrap();
         let _ = self.set_kv(&key, &value)?;
 
         let max_iid = self.get_max_instance_id(iid.replica_id);
@@ -90,7 +91,7 @@ impl InstanceEngine<MemEngine> for MemEngine {
         let key = iid.to_key();
         let val_bytes: Vec<u8> = self.get_kv(&key)?;
 
-        match parse_from_bytes::<Instance>(&val_bytes) {
+        match Instance::decode(val_bytes.as_slice()) {
             Ok(v) => Ok(v),
             Err(_) => Err(Error::DBError {
                 msg: "parse instance error".to_string(),
@@ -113,7 +114,7 @@ impl StatusEngine for MemEngine {
         let key = self.max_instance_id_key(rid);
         let val_bytes: Vec<u8> = self.get_kv(&key)?;
 
-        match parse_from_bytes::<InstanceID>(&val_bytes) {
+        match InstanceID::decode(val_bytes.as_slice()) {
             Ok(v) => Ok(v),
             Err(_) => Err(Error::DBError {
                 msg: "parse instance id error".to_string(),
@@ -125,7 +126,7 @@ impl StatusEngine for MemEngine {
         let key = self.max_exec_instance_id_key(rid);
         let val_bytes: Vec<u8> = self.get_kv(&key)?;
 
-        match parse_from_bytes::<InstanceID>(&val_bytes) {
+        match InstanceID::decode(val_bytes.as_slice()) {
             Ok(v) => Ok(v),
             Err(_) => Err(Error::DBError {
                 msg: "parse instance id error".to_string(),
@@ -184,8 +185,8 @@ mod tests {
 
                 let act = engine.get_instance(&iid).unwrap();
 
-                assert_eq!(act.cmds.into_vec(), cmds);
-                assert_eq!(*act.ballot.get_ref(), ballot);
+                assert_eq!(act.cmds, cmds);
+                assert_eq!(act.ballot, Some(ballot));
 
                 for (idx, inst_id) in act.initial_deps.iter().enumerate() {
                     assert_eq!(*inst_id, deps[idx]);
