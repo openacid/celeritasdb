@@ -1,9 +1,8 @@
 use crate::command::{Command, OpCode};
 use crate::instance::{BallotNum, Instance, InstanceID};
 use crate::message::{Reply, Request, RequestType};
-use protobuf::RepeatedField;
 // Message is required to use to use method in trait Message.
-use protobuf::{parse_from_bytes, Message};
+use prost::Message;
 
 fn new_foo_inst() -> Instance {
     let replica = 1;
@@ -21,22 +20,22 @@ fn new_foo_inst() -> Instance {
 
     let mut inst = Instance::of(&cmds[..], &ballot, &initial_deps[..]);
     // TODO move these to Instance::new_instance
-    inst.set_instance_id(inst_id1);
-    inst.set_deps(RepeatedField::from_slice(&[inst_id2]));
-    inst.set_final_deps(RepeatedField::from_slice(&[inst_id3]));
-    inst.set_last_ballot(ballot2);
+    inst.instance_id = Some(inst_id1);
+    inst.deps = [inst_id2].to_vec();
+    inst.final_deps = [inst_id3].to_vec();
+    inst.last_ballot = Some(ballot2);
 
     inst
 }
 
 fn test_request_common_fields(inst: &Instance, req: &Request, t: RequestType) {
-    assert_eq!(t, req.req_type);
+    assert_eq!(t as i32, req.req_type);
     assert_eq!(inst.ballot, req.ballot);
     assert_eq!(inst.instance_id, req.instance_id);
 }
 
 fn test_reply_common_fields(inst: &Instance, rp: &Reply, t: RequestType) {
-    assert_eq!(t, rp.req_type);
+    assert_eq!(t as i32, rp.req_type);
     assert_eq!(inst.last_ballot, rp.last_ballot);
     assert_eq!(inst.instance_id, rp.instance_id);
 }
@@ -50,11 +49,12 @@ fn test_request_prepare_pb() {
     test_request_common_fields(&inst, &pp, RequestType::Prepare);
     // prepare has no other fields.
 
-    let size = pp.compute_size();
+    let size = pp.encoded_len();
     assert!(size > 0);
 
-    let byts = pp.write_to_bytes().unwrap();
-    let pp2 = parse_from_bytes::<Request>(&byts).unwrap();
+    let mut byts = vec![];
+    pp.encode(&mut byts).unwrap();
+    let pp2 = Request::decode(byts.as_slice()).unwrap();
     assert_eq!(pp, pp2);
 }
 
@@ -69,11 +69,12 @@ fn test_reply_prepare_pb() {
     assert_eq!(inst.final_deps, pp.final_deps);
     assert_eq!(inst.committed, pp.committed);
 
-    let size = pp.compute_size();
+    let size = pp.encoded_len();
     assert!(size > 0);
 
-    let byts: Vec<u8> = pp.write_to_bytes().unwrap();
-    let pp2 = parse_from_bytes::<Reply>(&byts).unwrap();
+    let mut byts = vec![];
+    pp.encode(&mut byts).unwrap();
+    let pp2 = Reply::decode(byts.as_slice()).unwrap();
     assert_eq!(pp, pp2);
 }
 
@@ -89,11 +90,12 @@ fn test_request_preaccpt_pb() {
     assert_eq!(inst.initial_deps, pp.initial_deps);
     assert_eq!(deps_committed.to_vec(), pp.deps_committed);
 
-    let size = pp.compute_size();
+    let size = pp.encoded_len();
     assert!(size > 0);
 
-    let byts = pp.write_to_bytes().unwrap();
-    let pp2 = parse_from_bytes::<Request>(&byts).unwrap();
+    let mut byts = vec![];
+    pp.encode(&mut byts).unwrap();
+    let pp2 = Request::decode(byts.as_slice()).unwrap();
     assert_eq!(pp, pp2);
 }
 
@@ -108,11 +110,12 @@ fn test_reply_preaccept_pb() {
     assert_eq!(inst.deps, pp.deps);
     assert_eq!(deps_committed.to_vec(), pp.deps_committed);
 
-    let size = pp.compute_size();
+    let size = pp.encoded_len();
     assert!(size > 0);
 
-    let byts = pp.write_to_bytes().unwrap();
-    let pp2 = parse_from_bytes::<Reply>(&byts).unwrap();
+    let mut byts = vec![];
+    pp.encode(&mut byts).unwrap();
+    let pp2 = Reply::decode(byts.as_slice()).unwrap();
     assert_eq!(pp, pp2);
 }
 
@@ -125,11 +128,12 @@ fn test_request_accpt_pb() {
     test_request_common_fields(&inst, &pp, RequestType::Accept);
     assert_eq!(inst.final_deps, pp.final_deps);
 
-    let size = pp.compute_size();
+    let size = pp.encoded_len();
     assert!(size > 0);
 
-    let byts = pp.write_to_bytes().unwrap();
-    let pp2 = parse_from_bytes::<Request>(&byts).unwrap();
+    let mut byts = vec![];
+    pp.encode(&mut byts).unwrap();
+    let pp2 = Request::decode(byts.as_slice()).unwrap();
     assert_eq!(pp, pp2);
 }
 
@@ -142,11 +146,12 @@ fn test_reply_accept_pb() {
     test_reply_common_fields(&inst, &pp, RequestType::Accept);
     // no other fields.
 
-    let size = pp.compute_size();
+    let size = pp.encoded_len();
     assert!(size > 0);
 
-    let byts = pp.write_to_bytes().unwrap();
-    let pp2 = parse_from_bytes::<Reply>(&byts).unwrap();
+    let mut byts = vec![];
+    pp.encode(&mut byts).unwrap();
+    let pp2 = Reply::decode(byts.as_slice()).unwrap();
     assert_eq!(pp, pp2);
 }
 
@@ -160,11 +165,12 @@ fn test_request_commit_pb() {
     assert_eq!(inst.cmds, pp.cmds);
     assert_eq!(inst.final_deps, pp.final_deps);
 
-    let size = pp.compute_size();
+    let size = pp.encoded_len();
     assert!(size > 0);
 
-    let byts = pp.write_to_bytes().unwrap();
-    let pp2 = parse_from_bytes::<Request>(&byts).unwrap();
+    let mut byts = vec![];
+    pp.encode(&mut byts).unwrap();
+    let pp2 = Request::decode(byts.as_slice()).unwrap();
     assert_eq!(pp, pp2);
 }
 
@@ -177,10 +183,11 @@ fn test_reply_commit_pb() {
     test_reply_common_fields(&inst, &pp, RequestType::Commit);
     // no other fields.
 
-    let size = pp.compute_size();
+    let size = pp.encoded_len();
     assert!(size > 0);
 
-    let byts = pp.write_to_bytes().unwrap();
-    let pp2 = parse_from_bytes::<Reply>(&byts).unwrap();
+    let mut byts = vec![];
+    pp.encode(&mut byts).unwrap();
+    let pp2 = Reply::decode(byts.as_slice()).unwrap();
     assert_eq!(pp, pp2);
 }

@@ -3,7 +3,6 @@ extern crate quick_error;
 
 pub mod command;
 pub mod conf;
-pub mod data;
 pub mod instance;
 pub mod message;
 pub mod replica;
