@@ -49,7 +49,7 @@ pub trait StatusEngine: KVEngine {
 }
 
 /// TransactionEngine offer a transaction to operate key-values and instances atomically
-pub trait TransactionEngine<T>: KVEngine + InstanceEngine<T> {
+pub trait TransactionEngine<T>: StatusEngine + InstanceEngine<T> {
     /// start a transaction
     fn trans_begin(&mut self);
     /// commit a transaction
