@@ -70,3 +70,102 @@ fn test_cmp_instance_id() {
         };
     }
 }
+
+#[test]
+fn test_instance_after() {
+    let cases = vec![
+        (
+            Instance {
+                final_deps: vec![InstanceID::of(1, 1)],
+                ..Default::default()
+            },
+            Instance {
+                final_deps: vec![InstanceID::of(1, 1)],
+                ..Default::default()
+            },
+            false,
+        ),
+        (
+            Instance {
+                final_deps: vec![InstanceID::of(1, 1)],
+                ..Default::default()
+            },
+            Instance {
+                final_deps: vec![InstanceID::of(1, 0)],
+                ..Default::default()
+            },
+            true,
+        ),
+        (
+            Instance {
+                final_deps: vec![InstanceID::of(1, 1), InstanceID::of(2, 1)],
+                ..Default::default()
+            },
+            Instance {
+                final_deps: vec![InstanceID::of(1, 1), InstanceID::of(2, 1)],
+                ..Default::default()
+            },
+            false,
+        ),
+        (
+            Instance {
+                final_deps: vec![InstanceID::of(1, 1), InstanceID::of(2, 1)],
+                ..Default::default()
+            },
+            Instance {
+                final_deps: vec![InstanceID::of(1, 1), InstanceID::of(2, 0)],
+                ..Default::default()
+            },
+            true,
+        ),
+        (
+            Instance {
+                final_deps: vec![
+                    InstanceID::of(1, 1),
+                    InstanceID::of(2, 1),
+                    InstanceID::of(3, 1),
+                ],
+                ..Default::default()
+            },
+            Instance {
+                final_deps: vec![InstanceID::of(1, 1), InstanceID::of(2, 1)],
+                ..Default::default()
+            },
+            false,
+        ),
+        (
+            Instance {
+                final_deps: vec![InstanceID::of(1, 1), InstanceID::of(2, 1)],
+                ..Default::default()
+            },
+            Instance {
+                final_deps: vec![
+                    InstanceID::of(1, 1),
+                    InstanceID::of(2, 1),
+                    InstanceID::of(3, 1),
+                ],
+                ..Default::default()
+            },
+            false,
+        ),
+        (
+            Instance {
+                final_deps: vec![InstanceID::of(1, 2), InstanceID::of(2, 1)],
+                ..Default::default()
+            },
+            Instance {
+                final_deps: vec![
+                    InstanceID::of(1, 1),
+                    InstanceID::of(2, 1),
+                    InstanceID::of(3, 1),
+                ],
+                ..Default::default()
+            },
+            true,
+        ),
+    ];
+
+    for (a, b, r) in cases {
+        assert_eq!(r, a.after(&b));
+    }
+}

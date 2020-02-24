@@ -99,4 +99,28 @@ impl Instance {
             ..Default::default()
         }
     }
+
+    pub fn after(&self, other: &Instance) -> bool {
+        let mut great = false;
+        for iid in other.final_deps.iter() {
+            match self
+                .final_deps
+                .iter()
+                .find(|x| x.replica_id == iid.replica_id)
+            {
+                Some(my_iid) => {
+                    if my_iid.idx < iid.idx {
+                        return false;
+                    }
+
+                    if my_iid.idx > iid.idx {
+                        great = true;
+                    }
+                }
+                None => continue,
+            }
+        }
+
+        great
+    }
 }
