@@ -1,11 +1,14 @@
 use std::net::{SocketAddr, TcpListener, TcpStream};
 use std::thread::JoinHandle;
+use std::time::SystemTime;
 
 use super::super::command::Command;
 use super::super::conf::ClusterInfo;
 use super::super::instance::{Instance, InstanceID, InstanceIdx};
 
 use super::super::message::*;
+
+use super::super::snapshot::{InstanceEngine, KVEngine, StatusEngine, TransactionEngine};
 
 #[cfg(test)]
 #[path = "./tests/replica_tests.rs"]
@@ -23,10 +26,11 @@ pub struct ReplicaPeer {
 
 /// misc configuration info
 pub struct ReplicaConf {
-    pub thrifty: bool, // send msg only to a quorum or the full set
-    pub exec: bool,    // exec comamnd or not
-    pub dreply: bool,  // delay replying to client after command has been executed or not
-    pub beacon: bool,  // periodicity detect the speed of each known replica or not
+    pub thrifty: bool,        // send msg only to a quorum or the full set
+    pub exec: bool,           // exec comamnd or not
+    pub dreply: bool,         // delay replying to client after command has been executed or not
+    pub beacon: bool,         // periodicity detect the speed of each known replica or not
+    pub inst_co_timeout: i32, // instance committed timeout
 }
 
 /// status of a replica
@@ -41,11 +45,12 @@ pub enum ReplicaStatus {
 pub struct SMR {}
 
 /// structure to represent a replica
-pub struct Replica {
-    pub replica_id: ReplicaID,        // replica id
-    pub status: ReplicaStatus,        // status record used internally
-    pub client_listener: TcpListener, // tcp listener to client
-    pub listener: TcpListener,        // tcp listener for replicas
+pub struct Replica<Engine> {
+    pub replica_id: ReplicaID,             // replica id
+    pub group_replica_ids: Vec<ReplicaID>, // all replica ids in this group
+    pub status: ReplicaStatus,             // status record used internally
+    pub client_listener: TcpListener,      // tcp listener to client
+    pub listener: TcpListener,             // tcp listener for replicas
     pub peers: Vec<ReplicaPeer>, // peers in communication, if need access from multi-thread, wrap it by Arc<>
     pub conf: ReplicaConf,       // misc conf
 
@@ -60,9 +65,18 @@ pub struct Replica {
     pub exec_worker: JoinHandle<()>, // handle of exec thread
     pub max_seq: i64,                // max seq ever known in cluster
     pub latest_cp: InstanceID,       // record the instance id in the lastest communication
+
+    // snapshot trait
+    pub inst_engine: Box<dyn InstanceEngine<Engine>>,
+    pub kv_engine: Box<dyn KVEngine>,
+    pub st_engine: Box<dyn StatusEngine>,
+    pub tran_engine: Box<dyn TransactionEngine<Engine>>,
+
+    // to recover uncommitted instance
+    pub problem_inst_ids: Vec<(InstanceID, SystemTime)>,
 }
 
-impl Replica {
+impl<Engine> Replica<Engine> {
     /// create a new Replica
     /// do all the initialization and start all necessary threads here,
     /// so after this call, replica is fully functional.
@@ -72,7 +86,7 @@ impl Replica {
         thrifty: bool,
         exec: bool,
         beacon: bool,
-    ) -> Result<Replica, String> {
+    ) -> Result<Replica<Engine>, String> {
         Err("not implemented".to_string())
     }
 
