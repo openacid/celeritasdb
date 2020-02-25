@@ -62,11 +62,9 @@ impl ClusterInfo {
 
             let req_addr = match node_hash.get(&Yaml::String("req".to_string())) {
                 None => return Err(String::from("req address is required")),
-                Some(r) => {
-                    match r.as_vec() {
-                        None => return Err(String::from("invalid req socket address")),
-                        Some(v) => v,
-                    }
+                Some(r) => match r.as_vec() {
+                    None => return Err(String::from("invalid req socket address")),
+                    Some(v) => v,
                 },
             };
 
@@ -85,11 +83,9 @@ impl ClusterInfo {
 
             let dup_addr = match node_hash.get(&Yaml::String("dup".to_string())) {
                 None => return Err(String::from("dup socket address is required")),
-                Some(r) => {
-                    match r.as_vec() {
-                        None => return Err(String::from("invalid dup socket address")),
-                        Some(v) => v,
-                    }
+                Some(r) => match r.as_vec() {
+                    None => return Err(String::from("invalid dup socket address")),
+                    Some(v) => v,
                 },
             };
 
@@ -122,7 +118,10 @@ impl ClusterInfo {
             Some(port) => port as u16,
         };
 
-        return Ok(SocketAddr::new(IpAddr::V4(Ipv4Addr::from_str(ip).unwrap()), port));
+        return Ok(SocketAddr::new(
+            IpAddr::V4(Ipv4Addr::from_str(ip).unwrap()),
+            port,
+        ));
     }
 
     // make a node id from key, i.e. mac address

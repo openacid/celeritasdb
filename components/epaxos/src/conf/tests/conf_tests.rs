@@ -32,9 +32,15 @@ nodes:
 
     let node = ci.get_node("192.168.0.1", 3332).unwrap();
     assert_eq!("", node.node_id);
-    assert_eq!(IpAddr::V4(Ipv4Addr::new(192, 168, 0, 1)), node.req_addr.ip());
+    assert_eq!(
+        IpAddr::V4(Ipv4Addr::new(192, 168, 0, 1)),
+        node.req_addr.ip()
+    );
     assert_eq!(3332, node.req_addr.port());
-    assert_eq!(IpAddr::V4(Ipv4Addr::new(192, 168, 0, 1)), node.dup_addr.ip());
+    assert_eq!(
+        IpAddr::V4(Ipv4Addr::new(192, 168, 0, 1)),
+        node.dup_addr.ip()
+    );
     assert_eq!(4442, node.dup_addr.port());
     assert_eq!("/var/run/usocket2", node.req_uaddr.as_ref().unwrap());
 
