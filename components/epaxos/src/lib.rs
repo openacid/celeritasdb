@@ -5,10 +5,10 @@ pub mod command;
 pub mod conf;
 pub mod instance;
 pub mod message;
+pub mod qpaxos;
 pub mod replica;
 pub mod snapshot;
 pub mod tokey;
-pub mod qpaxos;
 
 #[cfg(test)]
 mod tests {

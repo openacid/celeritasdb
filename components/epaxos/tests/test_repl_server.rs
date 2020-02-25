@@ -1,16 +1,15 @@
-use tonic;
 use tokio;
-use tonic::{transport::Server};
-use tonic::{Request};
+use tonic;
+use tonic::transport::Server;
+use tonic::Request;
 
 use tokio::time::delay_for;
 
-use std::time::{Duration};
+use std::time::Duration;
 
-use epaxos::qpaxos::*;
-use epaxos::message;
 use epaxos::instance;
-
+use epaxos::message;
+use epaxos::qpaxos::*;
 
 #[test]
 fn test_repl_server() {
@@ -19,7 +18,6 @@ fn test_repl_server() {
 
 #[tokio::main]
 async fn _repl_server() {
-
     let addr = "127.0.0.1:4444".parse().unwrap();
 
     // This channel is for shutting down the server
@@ -32,7 +30,11 @@ async fn _repl_server() {
 
     tokio::spawn(async move {
         println!("spawned");
-        s.serve_with_shutdown(addr, async{rx.await.ok();}).await.unwrap();
+        s.serve_with_shutdown(addr, async {
+            rx.await.ok();
+        })
+        .await
+        .unwrap();
     });
 
     println!("serving");
@@ -41,9 +43,13 @@ async fn _repl_server() {
     // TODO replace this with loop of trying connecting.
     delay_for(Duration::from_millis(1_000)).await;
 
-    let mut client = QPaxosClient::connect("http://127.0.0.1:4444").await.unwrap();
+    let mut client = QPaxosClient::connect("http://127.0.0.1:4444")
+        .await
+        .unwrap();
 
-    let inst = instance::Instance { ..Default::default() };
+    let inst = instance::Instance {
+        ..Default::default()
+    };
 
     // Document said the request should be wrapped by a tonic::Request.
     // Do not know why. It seems to work fine with a protobuf message.
