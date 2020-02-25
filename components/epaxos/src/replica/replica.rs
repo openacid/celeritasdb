@@ -25,6 +25,7 @@ pub struct ReplicaPeer {
 }
 
 /// misc configuration info
+#[derive(Default)]
 pub struct ReplicaConf {
     pub thrifty: bool,        // send msg only to a quorum or the full set
     pub exec: bool,           // exec comamnd or not
@@ -41,9 +42,6 @@ pub enum ReplicaStatus {
     Down,
 }
 
-// TODO(lsl): use defination from @yipu
-pub struct SMR {}
-
 /// structure to represent a replica
 pub struct Replica<Engine> {
     pub replica_id: ReplicaID,             // replica id
@@ -54,23 +52,11 @@ pub struct Replica<Engine> {
     pub peers: Vec<ReplicaPeer>, // peers in communication, if need access from multi-thread, wrap it by Arc<>
     pub conf: ReplicaConf,       // misc conf
 
-    pub smr: SMR, // state machine replication
-
     pub inst_idx: InstanceIdx,
-    // pub crt_inst: InstIDs, // highest active instance numbers that this replica knows
-    // pub replica_committed: InstIDs, // highest continuous committed instance per replica that known
-    // pub replica_executed: InstIDs, // highest executed instance per replica that known
+    pub latest_cp: InstanceID, // record the instance id in the lastest communication
 
-    // TODO(lsl): get exec thread handle from @baohai
-    pub exec_worker: JoinHandle<()>, // handle of exec thread
-    pub max_seq: i64,                // max seq ever known in cluster
-    pub latest_cp: InstanceID,       // record the instance id in the lastest communication
-
-    // snapshot trait
-    pub inst_engine: Box<dyn InstanceEngine<Engine>>,
-    pub kv_engine: Box<dyn KVEngine>,
-    pub st_engine: Box<dyn StatusEngine>,
-    pub tran_engine: Box<dyn TransactionEngine<Engine>>,
+    // snapshot engine
+    pub engine: Engine,
 
     // to recover uncommitted instance
     pub problem_inst_ids: Vec<(InstanceID, SystemTime)>,
