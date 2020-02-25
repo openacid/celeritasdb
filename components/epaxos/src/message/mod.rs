@@ -2,10 +2,6 @@ use super::instance::Instance;
 // use prost::{Message};
 
 include!(concat!(env!("OUT_DIR"), "/message.rs"));
-// include!(concat!(
-//     env!("CARGO_MANIFEST_DIR"),
-//     "/data/qpaxos.message.rs"
-// ));
 
 #[cfg(test)]
 #[path = "./tests/message_tests.rs"]

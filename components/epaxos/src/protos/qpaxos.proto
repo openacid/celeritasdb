@@ -1,0 +1,9 @@
+syntax = "proto3";
+
+package qpaxos;
+
+import "message.proto";
+
+service QPaxos {
+    rpc replicate (message.Request) returns (message.Reply) {}
+}
