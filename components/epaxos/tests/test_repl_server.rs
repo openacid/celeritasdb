@@ -1,0 +1,61 @@
+use tonic;
+use tokio;
+use tonic::{transport::Server};
+use tonic::{Request};
+
+use tokio::time::delay_for;
+
+use std::time::{Duration};
+
+use epaxos::qpaxos::*;
+use epaxos::message;
+use epaxos::instance;
+
+
+#[test]
+fn test_repl_server() {
+    _repl_server();
+}
+
+#[tokio::main]
+async fn _repl_server() {
+
+    let addr = "127.0.0.1:4444".parse().unwrap();
+
+    // This channel is for shutting down the server
+    let (tx, rx) = tokio::sync::oneshot::channel::<()>();
+
+    // start a replication server in a coroutine
+
+    let qp = MyQPaxos::default();
+    let s = Server::builder().add_service(QPaxosServer::new(qp));
+
+    tokio::spawn(async move {
+        println!("spawned");
+        s.serve_with_shutdown(addr, async{rx.await.ok();}).await.unwrap();
+    });
+
+    println!("serving");
+
+    // Wait for server to setup.
+    // TODO replace this with loop of trying connecting.
+    delay_for(Duration::from_millis(1_000)).await;
+
+    let mut client = QPaxosClient::connect("http://127.0.0.1:4444").await.unwrap();
+
+    let inst = instance::Instance { ..Default::default() };
+
+    // Document said the request should be wrapped by a tonic::Request.
+    // Do not know why. It seems to work fine with a protobuf message.
+
+    // let request = Request::new(message::Request::accept());
+    // let request = message::Request::accept().into();
+    let request = message::Request::accept(&inst);
+
+    let response = client.replicate(request).await.unwrap();
+
+    println!("RESPONSE={:?}", response);
+
+    // shut up or shut down?:)
+    let _ = tx.send(());
+}
