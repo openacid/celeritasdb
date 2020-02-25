@@ -7,7 +7,9 @@ use prost::Message;
 use super::super::super::command::{Command, OpCode};
 use super::super::super::instance::{BallotNum, Instance, InstanceID};
 use super::super::super::replica::ReplicaID;
-use super::super::{Error, InstanceEngine, InstanceIter, KVEngine, StatusEngine};
+use super::super::{
+    Error, InstanceEngine, InstanceIter, KVEngine, StatusEngine, TransactionEngine,
+};
 
 use super::super::super::tokey::ToKey;
 
@@ -135,6 +137,19 @@ impl StatusEngine for MemEngine {
     }
 }
 
+impl TransactionEngine<MemEngine> for MemEngine {
+    fn trans_begin(&mut self) {}
+    fn trans_commit(&mut self) -> Result<(), Error> {
+        Ok(())
+    }
+    fn trans_rollback(&mut self) -> Result<(), Error> {
+        Ok(())
+    }
+    fn get_kv_for_update(&self, key: &Vec<u8>) -> Result<Vec<u8>, Error> {
+        Ok(vec![])
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -238,5 +253,17 @@ mod tests {
 
             assert_eq!(act, iid);
         }
+    }
+
+    #[test]
+    fn test_transaction() {
+        let mut engine = MemEngine::new().unwrap();
+        let k = "foo".as_bytes().to_vec();
+        let v = "bar".as_bytes().to_vec();
+        engine.trans_begin();
+        engine.set_kv(&k, &v);
+        engine.trans_commit();
+
+        assert_eq!(v, engine.get_kv(&k).unwrap());
     }
 }
