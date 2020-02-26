@@ -1,8 +1,5 @@
 # Protobuf related programs
 
-- [ ] TODO grpc: howto
-- [ ] TODO comparison with prost(another rust protobuf libl)
-
 `git@github.com:stepancheg/rust-protobuf.git`
 
 这个 git repo. rust protobuf 的东西几乎都在这个 repo 里. 每个目录是一个 workspace
@@ -58,3 +55,13 @@ protoc                     \  --'                |
   --rust_out=.             \
   hello.proto
 ```
+
+## prost
+
+prost is another protobuf impl.
+It produce simpler rs files, without SingularField, RepeatedFiled etc.
+
+## grpc
+
+tower-grpc recommends to use `tonic`
+`tonic` is a grpc runtime based on `prost`
