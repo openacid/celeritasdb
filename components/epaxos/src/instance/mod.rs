@@ -1,5 +1,6 @@
 use super::command::Command;
 use super::tokey::ToKey;
+use derive_more;
 use std::cmp::{Ord, Ordering};
 
 include!(concat!(env!("OUT_DIR"), "/instance.rs"));
