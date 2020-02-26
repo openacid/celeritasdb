@@ -49,13 +49,7 @@ fn test_request_prepare_pb() {
     test_request_common_fields(&inst, &pp, RequestType::Prepare);
     // prepare has no other fields.
 
-    let size = pp.encoded_len();
-    assert!(size > 0);
-
-    let mut byts = vec![];
-    pp.encode(&mut byts).unwrap();
-    let pp2 = Request::decode(byts.as_slice()).unwrap();
-    assert_eq!(pp, pp2);
+    test_enc_dec!(pp, Request);
 }
 
 #[test]
@@ -69,13 +63,7 @@ fn test_reply_prepare_pb() {
     assert_eq!(inst.final_deps, pp.final_deps);
     assert_eq!(inst.committed, pp.committed);
 
-    let size = pp.encoded_len();
-    assert!(size > 0);
-
-    let mut byts = vec![];
-    pp.encode(&mut byts).unwrap();
-    let pp2 = Reply::decode(byts.as_slice()).unwrap();
-    assert_eq!(pp, pp2);
+    test_enc_dec!(pp, Reply);
 }
 
 #[test]
@@ -90,13 +78,7 @@ fn test_request_preaccpt_pb() {
     assert_eq!(inst.initial_deps, pp.initial_deps);
     assert_eq!(deps_committed.to_vec(), pp.deps_committed);
 
-    let size = pp.encoded_len();
-    assert!(size > 0);
-
-    let mut byts = vec![];
-    pp.encode(&mut byts).unwrap();
-    let pp2 = Request::decode(byts.as_slice()).unwrap();
-    assert_eq!(pp, pp2);
+    test_enc_dec!(pp, Request);
 }
 
 #[test]
@@ -110,13 +92,7 @@ fn test_reply_preaccept_pb() {
     assert_eq!(inst.deps, pp.deps);
     assert_eq!(deps_committed.to_vec(), pp.deps_committed);
 
-    let size = pp.encoded_len();
-    assert!(size > 0);
-
-    let mut byts = vec![];
-    pp.encode(&mut byts).unwrap();
-    let pp2 = Reply::decode(byts.as_slice()).unwrap();
-    assert_eq!(pp, pp2);
+    test_enc_dec!(pp, Reply);
 }
 
 #[test]
@@ -128,13 +104,7 @@ fn test_request_accpt_pb() {
     test_request_common_fields(&inst, &pp, RequestType::Accept);
     assert_eq!(inst.final_deps, pp.final_deps);
 
-    let size = pp.encoded_len();
-    assert!(size > 0);
-
-    let mut byts = vec![];
-    pp.encode(&mut byts).unwrap();
-    let pp2 = Request::decode(byts.as_slice()).unwrap();
-    assert_eq!(pp, pp2);
+    test_enc_dec!(pp, Request);
 }
 
 #[test]
@@ -146,13 +116,7 @@ fn test_reply_accept_pb() {
     test_reply_common_fields(&inst, &pp, RequestType::Accept);
     // no other fields.
 
-    let size = pp.encoded_len();
-    assert!(size > 0);
-
-    let mut byts = vec![];
-    pp.encode(&mut byts).unwrap();
-    let pp2 = Reply::decode(byts.as_slice()).unwrap();
-    assert_eq!(pp, pp2);
+    test_enc_dec!(pp, Reply);
 }
 
 #[test]
@@ -165,13 +129,7 @@ fn test_request_commit_pb() {
     assert_eq!(inst.cmds, pp.cmds);
     assert_eq!(inst.final_deps, pp.final_deps);
 
-    let size = pp.encoded_len();
-    assert!(size > 0);
-
-    let mut byts = vec![];
-    pp.encode(&mut byts).unwrap();
-    let pp2 = Request::decode(byts.as_slice()).unwrap();
-    assert_eq!(pp, pp2);
+    test_enc_dec!(pp, Request);
 }
 
 #[test]
@@ -183,11 +141,5 @@ fn test_reply_commit_pb() {
     test_reply_common_fields(&inst, &pp, RequestType::Commit);
     // no other fields.
 
-    let size = pp.encoded_len();
-    assert!(size > 0);
-
-    let mut byts = vec![];
-    pp.encode(&mut byts).unwrap();
-    let pp2 = Reply::decode(byts.as_slice()).unwrap();
-    assert_eq!(pp, pp2);
+    test_enc_dec!(pp, Reply);
 }
