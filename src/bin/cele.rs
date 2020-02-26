@@ -5,331 +5,82 @@ use clap::{App, Arg};
 use net2;
 use redis;
 
-use net2::TcpBuilder;
-use std::io;
-use std::io::{Error, Read, Write};
-use std::net::{SocketAddr, TcpListener, TcpStream, ToSocketAddrs};
+use std::net::ToSocketAddrs;
 use std::str::from_utf8;
 
-use std::sync::mpsc::{channel, Receiver};
-use std::thread;
+use tokio;
+use tokio::io::{AsyncReadExt, AsyncWriteExt};
+use tokio::net::TcpListener;
+use tokio::task::JoinHandle;
+use tonic;
+
+use epaxos::qpaxos::*;
 
 use parse::Response;
 
-enum Stream {
-    Tcp(TcpStream),
-}
-
-impl Read for Stream {
-    /// Pull some bytes from this source into the specified buffer,
-    /// returning how many bytes were read.
-    fn read(&mut self, buf: &mut [u8]) -> io::Result<usize> {
-        match *self {
-            Stream::Tcp(ref mut s) => s.read(buf),
-        }
-    }
-}
-
-impl Stream {
-    /// Creates a new independently owned handle to the underlying socket.
-    fn try_clone(&self) -> io::Result<Stream> {
-        match *self {
-            Stream::Tcp(ref s) => Ok(Stream::Tcp(s.try_clone()?)),
-        }
-    }
-
-    /// Write a buffer into this object, returning how many bytes were written.
-    fn write(&mut self, buf: &[u8]) -> io::Result<usize> {
-        match *self {
-            Stream::Tcp(ref mut s) => s.write(buf),
-        }
-    }
-}
-
 pub struct Server {
-    /// A list of threads listening for incoming connections
-    api_listen_port: u16,
-    repl_listen_port: u16,
-    listener_threads: Vec<thread::JoinHandle<()>>,
+    join_handles: Vec<JoinHandle<()>>,
 }
 
 impl Server {
-    /// Creates a new server
-    pub fn new(api_port: u16, repl_port: u16) -> Server {
+    pub fn new() -> Server {
         return Server {
-            api_listen_port: api_port,
-            repl_listen_port: repl_port,
-            listener_threads: Vec::new(),
+            join_handles: Vec::new(),
         };
     }
 
-    pub fn run(&mut self) {
-        self.start_replication_server();
-        self.start_api_server();
-        self.join();
-    }
+    /// Starts service:
+    ///
+    /// # Arguments
+    ///
+    /// - `api_addrs`: addresses to listen to receive client request.
+    /// - `repl_addrs`: internal replication listening addresses.
+    ///
+    /// # Examples
+    ///
+    /// ```norun
+    /// start_servers("127.0.0.1:1234",
+    ///               "127.0.0.1:4567", 10);
+    /// ```
+    #[tokio::main]
+    async fn start_servers(
+        &mut self,
+        api_addrs: &str,
+        repl_addrs: &str,
+        tcp_backlog: i32,
+    ) -> Result<(), Box<dyn std::error::Error>> {
+        let addr = api_addrs.to_socket_addrs().unwrap().next().unwrap();
 
-    /// Join the listener threads.
-    pub fn join(&mut self) {
-        while self.listener_threads.len() > 0 {
-            let _ = self.listener_threads.pop().unwrap().join();
-        }
-    }
+        let builder = net2::TcpBuilder::new_v4().unwrap();
+        builder.reuse_address(true).unwrap();
+        let lis = builder.bind(addr).unwrap().listen(tcp_backlog).unwrap();
 
-    fn reuse_address(&self, builder: &TcpBuilder) -> io::Result<()> {
-        builder.reuse_address(true)?;
-        Ok(())
-    }
+        let listener1 = TcpListener::from_std(lis).unwrap();
 
-    /// Listens to a socket address.
-    fn api_listen<T: ToSocketAddrs>(&mut self, t: T, tcp_backlog: i32) -> io::Result<()> {
-        for addr in t.to_socket_addrs()? {
-            let listener = self.make_listener(addr, tcp_backlog)?;
+        println!("api listened: {}", addr);
 
-            let th = thread::spawn(move || Self::api_server_loop(listener));
-            self.listener_threads.push(th);
-        }
-        Ok(())
-    }
-
-    fn api_server_loop(listener: TcpListener) {
-        for stream in listener.incoming() {
-            match stream {
-                Ok(stream) => {
-                    println!("Accepted connection to {:?}", stream);
-                    thread::spawn(move || {
-                        let mut client = Client::tcp(stream);
-                        client.run();
-                    });
-                }
-                Err(e) => {
-                    println!("Accepting client connection: {:?}", e);
-                }
-            }
-        }
-    }
-
-    fn make_listener(&mut self, addr: SocketAddr, backlog: i32) -> io::Result<TcpListener> {
-        let builder = match addr {
-            SocketAddr::V4(_) => TcpBuilder::new_v4(),
-            SocketAddr::V6(_) => TcpBuilder::new_v6(),
-        }?;
-
-        self.reuse_address(&builder)?;
-        let listener = builder.bind(addr)?.listen(backlog)?;
-        Ok(listener)
-    }
-
-    /// Listens to a socket address.
-    fn replication_listen<T: ToSocketAddrs>(&mut self, t: T, tcp_backlog: i32) -> io::Result<()> {
-        for addr in t.to_socket_addrs()? {
-            let listener = self.make_listener(addr, tcp_backlog)?;
-
-            let th = thread::spawn(move || Self::replication_server_loop(listener));
-            self.listener_threads.push(th);
-        }
-        Ok(())
-    }
-
-    fn replication_server_loop(listener: TcpListener) {
-        for stream in listener.incoming() {
-            match stream {
-                Ok(stream) => {
-                    println!("Accepted connection to {:?}", stream);
-                    thread::spawn(move || {
-                        let mut client = ReplicationHandler::tcp(stream);
-                        let r = client.run();
-                        match r {
-                            Err(err) => {
-                                println!("error: {:?}", err);
-                            }
-                            _ => {}
-                        }
-                    });
-                }
-                Err(e) => {
-                    println!("Accepting client connection: {:?}", e);
-                }
-            }
-        }
-    }
-
-    /// Starts threads listening to new connections.
-    pub fn start_api_server(&mut self) {
-        let addresses = vec![("127.0.0.1".to_owned(), self.api_listen_port)];
-        for (host, port) in addresses {
-            self.api_listen((&host[..], port), 10).unwrap();
-            println!("ready to accept api connections on port {}", port);
-        }
-    }
-
-    /// Starts listening replication message.
-    pub fn start_replication_server(&mut self) {
-        let addresses = vec![("127.0.0.1".to_owned(), self.repl_listen_port)];
-        for (host, port) in addresses {
-            self.replication_listen((&host[..], port), 10).unwrap();
-            println!("ready to accept replication connections on port {}", port);
-        }
-    }
-}
-
-/// A client connection
-struct ReplicationHandler {
-    /// The socket connection
-    stream: TcpStream,
-}
-
-impl ReplicationHandler {
-    /// Creates a new TCP socket client
-    pub fn tcp(stream: TcpStream) -> ReplicationHandler {
-        return ReplicationHandler { stream: stream };
-    }
-
-    /// Runs all clients commands. The function loops until the client
-    /// disconnects.
-    pub fn run(&mut self) -> io::Result<()> {
-        loop {
-            // TODO extend buf
-            // Now it requires a complete command in a single packet.
-            let mut buf = vec![0u8; 1024];
-            let len = self.stream.read(&mut buf[..])?;
-            println!("read buf: len={:}, {:?}", len, buf);
-
-            if len == 0 {
-                println!("client closed");
-                return Ok(());
-            }
-
-            // TODO handle replication protocol in protobuf.
-            //      For now, just mimic a redis server
-
-            let v = redis::parse_redis_value(&buf);
-            let v = match v {
-                Ok(q) => {
-                    println!("q= {:?}", q);
-                    q
-                }
-                Err(err) => {
-                    // TODO bad protocol handling
-                    println!("parse error: {:}", err);
-                    panic!("bad redis protocol");
-                }
-            };
-            let r = exec_redis_cmd(v);
-            match r {
-                // received a response, send it to the client
-                Some(response) => {
-                    self.stream.write(&*response.as_bytes())?;
-                }
-                None => {
-                    // TODO
-                }
-            };
-        }
-    }
-}
-
-/// A client connection
-struct Client {
-    /// The socket connection
-    stream: Stream,
-}
-
-impl Client {
-    /// Creates a new TCP socket client
-    pub fn tcp(stream: TcpStream) -> Client {
-        return Client {
-            stream: Stream::Tcp(stream),
-        };
-    }
-
-    /// Creates a thread that writes into the client stream each response received
-    fn create_writer_thread(&self, rx: Receiver<Option<Response>>) {
-        let mut stream = self.stream.try_clone().unwrap();
-        thread::spawn(move || loop {
-            match rx.recv() {
-                Ok(m) => match m {
-                    Some(msg) => {
-                        println!("to client:");
-                        match stream.write(&*msg.as_bytes()) {
-                            Ok(_) => (),
-                            Err(e) => println!("Error writing to client: {:?}", e),
-                        }
-                    }
-                    None => break,
-                },
-                Err(_) => break,
-            };
+        let j1 = tokio::spawn(async move {
+            api_loop(listener1).await;
         });
-    }
 
-    /// Runs all clients commands. The function loops until the client
-    /// disconnects.
-    pub fn run(&mut self) {
-        #![allow(unused_must_use)]
-        let (stream_tx, rx) = channel::<Option<Response>>();
-        self.create_writer_thread(rx);
+        println!("serving: {}", addr);
 
-        loop {
-            let mut buf = vec![0u8; 1024];
-            let len = {
-                // TODO extend buf
-                // Now it requires a complete command in a single packet.
-                match self.stream.read(&mut buf[..]) {
-                    Ok(r) => {
-                        println!("read buf: r={:}, {:?}", r, buf);
-                        r
-                    }
-                    Err(err) => {
-                        println!("Reading from client: {:?}", err);
-                        break;
-                    }
-                }
-            };
+        let addr = repl_addrs.to_socket_addrs().unwrap().next().unwrap();
 
-            // client closed connection
-            if len == 0 {
-                println!("Client closed connection");
-                break;
-            }
+        let qp = MyQPaxos::default();
+        let s = tonic::transport::Server::builder().add_service(QPaxosServer::new(qp));
 
-            let v = redis::parse_redis_value(&buf);
-            let v = match v {
-                Ok(q) => {
-                    println!("q= {:?}", q);
-                    q
-                }
-                Err(err) => {
-                    // TODO bad protocol handling
-                    println!("parse error: {:}", err);
-                    break;
-                }
-            };
+        let j2 = tokio::spawn(async move {
+            println!("repl server spawned");
+            s.serve(addr).await.unwrap();
+        });
 
-            // TODO implementation entry:
-            let r = exec_redis_cmd(v);
+        println!("serving: {}", addr);
 
-            // check out the response
-            match r {
-                // received a response, send it to the client
-                Some(response) => {
-                    // send to writer thread, which writes bytes into underlying tcp socket.
-                    match stream_tx.send(Some(response)) {
-                        Ok(_) => (),
-                        Err(e) => {
-                            println!("error sending to sender thread: {}", e);
-                            break;
-                        }
-                    };
-                }
-                None => {
-                    println!("internal error");
-                    break;
-                }
-            }
-        }
-        println!("client exit");
-        //TODO close socket
+        j1.await;
+        j2.await;
+
+        Ok(())
     }
 }
 
@@ -365,6 +116,59 @@ fn exec_redis_cmd(v: redis::Value) -> Option<Response> {
         "SET" => Some(Response::Status("OK".to_owned())),
         "GET" => Some(Response::Integer(42)),
         _ => Some(Response::Error("invalid command".to_owned())),
+    }
+}
+
+async fn api_loop(mut listener: TcpListener) {
+    println!("api_loop start");
+    loop {
+        let (mut sock, _) = listener.accept().await.expect("accept failure");
+        println!("new connection");
+
+        tokio::spawn(async move {
+            loop {
+                let mut buf = vec![0u8; 1024];
+
+                let n = sock
+                    .read(&mut buf)
+                    .await
+                    .expect("failed to read data from socket");
+
+                println!("read buf: len={:}, {:?}", n, buf);
+
+                if n == 0 {
+                    println!("client closed");
+                    return;
+                }
+
+                let v = redis::parse_redis_value(&buf);
+                let v = match v {
+                    Ok(q) => {
+                        println!("parsed redis value: {:?}", q);
+                        q
+                    }
+                    Err(err) => {
+                        // TODO bad protocol handling
+                        println!("parse error: {:}", err);
+                        panic!("bad redis protocol");
+                    }
+                };
+                let r = exec_redis_cmd(v);
+                println!("r={:?}", r);
+                match r {
+                    // received a response, send it to the client
+                    Some(response) => {
+                        println!("response bytes:{:?}", response.as_bytes());
+                        sock.write_all(&*response.as_bytes())
+                            .await
+                            .expect("failed to write data to socket");
+                    }
+                    None => {
+                        // TODO
+                    }
+                };
+            }
+        });
     }
 }
 
@@ -406,8 +210,13 @@ fn main() {
 
     let repl_port_str = matches.value_of("replication_port").unwrap_or("6377");
     let repl_port = repl_port_str.parse::<u16>().unwrap();
-    let mut server = Server::new(port, repl_port);
-    println!("port: {}", port);
-    println!("replication port: {}", repl_port);
-    server.run();
+
+    let mut server = Server::new();
+    server
+        .start_servers(
+            format!("127.0.0.1:{}", port).as_str(),
+            format!("127.0.0.1:{}", repl_port).as_str(),
+            10,
+        )
+        .unwrap();
 }
