@@ -1,5 +1,3 @@
-use prost::Message;
-
 include!(concat!(env!("OUT_DIR"), "/command.rs"));
 
 #[cfg(test)]

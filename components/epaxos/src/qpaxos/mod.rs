@@ -1,6 +1,5 @@
 use tonic;
-use tonic::transport::server::Router;
-use tonic::{transport::Server, Request, Response, Status};
+use tonic::{Request, Response, Status};
 
 use super::instance::Instance;
 use super::message;
