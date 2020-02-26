@@ -17,16 +17,7 @@ fn test_instance_protobuf() {
 
     let inst1 = Instance::of(&cmds[..], &ballot, &initial_deps[..]);
 
-    let mut inst_bytes = vec![];
-    inst1.encode(&mut inst_bytes).unwrap();
-
-    let inst2 = Instance::decode(inst_bytes.as_slice()).unwrap();
-
-    assert_eq!(inst2.cmds, cmds);
-    assert_eq!(inst2.ballot, Some(ballot));
-    for (idx, inst_id) in inst2.initial_deps.iter().enumerate() {
-        assert_eq!(*inst_id, initial_deps[idx]);
-    }
+    test_enc_dec!(inst1, Instance);
 }
 
 #[test]
