@@ -2,7 +2,6 @@ macro_rules! test_enc_dec {
     // $msg is a prost Message.
     // $typ is one of message.Request or message.Reply
     ($msg:ident, $typ:ty) => {
-
         let size = $msg.encoded_len();
         assert!(size > 0);
 
