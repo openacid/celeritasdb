@@ -22,7 +22,6 @@ fn test_instance_protobuf() {
 
 #[test]
 fn test_instanceid_derived() {
-
     let inst_id1 = InstanceID::of(1, 10);
     let inst_id2 = inst_id1;
 
@@ -32,7 +31,6 @@ fn test_instanceid_derived() {
 
 #[test]
 fn test_ballotnum_derived() {
-
     let b1 = BallotNum::of(1, 10, 5);
     let b2 = b1;
 
@@ -69,8 +67,8 @@ fn test_cmp_instance_id() {
     ];
 
     for (t1, t2, op) in cases {
-        let i1 :InstanceID = t1.into();
-        let i2 :InstanceID = t2.into();
+        let i1: InstanceID = t1.into();
+        let i2: InstanceID = t2.into();
         match op {
             "=" => assert_eq!(i1 == i2, true),
             "<=" => assert_eq!(i1 <= i2, true),
@@ -133,11 +131,7 @@ fn test_instance_after() {
         ),
         (
             Instance {
-                final_deps: vec![
-                    (1, 1).into(),
-                    (2, 1).into(),
-                    (3, 1).into(),
-                ],
+                final_deps: vec![(1, 1).into(), (2, 1).into(), (3, 1).into()],
                 ..Default::default()
             },
             Instance {
@@ -152,11 +146,7 @@ fn test_instance_after() {
                 ..Default::default()
             },
             Instance {
-                final_deps: vec![
-                    (1, 1).into(),
-                    (2, 1).into(),
-                    (3, 1).into(),
-                ],
+                final_deps: vec![(1, 1).into(), (2, 1).into(), (3, 1).into()],
                 ..Default::default()
             },
             false,
@@ -167,11 +157,7 @@ fn test_instance_after() {
                 ..Default::default()
             },
             Instance {
-                final_deps: vec![
-                    (1, 1).into(),
-                    (2, 1).into(),
-                    (3, 1).into(),
-                ],
+                final_deps: vec![(1, 1).into(), (2, 1).into(), (3, 1).into()],
                 ..Default::default()
             },
             true,
