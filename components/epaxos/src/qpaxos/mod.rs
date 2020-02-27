@@ -5,7 +5,6 @@ use super::tokey::ToKey;
 use derive_more;
 use std::cmp::{Ord, Ordering};
 
-
 include!(concat!(env!("OUT_DIR"), "/qpaxos.rs"));
 
 #[cfg(test)]
@@ -236,7 +235,6 @@ impl MakeReply {
         }
     }
 }
-
 
 #[derive(Debug, Default)]
 pub struct MyQPaxos {}
