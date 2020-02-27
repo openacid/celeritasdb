@@ -4,12 +4,12 @@ use std::sync::Mutex;
 use super::MemEngine;
 use prost::Message;
 
-use crate::qpaxos::{Command, OpCode};
-use crate::qpaxos::{BallotNum, Instance, InstanceID};
-use crate::replica::ReplicaID;
 use super::super::{
     Error, InstanceEngine, InstanceIter, KVEngine, StatusEngine, TransactionEngine,
 };
+use crate::qpaxos::{BallotNum, Instance, InstanceID};
+use crate::qpaxos::{Command, OpCode};
+use crate::replica::ReplicaID;
 
 use super::super::super::tokey::ToKey;
 
