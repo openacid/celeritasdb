@@ -21,6 +21,9 @@ impl From<MsgStatus> for bool {
     }
 }
 
+pub struct Request {}
+pub struct Reply {}
+
 /// Request is a protobuf message for all kinds of replication request.
 /// See: https://github.com/openacid/celeritasdb/wiki/replication-algo#messages;
 ///
@@ -29,41 +32,43 @@ impl From<MsgStatus> for bool {
 /// let req = Request::prepare(some_instance);
 /// ```
 impl Request {
-    pub fn of_instance(inst: &Instance, t: RequestType) -> Self {
-        Self {
-            req_type: t.into(),
-            ballot: inst.ballot.clone(),
-            instance_id: inst.instance_id.clone(),
-            ..Default::default()
-        }
+    pub fn common(inst: &Instance) -> Option<RequestCommon> {
+        // TODO need filling to_replica_id
+        Some(RequestCommon {
+            to_replica_id: 0,
+            ballot: inst.ballot,
+            instance_id: inst.instance_id,
+        })
     }
 
-    pub fn preaccept(inst: &Instance, deps_committed: &[bool]) -> Self {
-        Self {
+    pub fn fast_accept(inst: &Instance, deps_committed: &[bool]) -> FastAcceptRequest {
+        FastAcceptRequest {
+            cmn: Request::common(inst),
             cmds: inst.cmds.clone(),
             initial_deps: inst.initial_deps.clone(),
             deps_committed: deps_committed.into(),
-            ..Self::of_instance(inst, RequestType::PreAccept)
         }
     }
 
-    pub fn accept(inst: &Instance) -> Self {
-        Self {
+    pub fn accept(inst: &Instance) -> AcceptRequest {
+        AcceptRequest {
+            cmn: Request::common(inst),
             final_deps: inst.final_deps.clone(),
-            ..Self::of_instance(inst, RequestType::Accept)
         }
     }
 
-    pub fn commit(inst: &Instance) -> Self {
-        Self {
+    pub fn commit(inst: &Instance) -> CommitRequest {
+        CommitRequest {
+            cmn: Request::common(inst),
             cmds: inst.cmds.clone(),
             final_deps: inst.final_deps.clone(),
-            ..Self::of_instance(inst, RequestType::Commit)
         }
     }
 
-    pub fn prepare(inst: &Instance) -> Self {
-        Self::of_instance(inst, RequestType::Prepare)
+    pub fn prepare(inst: &Instance) -> PrepareRequest {
+        PrepareRequest {
+            cmn: Request::common(inst),
+        }
     }
 }
 
@@ -75,37 +80,39 @@ impl Request {
 /// let rep = Reply::prepare(some_instance);
 /// ```
 impl Reply {
-    pub fn of_instance(inst: &Instance, t: RequestType) -> Self {
-        Self {
-            req_type: t.into(),
-            last_ballot: inst.last_ballot.clone(),
-            instance_id: inst.instance_id.clone(),
-            ..Default::default()
-        }
+    pub fn common(inst: &Instance) -> Option<ReplyCommon> {
+        Some(ReplyCommon {
+            last_ballot: inst.last_ballot,
+            instance_id: inst.instance_id,
+        })
     }
 
-    pub fn preaccept(inst: &Instance, deps_committed: &[bool]) -> Self {
-        Self {
+    pub fn fast_accept(inst: &Instance, deps_committed: &[bool]) -> FastAcceptReply {
+        FastAcceptReply {
+            cmn: Reply::common(inst),
             deps: inst.deps.clone(),
             deps_committed: deps_committed.into(),
-            ..Self::of_instance(inst, RequestType::PreAccept)
         }
     }
 
-    pub fn accept(inst: &Instance) -> Self {
-        Self::of_instance(inst, RequestType::Accept)
+    pub fn accept(inst: &Instance) -> AcceptReply {
+        AcceptReply {
+            cmn: Reply::common(inst),
+        }
     }
 
-    pub fn commit(inst: &Instance) -> Self {
-        Self::of_instance(inst, RequestType::Commit)
+    pub fn commit(inst: &Instance) -> CommitReply {
+        CommitReply {
+            cmn: Reply::common(inst),
+        }
     }
 
-    pub fn prepare(inst: &Instance) -> Self {
-        Self {
+    pub fn prepare(inst: &Instance) -> PrepareReply {
+        PrepareReply {
+            cmn: Reply::common(inst),
             deps: inst.deps.clone(),
             final_deps: inst.final_deps.clone(),
             committed: inst.committed,
-            ..Self::of_instance(inst, RequestType::Prepare)
         }
     }
 }

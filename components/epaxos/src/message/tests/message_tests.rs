@@ -1,6 +1,6 @@
 use crate::command::{Command, OpCode};
 use crate::instance::{BallotNum, Instance, InstanceID};
-use crate::message::{Reply, Request, RequestType};
+use crate::message::*;
 // Message is required to use to use method in trait Message.
 use prost::Message;
 
@@ -28,16 +28,20 @@ fn new_foo_inst() -> Instance {
     inst
 }
 
-fn test_request_common_fields(inst: &Instance, req: &Request, t: RequestType) {
-    assert_eq!(t as i32, req.req_type);
-    assert_eq!(inst.ballot, req.ballot);
-    assert_eq!(inst.instance_id, req.instance_id);
+// TODO test to_replica_id
+
+macro_rules! test_request_common {
+    ($msg:ident, $inst:ident) => {
+        assert_eq!($inst.ballot, $msg.cmn.as_ref().unwrap().ballot);
+        assert_eq!($inst.instance_id, $msg.cmn.as_ref().unwrap().instance_id);
+    };
 }
 
-fn test_reply_common_fields(inst: &Instance, rp: &Reply, t: RequestType) {
-    assert_eq!(t as i32, rp.req_type);
-    assert_eq!(inst.last_ballot, rp.last_ballot);
-    assert_eq!(inst.instance_id, rp.instance_id);
+macro_rules! test_reply_common {
+    ($msg:ident, $inst:ident) => {
+        assert_eq!($inst.last_ballot, $msg.cmn.as_ref().unwrap().last_ballot);
+        assert_eq!($inst.instance_id, $msg.cmn.as_ref().unwrap().instance_id);
+    };
 }
 
 #[test]
@@ -46,10 +50,10 @@ fn test_request_prepare_pb() {
 
     let pp = Request::prepare(&inst);
 
-    test_request_common_fields(&inst, &pp, RequestType::Prepare);
+    test_request_common!(pp, inst);
     // prepare has no other fields.
 
-    test_enc_dec!(pp, Request);
+    test_enc_dec!(pp, PrepareRequest);
 }
 
 #[test]
@@ -58,41 +62,41 @@ fn test_reply_prepare_pb() {
 
     let pp = Reply::prepare(&inst);
 
-    test_reply_common_fields(&inst, &pp, RequestType::Prepare);
+    test_reply_common!(pp, inst);
     assert_eq!(inst.deps, pp.deps);
     assert_eq!(inst.final_deps, pp.final_deps);
     assert_eq!(inst.committed, pp.committed);
 
-    test_enc_dec!(pp, Reply);
+    test_enc_dec!(pp, PrepareReply);
 }
 
 #[test]
-fn test_request_preaccpt_pb() {
+fn test_request_fast_accpt_pb() {
     let inst = new_foo_inst();
 
     let deps_committed = &[true, false];
-    let pp = Request::preaccept(&inst, deps_committed);
+    let pp = Request::fast_accept(&inst, deps_committed);
 
-    test_request_common_fields(&inst, &pp, RequestType::PreAccept);
+    test_request_common!(pp, inst);
     assert_eq!(inst.cmds, pp.cmds);
     assert_eq!(inst.initial_deps, pp.initial_deps);
     assert_eq!(deps_committed.to_vec(), pp.deps_committed);
 
-    test_enc_dec!(pp, Request);
+    test_enc_dec!(pp, FastAcceptRequest);
 }
 
 #[test]
-fn test_reply_preaccept_pb() {
+fn test_reply_fast_accept_pb() {
     let inst = new_foo_inst();
 
     let deps_committed = &[true, false];
-    let pp = Reply::preaccept(&inst, deps_committed);
+    let pp = Reply::fast_accept(&inst, deps_committed);
 
-    test_reply_common_fields(&inst, &pp, RequestType::PreAccept);
+    test_reply_common!(pp, inst);
     assert_eq!(inst.deps, pp.deps);
     assert_eq!(deps_committed.to_vec(), pp.deps_committed);
 
-    test_enc_dec!(pp, Reply);
+    test_enc_dec!(pp, FastAcceptReply);
 }
 
 #[test]
@@ -101,10 +105,10 @@ fn test_request_accpt_pb() {
 
     let pp = Request::accept(&inst);
 
-    test_request_common_fields(&inst, &pp, RequestType::Accept);
+    test_request_common!(pp, inst);
     assert_eq!(inst.final_deps, pp.final_deps);
 
-    test_enc_dec!(pp, Request);
+    test_enc_dec!(pp, AcceptRequest);
 }
 
 #[test]
@@ -113,10 +117,10 @@ fn test_reply_accept_pb() {
 
     let pp = Reply::accept(&inst);
 
-    test_reply_common_fields(&inst, &pp, RequestType::Accept);
+    test_reply_common!(pp, inst);
     // no other fields.
 
-    test_enc_dec!(pp, Reply);
+    test_enc_dec!(pp, AcceptReply);
 }
 
 #[test]
@@ -125,11 +129,11 @@ fn test_request_commit_pb() {
 
     let pp = Request::commit(&inst);
 
-    test_request_common_fields(&inst, &pp, RequestType::Commit);
+    test_request_common!(pp, inst);
     assert_eq!(inst.cmds, pp.cmds);
     assert_eq!(inst.final_deps, pp.final_deps);
 
-    test_enc_dec!(pp, Request);
+    test_enc_dec!(pp, CommitRequest);
 }
 
 #[test]
@@ -138,8 +142,8 @@ fn test_reply_commit_pb() {
 
     let pp = Reply::commit(&inst);
 
-    test_reply_common_fields(&inst, &pp, RequestType::Commit);
+    test_reply_common!(pp, inst);
     // no other fields.
 
-    test_enc_dec!(pp, Reply);
+    test_enc_dec!(pp, CommitReply);
 }
