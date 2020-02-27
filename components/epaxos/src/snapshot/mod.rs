@@ -4,14 +4,14 @@ mod enum_str;
 mod errors;
 pub use errors::*;
 
-mod rocksEngine;
-pub use rocksEngine::*;
+mod rocks_engine;
+pub use rocks_engine::*;
 
 mod traits;
 pub use traits::*;
 
-mod memEngine;
-pub use memEngine::*;
+mod mem_engine;
+pub use mem_engine::*;
 
 mod iters;
 pub use iters::*;
