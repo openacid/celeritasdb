@@ -3,7 +3,6 @@ use tonic::{Request, Response, Status};
 
 use super::tokey::ToKey;
 use derive_more;
-use std::cmp::{Ord, Ordering};
 
 include!(concat!(env!("OUT_DIR"), "/qpaxos.rs"));
 
@@ -38,26 +37,6 @@ impl ToKey for InstanceID {
     }
 }
 
-impl Eq for InstanceID {}
-
-impl Ord for InstanceID {
-    fn cmp(&self, other: &Self) -> Ordering {
-        let _ = match self.replica_id.cmp(&other.replica_id) {
-            Ordering::Greater => return Ordering::Greater,
-            Ordering::Less => return Ordering::Less,
-            Ordering::Equal => Ordering::Equal,
-        };
-
-        self.idx.cmp(&other.idx)
-    }
-}
-
-impl PartialOrd for InstanceID {
-    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
 impl InstanceID {
     pub fn of(replica_id: i64, idx: i64) -> InstanceID {
         InstanceID {
@@ -88,17 +67,6 @@ impl InstanceID {
         }
 
         return None;
-    }
-}
-
-impl BallotNum {
-    pub fn of(epoch: i32, num: i32, replica_id: i64) -> BallotNum {
-        BallotNum {
-            epoch,
-            num,
-            replica_id,
-            ..Default::default()
-        }
     }
 }
 

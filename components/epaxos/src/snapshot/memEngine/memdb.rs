@@ -65,7 +65,7 @@ impl InstanceEngine<MemEngine> for MemEngine {
             Ok(v) => v,
             Err(err) => {
                 if err == Error::NotFound {
-                    InstanceID::of(iid.replica_id, -1)
+                    InstanceID::from((iid.replica_id, -1))
                 } else {
                     return Err(err);
                 }
@@ -102,7 +102,7 @@ impl InstanceEngine<MemEngine> for MemEngine {
     }
 
     fn get_instance_iter(&self, rid: ReplicaID) -> Result<InstanceIter<MemEngine>, Error> {
-        let iid = InstanceID::of(rid.clone(), 0);
+        let iid = InstanceID::from((rid, 0));
         Ok(InstanceIter {
             curr_inst_id: iid,
             include: true,
@@ -179,7 +179,7 @@ mod tests {
 
         for rid in 0..3 {
             for idx in 0..10 {
-                let iid = InstanceID::of(rid, idx);
+                let iid = InstanceID::from((rid, idx));
 
                 let cmds = vec![Command::of(
                     OpCode::NoOp,
@@ -187,9 +187,9 @@ mod tests {
                     format!("v1{:}", rid * idx).as_bytes(),
                 )];
 
-                let ballot = BallotNum::of(rid as i32, idx as i32, 0);
+                let ballot = (rid as i32, idx as i32, 0).into();
 
-                let deps = vec![InstanceID::of(rid + 1, idx + 1)];
+                let deps = vec![InstanceID::from((rid + 1, idx + 1))];
 
                 let inst = Instance::of(&cmds[..], &ballot, &deps[..]);
 
@@ -239,7 +239,7 @@ mod tests {
         for (rid, idx) in cases {
             let mut engine = MemEngine::new().unwrap();
 
-            let iid = InstanceID::of(rid, idx);
+            let iid = InstanceID::from((rid, idx));
 
             let key = engine.max_instance_id_key(rid);
             let _ = engine.set_instance_id(&key, iid.clone()).unwrap();
