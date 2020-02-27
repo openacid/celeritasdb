@@ -5,7 +5,7 @@ use super::super::conf::ClusterInfo;
 
 use super::super::qpaxos::*;
 
-use super::super::snapshot::{InstanceEngine, KVEngine, StatusEngine, TransactionEngine};
+use super::super::snapshot::TransactionEngine;
 
 #[cfg(test)]
 #[path = "./tests/replica_tests.rs"]
@@ -40,7 +40,7 @@ pub enum ReplicaStatus {
 }
 
 /// structure to represent a replica
-pub struct Replica<Engine> {
+pub struct Replica<E> {
     pub replica_id: ReplicaID,             // replica id
     pub group_replica_ids: Vec<ReplicaID>, // all replica ids in this group
     pub status: ReplicaStatus,             // status record used internally
@@ -52,14 +52,14 @@ pub struct Replica<Engine> {
     pub inst_idx: InstanceIdx,
     pub latest_cp: InstanceID, // record the instance id in the lastest communication
 
-    // snapshot engine
-    pub engine: Engine,
+    // storage
+    pub storage: Box<dyn TransactionEngine<E>>,
 
     // to recover uncommitted instance
     pub problem_inst_ids: Vec<(InstanceID, SystemTime)>,
 }
 
-impl<Engine> Replica<Engine> {
+impl<E> Replica<E> {
     /// create a new Replica
     /// do all the initialization and start all necessary threads here,
     /// so after this call, replica is fully functional.
@@ -69,7 +69,7 @@ impl<Engine> Replica<Engine> {
         thrifty: bool,
         exec: bool,
         beacon: bool,
-    ) -> Result<Replica<Engine>, String> {
+    ) -> Result<Replica<E>, String> {
         Err("not implemented".to_string())
     }
 

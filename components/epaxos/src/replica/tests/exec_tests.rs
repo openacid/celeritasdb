@@ -1,10 +1,7 @@
-use std::net::{SocketAddr, TcpListener, TcpStream};
+use std::net::TcpListener;
 
-use crate::qpaxos::Instance;
-use crate::qpaxos::InstanceID;
-use crate::replica::Replica;
-use crate::replica::ReplicaConf;
-use crate::replica::ReplicaStatus;
+use crate::qpaxos::{Command, Instance, InstanceID, OpCode};
+use crate::replica::{ExecuteResult, Replica, ReplicaConf, ReplicaStatus};
 use crate::snapshot::MemEngine;
 
 fn new_replica() -> Replica<MemEngine> {
@@ -19,8 +16,8 @@ fn new_replica() -> Replica<MemEngine> {
             ..Default::default()
         },
         inst_idx: 0,
-        latest_cp: InstanceID::of(1, 1),
-        engine: MemEngine::new().unwrap(),
+        latest_cp: (1, 1).into(),
+        storage: Box::new(MemEngine::new().unwrap()),
         problem_inst_ids: vec![],
     };
 }
@@ -32,8 +29,8 @@ fn test_find_missing_instances() {
     let cases1 = [
         (
             vec![Instance {
-                instance_id: Some(InstanceID::of(1, 2)),
-                final_deps: vec![InstanceID::of(1, 1)],
+                instance_id: Some((1, 2).into()),
+                final_deps: vec![(1, 1).into()],
                 ..Default::default()
             }],
             vec![InstanceID::of(1, 1)],
@@ -49,36 +46,24 @@ fn test_find_missing_instances() {
         (
             vec![
                 Instance {
-                    instance_id: Some(InstanceID::of(1, 2)),
-                    final_deps: vec![
-                        InstanceID::of(1, 1),
-                        InstanceID::of(2, 1),
-                        InstanceID::of(3, 3),
-                    ],
+                    instance_id: Some((1, 2).into()),
+                    final_deps: vec![(1, 1).into(), (2, 1).into(), (3, 3).into()],
                     ..Default::default()
                 },
                 Instance {
-                    instance_id: Some(InstanceID::of(2, 2)),
-                    final_deps: vec![
-                        InstanceID::of(1, 1),
-                        InstanceID::of(2, 1),
-                        InstanceID::of(3, 5),
-                    ],
+                    instance_id: Some((2, 2).into()),
+                    final_deps: vec![(1, 1).into(), (2, 1).into(), (3, 5).into()],
                     ..Default::default()
                 },
             ],
-            vec![
-                InstanceID::of(1, 1),
-                InstanceID::of(2, 1),
-                InstanceID::of(3, 10),
-            ],
+            vec![InstanceID::of(1, 1), (2, 1).into(), (3, 10).into()],
         ),
     ];
 
     for (insts, up_to) in cases1.iter() {
         match rp.find_missing_insts(&insts, &up_to) {
             None => assert!(true),
-            Some(s) => assert!(false),
+            Some(_) => assert!(false),
         };
     }
 
@@ -95,20 +80,12 @@ fn test_find_missing_instances() {
         // need recover (2, 6) and (3, 6)
         (
             vec![Instance {
-                instance_id: Some(InstanceID::of(1, 2)),
-                final_deps: vec![
-                    InstanceID::of(1, 1),
-                    InstanceID::of(2, 6),
-                    InstanceID::of(3, 6),
-                ],
+                instance_id: Some((1, 2).into()),
+                final_deps: vec![(1, 1).into(), (2, 6).into(), (3, 6).into()],
                 ..Default::default()
             }],
-            vec![
-                InstanceID::of(1, 1),
-                InstanceID::of(2, 5),
-                InstanceID::of(3, 5),
-            ],
-            vec![InstanceID::of(2, 6), InstanceID::of(3, 6)],
+            vec![InstanceID::of(1, 1), (2, 5).into(), (3, 5).into()],
+            vec![InstanceID::of(2, 6), (3, 6).into()],
         ),
         // R1               R2              R3
         // |                |               |
@@ -123,29 +100,17 @@ fn test_find_missing_instances() {
         (
             vec![
                 Instance {
-                    instance_id: Some(InstanceID::of(1, 2)),
-                    final_deps: vec![
-                        InstanceID::of(1, 1),
-                        InstanceID::of(2, 1),
-                        InstanceID::of(3, 1),
-                    ],
+                    instance_id: Some((1, 2).into()),
+                    final_deps: vec![(1, 1).into(), (2, 1).into(), (3, 1).into()],
                     ..Default::default()
                 },
                 Instance {
-                    instance_id: Some(InstanceID::of(2, 2)),
-                    final_deps: vec![
-                        InstanceID::of(1, 1),
-                        InstanceID::of(2, 1),
-                        InstanceID::of(3, 3),
-                    ],
+                    instance_id: Some((2, 2).into()),
+                    final_deps: vec![(1, 1).into(), (2, 1).into(), (3, 3).into()],
                     ..Default::default()
                 },
             ],
-            vec![
-                InstanceID::of(1, 1),
-                InstanceID::of(2, 1),
-                InstanceID::of(3, 1),
-            ],
+            vec![InstanceID::of(1, 1), (2, 1).into(), (3, 1).into()],
             vec![InstanceID::of(3, 2)],
         ),
     ];
@@ -156,4 +121,172 @@ fn test_find_missing_instances() {
             Some(s) => assert_eq!(exp, &s),
         };
     }
+}
+
+#[test]
+fn test_execute_commands() {
+    let mut rp = new_replica();
+
+    match rp.storage.set_kv(&vec![1], &vec![11]) {
+        Err(_) => assert!(false),
+        Ok(_) => {}
+    }
+    match rp.storage.set_kv(&vec![2], &vec![22]) {
+        Err(_) => assert!(false),
+        Ok(_) => {}
+    }
+    let cases = [
+        (
+            Instance {
+                instance_id: Some((2, 2).into()),
+                cmds: vec![],
+                ..Default::default()
+            },
+            Vec::<ExecuteResult>::new(),
+        ),
+        (
+            Instance {
+                instance_id: Some((2, 2).into()),
+                cmds: vec![Command::of(OpCode::Get, &[96], &[])],
+                ..Default::default()
+            },
+            vec![ExecuteResult::NotFound],
+        ),
+        (
+            Instance {
+                instance_id: Some((2, 2).into()),
+                cmds: vec![Command::of(OpCode::Get, &[1], &[])],
+                ..Default::default()
+            },
+            vec![ExecuteResult::SuccessWithVal { value: vec![11] }],
+        ),
+        (
+            Instance {
+                instance_id: Some((2, 2).into()),
+                cmds: vec![
+                    Command::of(OpCode::Get, &[1], &[]),
+                    Command::of(OpCode::Get, &[2], &[]),
+                ],
+                ..Default::default()
+            },
+            vec![
+                ExecuteResult::SuccessWithVal { value: vec![11] },
+                ExecuteResult::SuccessWithVal { value: vec![22] },
+            ],
+        ),
+        (
+            Instance {
+                instance_id: Some((2, 2).into()),
+                cmds: vec![
+                    Command::of(OpCode::NoOp, &[], &[]),
+                    Command::of(OpCode::Set, &[2], &[222]),
+                    Command::of(OpCode::Get, &[2], &[]),
+                ],
+                ..Default::default()
+            },
+            vec![
+                ExecuteResult::Success,
+                ExecuteResult::Success,
+                ExecuteResult::SuccessWithVal { value: vec![222] },
+            ],
+        ),
+    ];
+
+    for (inst, res) in cases.iter() {
+        match rp.execute_commands(&inst) {
+            Ok(r) => assert_eq!(res, &r),
+            Err(_) => assert!(false),
+        }
+    }
+}
+
+#[test]
+fn test_execute_instances() {
+    let mut rp = new_replica();
+
+    // (3, 1)→(2, 1)→(1, 1)
+    let min_insts = vec![
+        Instance {
+            instance_id: Some((1, 1).into()),
+            cmds: vec![Command::of(OpCode::Set, &[2], &[222])],
+            final_deps: vec![(1, 0).into(), (2, 0).into(), (3, 0).into()],
+            ..Default::default()
+        },
+        Instance {
+            instance_id: Some(InstanceID::of(2, 1)),
+            cmds: vec![Command::of(OpCode::NoOp, &[], &[])],
+            final_deps: vec![(1, 1).into(), (2, 0).into(), (3, 0).into()],
+            ..Default::default()
+        },
+        Instance {
+            instance_id: Some((3, 1).into()),
+            cmds: vec![Command::of(OpCode::Set, &[1], &[11])],
+            final_deps: vec![(1, 1).into(), (2, 1).into(), (3, 0).into()],
+            ..Default::default()
+        },
+    ];
+
+    match rp.execute_instances(&min_insts) {
+        Ok(iids) => assert_eq!(vec![InstanceID::of(1, 1)], iids),
+        Err(_) => assert!(false),
+    };
+
+    // (3, 1)~(2, 1)~(1, 1)
+    let min_insts = vec![
+        Instance {
+            instance_id: Some((1, 1).into()),
+            cmds: vec![Command::of(OpCode::Set, &[2], &[222])],
+            final_deps: vec![(1, 0).into(), (2, 1).into(), (3, 0).into()],
+            ..Default::default()
+        },
+        Instance {
+            instance_id: Some(InstanceID::of(2, 1)),
+            cmds: vec![Command::of(OpCode::NoOp, &[], &[])],
+            final_deps: vec![(1, 1).into(), (2, 0).into(), (3, 0).into()],
+            ..Default::default()
+        },
+        Instance {
+            instance_id: Some((3, 1).into()),
+            cmds: vec![Command::of(OpCode::Set, &[1], &[11])],
+            final_deps: vec![(1, 1).into(), (2, 0).into(), (3, 0).into()],
+            ..Default::default()
+        },
+    ];
+
+    match rp.execute_instances(&min_insts) {
+        Ok(iids) => assert_eq!(
+            vec![InstanceID::of(1, 1), (2, 1).into(), (3, 1).into()],
+            iids
+        ),
+        Err(_) => assert!(false),
+    };
+
+    // (3, 1) →(1, 1)
+    //       ↘   ~
+    //         (2, 1)
+    let min_insts = vec![
+        Instance {
+            instance_id: Some((1, 1).into()),
+            cmds: vec![Command::of(OpCode::Set, &[2], &[222])],
+            final_deps: vec![(1, 0).into(), (2, 1).into(), (3, 0).into()],
+            ..Default::default()
+        },
+        Instance {
+            instance_id: Some(InstanceID::of(2, 1)),
+            cmds: vec![Command::of(OpCode::NoOp, &[], &[])],
+            final_deps: vec![(1, 1).into(), (2, 0).into(), (3, 0).into()],
+            ..Default::default()
+        },
+        Instance {
+            instance_id: Some((3, 1).into()),
+            cmds: vec![Command::of(OpCode::Set, &[1], &[11])],
+            final_deps: vec![(1, 1).into(), (2, 1).into(), (3, 0).into()],
+            ..Default::default()
+        },
+    ];
+
+    match rp.execute_instances(&min_insts) {
+        Ok(iids) => assert_eq!(vec![InstanceID::of(1, 1), (2, 1).into()], iids),
+        Err(_) => assert!(false),
+    };
 }
