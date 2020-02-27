@@ -15,8 +15,8 @@ fn new_foo_inst() -> Instance {
     let cmd1 = Command::of(OpCode::NoOp, "k1".as_bytes(), "v1".as_bytes());
     let cmd2 = Command::of(OpCode::Get, "k2".as_bytes(), "v2".as_bytes());
     let cmds = vec![cmd1, cmd2];
-    let ballot = BallotNum::of(0, 0, replica);
-    let ballot2 = BallotNum::of(1, 2, replica);
+    let ballot = (0, 0, replica).into();
+    let ballot2 = (1, 2, replica).into();
 
     let mut inst = Instance::of(&cmds[..], &ballot, &initial_deps[..]);
     // TODO move these to Instance::new_instance
@@ -72,7 +72,7 @@ fn test_instanceid_derived() {
 
 #[test]
 fn test_ballotnum_derived() {
-    let b1 = BallotNum::of(1, 10, 5);
+    let b1 = BallotNum::from((1, 10, 5));
     let b2 = b1;
 
     assert_eq!(b1, b2);

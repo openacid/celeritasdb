@@ -8,8 +8,10 @@ fn main() {
         .build_server(true)
         //TODO command contains vec<u8> that can not be copied.
         // .type_attribute("Command", "#[derive(Copy)]")
-        .type_attribute("InstanceID", "#[derive(Copy, derive_more::From)]")
-        .type_attribute("BallotNum", "#[derive(Copy, derive_more::From)]")
+        .type_attribute("InstanceID",
+                        "#[derive(Copy, Eq, Ord, PartialOrd, derive_more::From)]")
+        .type_attribute("BallotNum",
+                        "#[derive(Copy, Eq, Ord, PartialOrd, derive_more::From)]")
         .compile(
             &[
                 "src/protos/command.proto",
