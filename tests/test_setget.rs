@@ -1,8 +1,6 @@
 #[cfg(test)]
 use pretty_assertions::assert_eq;
 
-use epaxos::instance;
-use epaxos::message;
 use epaxos::qpaxos::*;
 use std::time::Duration;
 
@@ -43,11 +41,11 @@ async fn connect_repl() {
         .await
         .unwrap();
 
-    let inst = instance::Instance {
+    let inst = Instance {
         ..Default::default()
     };
 
-    let request = message::Request::accept(&inst);
+    let request = MakeRequest::accept(&inst);
 
     let response = client.accept(request).await.unwrap();
 
