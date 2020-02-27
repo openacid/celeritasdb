@@ -1,4 +1,4 @@
-use crate::instance::{Instance, InstanceID};
+use crate::qpaxos::{Instance, InstanceID};
 use crate::replica::ReplicaID;
 
 use prost::Message;

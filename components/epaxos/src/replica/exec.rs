@@ -1,5 +1,5 @@
-use crate::instance::Instance;
-use crate::instance::InstanceID;
+use crate::qpaxos::Instance;
+use crate::qpaxos::InstanceID;
 use crate::replica::Replica;
 
 #[cfg(test)]

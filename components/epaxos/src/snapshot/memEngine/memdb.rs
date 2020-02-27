@@ -4,9 +4,9 @@ use std::sync::Mutex;
 use super::MemEngine;
 use prost::Message;
 
-use super::super::super::command::{Command, OpCode};
-use super::super::super::instance::{BallotNum, Instance, InstanceID};
-use super::super::super::replica::ReplicaID;
+use crate::qpaxos::{Command, OpCode};
+use crate::qpaxos::{BallotNum, Instance, InstanceID};
+use crate::replica::ReplicaID;
 use super::super::{
     Error, InstanceEngine, InstanceIter, KVEngine, StatusEngine, TransactionEngine,
 };

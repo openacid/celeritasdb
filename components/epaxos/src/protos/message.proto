@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package message;
+package qpaxos;
 
 import "command.proto";
 import "instance.proto";
@@ -26,43 +26,43 @@ message RequestCommon {
     int64 to_replica_id = 2;
 
     // Sender's ballot
-    instance.BallotNum ballot = 12;
-    instance.InstanceID instance_id = 13;
+    BallotNum ballot = 12;
+    InstanceID instance_id = 13;
 }
 message FastAcceptRequest {
     RequestCommon cmn = 1;
-    repeated command.Command     cmds           = 21;
-    repeated instance.InstanceID initial_deps   = 31;
+    repeated Command     cmds           = 21;
+    repeated InstanceID initial_deps   = 31;
     repeated bool                deps_committed = 33;
 }
 message AcceptRequest {
     RequestCommon cmn = 1;
-    repeated instance.InstanceID final_deps     = 41;
+    repeated InstanceID final_deps     = 41;
 }
 message CommitRequest {
     RequestCommon cmn = 1;
-    repeated command.Command     cmds           = 21;
-    repeated instance.InstanceID final_deps     = 41;
+    repeated Command     cmds           = 21;
+    repeated InstanceID final_deps     = 41;
 }
 message PrepareRequest {
     RequestCommon cmn = 1;
     // TODO prepare does not need cmds to find conflicting in our algorithm.
     //      need proof
-    // repeated command.Command     cmds           = 21;
+    // repeated Command     cmds           = 21;
 }
 
 
 message ReplyCommon {
     // The ballot stored on acceptor before handling a request.
-    instance.BallotNum last_ballot = 11;
-    instance.InstanceID instance_id = 13;
+    BallotNum last_ballot = 11;
+    InstanceID instance_id = 13;
 }
 message FastAcceptReply {
     // deps_status describe what status a dependent instance is in.
     // Only `deps` needs these information in order to commit on fast-path.
 
     ReplyCommon cmn = 1;
-    repeated instance.InstanceID deps           = 32;
+    repeated InstanceID deps           = 32;
     repeated bool                deps_committed = 33;
 }
 message AcceptReply {
@@ -73,7 +73,7 @@ message CommitReply {
 }
 message PrepareReply {
     ReplyCommon cmn = 1;
-    repeated instance.InstanceID deps       = 32;
-    repeated instance.InstanceID final_deps = 41;
+    repeated InstanceID deps       = 32;
+    repeated InstanceID final_deps = 41;
     bool                         committed  = 51;
 }

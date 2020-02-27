@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package instance;
+package qpaxos;
 
 import "command.proto";
 
@@ -29,7 +29,7 @@ message Instance {
     BallotNum last_ballot  = 11;
     BallotNum ballot       = 12;
     InstanceID instance_id = 13;
-    repeated command.Command cmds  = 21;
+    repeated Command cmds  = 21;
 
     // initial_deps is the dependent instance ids when an instance is created.
     repeated InstanceID initial_deps                = 31;
