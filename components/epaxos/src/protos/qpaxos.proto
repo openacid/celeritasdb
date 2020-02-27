@@ -5,5 +5,8 @@ package qpaxos;
 import "message.proto";
 
 service QPaxos {
-    rpc replicate (message.Request) returns (message.Reply) {}
+    rpc fast_accept (message.FastAcceptRequest) returns (message.FastAcceptReply) {}
+    rpc accept      (message.AcceptRequest)     returns (message.AcceptReply) {}
+    rpc commit      (message.CommitRequest)     returns (message.CommitReply) {}
+    rpc prepare     (message.PrepareRequest)    returns (message.PrepareReply) {}
 }

@@ -1,5 +1,4 @@
 use std::net::{SocketAddr, TcpListener, TcpStream};
-use std::thread::JoinHandle;
 use std::time::SystemTime;
 
 use super::super::command::Command;
@@ -107,26 +106,19 @@ impl<Engine> Replica<Engine> {
     // reply to requester?
     // I think that would be a great place to do statistics and measurement.
     // and by making Replica independent,it's easier to do test.
-    fn handle_prepare(&mut self, req: &PrepareReq) -> Result<PrepareReply, String> {
+    fn handle_prepare(&mut self, req: &PrepareRequest) -> Result<PrepareReply, String> {
         Err("not implemented".to_string())
     }
 
-    fn handle_pre_accept(&mut self, req: &PreAcceptReq) -> Result<PreAcceptReply, String> {
+    fn handle_pre_accept(&mut self, req: &FastAcceptRequest) -> Result<FastAcceptReply, String> {
         Err("not implemented".to_string())
     }
 
-    fn handle_try_pre_accept(
-        &mut self,
-        req: &TryPreAcceptReq,
-    ) -> Result<TryPreAcceptReply, String> {
+    fn handle_accept(&mut self, req: &AcceptRequest) -> Result<AcceptReply, String> {
         Err("not implemented".to_string())
     }
 
-    fn handle_accept(&mut self, req: &AcceptReq) -> Result<AcceptReply, String> {
-        Err("not implemented".to_string())
-    }
-
-    fn handle_commit(&mut self, req: &CommitReq) -> Result<(), String> {
+    fn handle_commit(&mut self, req: &CommitRequest) -> Result<(), String> {
         Err("not implemented".to_string())
     }
 }

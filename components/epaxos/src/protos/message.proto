@@ -13,133 +13,67 @@ enum RequestType {
     Commit = 4;
 };
 
-message Request {
+// field id:
+// 01~10: meta.
+// 11~20: common fields.
+// 21~30: replication irrelevant fields.
+// 31~40: fast path related fields.
+// 41~50: slow path related fields.
+// 51~60: for commit.
 
-    // field id:
-    // 01~10: meta.
-    // 11~20: common fields.
-    // 21~30: replication irrelevant fields.
-    // 31~40: fast path related fields.
-    // 41~50: slow path related fields.
-    // 51~60: for commit.
 
-    RequestType req_type = 1;
+message RequestCommon {
     int64 to_replica_id = 2;
 
     // Sender's ballot
     instance.BallotNum ballot = 12;
     instance.InstanceID instance_id = 13;
-
-    //                                         // required by:
-
-    repeated command.Command        cmds           = 21; // PreAccept,          Commit, Prepare
-    repeated instance.InstanceID     initial_deps   = 31; // PreAccept,
-    repeated bool           deps_committed = 33; // PreAccept,
-    repeated instance.InstanceID     final_deps     = 41; //             Accept, Commit
+}
+message FastAcceptRequest {
+    RequestCommon cmn = 1;
+    repeated command.Command     cmds           = 21;
+    repeated instance.InstanceID initial_deps   = 31;
+    repeated bool                deps_committed = 33;
+}
+message AcceptRequest {
+    RequestCommon cmn = 1;
+    repeated instance.InstanceID final_deps     = 41;
+}
+message CommitRequest {
+    RequestCommon cmn = 1;
+    repeated command.Command     cmds           = 21;
+    repeated instance.InstanceID final_deps     = 41;
+}
+message PrepareRequest {
+    RequestCommon cmn = 1;
+    // TODO prepare does not need cmds to find conflicting in our algorithm.
+    //      need proof
+    // repeated command.Command     cmds           = 21;
 }
 
-message Reply {
 
-    RequestType req_type = 1;
-
+message ReplyCommon {
     // The ballot stored on acceptor before handling a request.
     instance.BallotNum last_ballot = 11;
     instance.InstanceID instance_id = 13;
-
+}
+message FastAcceptReply {
     // deps_status describe what status a dependent instance is in.
     // Only `deps` needs these information in order to commit on fast-path.
 
-    //                                         // required by:
-
-    repeated instance.InstanceID     deps           = 32;  // PreAccept,     Prepare
-    repeated bool           deps_committed = 33;  // PreAccept,
-    repeated instance.InstanceID     final_deps     = 41;  //                Prepare
-    bool                    committed      = 51;  //                Prepare
+    ReplyCommon cmn = 1;
+    repeated instance.InstanceID deps           = 32;
+    repeated bool                deps_committed = 33;
 }
-
-
-message PrepareReq {
-    int64 leader_id = 1;  // the replica owns the instance
-    int64 replica_id = 2; // the replica who starts the explict prepare
-    instance.InstanceID instance_id = 3;
-    instance.BallotNum ballot = 4;
-};
-
-message PrepareReply {
-    int64 acceptor_id = 1;
-    int64 replica_id = 2; // the replica who starts the explict prepare
-    instance.InstanceID instance_id = 3;
-    // successful(true), or failed(false) in case ballot number of msg
-    // smaller than that in instance
-    bool ok = 4;
-    instance.BallotNum ballot = 5;
-    instance.Instance instance = 6;
-};
-
-message PreAcceptReq {
-    int64 leader_id = 1;
-    int64 replica_id = 2; // the same value with leader_id, weird!
-    instance.InstanceID instance_id = 3;
-    instance.Instance instance = 4;
-    instance.BallotNum ballot = 5;
-};
-
-message PreAcceptReply {
-    int64 replica_id = 1;
-    instance.Instance instance = 2;
-    bool ok = 3;
-    instance.BallotNum ballot = 4;
-    repeated instance.InstanceID committed_deps = 5;
-};
-
-// used in Paxos-Accept
-message AcceptReq {
-    int64 leader_id = 1;  // the replica who sends the msg
-    int64 replica_id = 2; // the replica who starts the explicit_prepare or who starts the preaccept or who starts the try-preaccept
-    instance.Instance instance = 3;
-    instance.BallotNum ballot = 4;
-    int32 count = 5;
-};
-
 message AcceptReply {
-    int64 replica_id = 1;
-    instance.InstanceID instance_id = 2;
-    bool ok = 3;
-    instance.BallotNum ballot = 4;
-};
-
-// used in commit phase
-message CommitReq {
-    int64 leader_id = 1;
-    int64 replica_id = 2;
-    instance.Instance instance = 3;
-};
-
-message CommitShort {
-    int64 leader_id = 1;
-    int64 replica_id = 2;
-    instance.InstanceID instance_id = 3;
-    int32 count = 4;
-
-    int32 seq = 5;
-    repeated instance.InstanceID deps = 6;
+    ReplyCommon cmn = 1;
 }
-
-message TryPreAcceptReq {
-    int64 leader_id = 1;
-    int64 replica_id = 2;
-    instance.InstanceID instance_id = 3;
-    instance.BallotNum ballot = 4;
-    instance.Instance instance = 5;
-};
-
-message TryPreAcceptReply {
-    int64 acceptor_id = 1;
-    int64 replica_id = 2;
-    instance.InstanceID instance_id = 3;
-    bool ok = 4;
-    instance.BallotNum ballot = 5;
-    int64 conflict_replica = 6;
-    instance.InstanceID conflict_instance_id = 7;
-    instance.InstanceStatus conflict_status = 8;
-};
+message CommitReply {
+    ReplyCommon cmn = 1;
+}
+message PrepareReply {
+    ReplyCommon cmn = 1;
+    repeated instance.InstanceID deps       = 32;
+    repeated instance.InstanceID final_deps = 41;
+    bool                         committed  = 51;
+}

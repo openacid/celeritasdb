@@ -49,7 +49,7 @@ async fn connect_repl() {
 
     let request = message::Request::accept(&inst);
 
-    let response = client.replicate(request).await.unwrap();
+    let response = client.accept(request).await.unwrap();
 
     println!("RESPONSE={:?}", response);
 }
