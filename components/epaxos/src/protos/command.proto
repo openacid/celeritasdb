@@ -1,6 +1,6 @@
 syntax = "proto3";
 
-package command;
+package qpaxos;
 
 enum OpCode {
     NoOp = 0;

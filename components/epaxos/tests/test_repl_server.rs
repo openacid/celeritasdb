@@ -7,9 +7,7 @@ use tokio::time::delay_for;
 
 use std::time::Duration;
 
-use epaxos::instance;
-use epaxos::message;
-use epaxos::qpaxos::*;
+use epaxos::qpaxos as qp;
 
 #[test]
 fn test_repl_server() {
@@ -25,8 +23,8 @@ async fn _repl_server() {
 
     // start a replication server in a coroutine
 
-    let qp = MyQPaxos::default();
-    let s = Server::builder().add_service(QPaxosServer::new(qp));
+    let qp = qp::MyQPaxos::default();
+    let s = Server::builder().add_service(qp::QPaxosServer::new(qp));
 
     tokio::spawn(async move {
         println!("spawned");
@@ -43,11 +41,11 @@ async fn _repl_server() {
     // TODO replace this with loop of trying connecting.
     delay_for(Duration::from_millis(1_000)).await;
 
-    let mut client = QPaxosClient::connect("http://127.0.0.1:4444")
+    let mut client = qp::QPaxosClient::connect("http://127.0.0.1:4444")
         .await
         .unwrap();
 
-    let inst = instance::Instance {
+    let inst = qp::Instance {
         ..Default::default()
     };
 
@@ -56,7 +54,7 @@ async fn _repl_server() {
 
     // let request = Request::new(message::Request::accept());
     // let request = message::Request::accept().into();
-    let request = message::Request::accept(&inst);
+    let request = qp::MakeRequest::accept(&inst);
 
     let response = client.accept(request).await.unwrap();
 

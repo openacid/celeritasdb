@@ -1,7 +1,7 @@
 use std::net::{SocketAddr, TcpListener, TcpStream};
 
-use crate::instance::Instance;
-use crate::instance::InstanceID;
+use crate::qpaxos::Instance;
+use crate::qpaxos::InstanceID;
 use crate::replica::Replica;
 use crate::replica::ReplicaConf;
 use crate::replica::ReplicaStatus;

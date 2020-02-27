@@ -1,11 +1,9 @@
 use std::net::{SocketAddr, TcpListener, TcpStream};
 use std::time::SystemTime;
 
-use super::super::command::Command;
 use super::super::conf::ClusterInfo;
-use super::super::instance::{Instance, InstanceID, InstanceIdx};
 
-use super::super::message::*;
+use super::super::qpaxos::*;
 
 use super::super::snapshot::{InstanceEngine, KVEngine, StatusEngine, TransactionEngine};
 
@@ -87,7 +85,7 @@ impl<Engine> Replica<Engine> {
     /// if conn is None, make connection
     /// TODO(lsl): we really need something like a request context
     ///            to store conn and anything should be shared in a request or proposing an instance
-    fn send_msg(&mut self, to: ReplicaID, msg: &Request) -> Result<Reply, String> {
+    fn send_msg(&mut self, to: ReplicaID, msg: &AcceptRequest) -> Result<AcceptReply, String> {
         Err("not implemented".to_string())
     }
 

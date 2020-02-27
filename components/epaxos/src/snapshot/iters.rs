@@ -1,5 +1,5 @@
 use super::memEngine::*;
-use crate::instance::{Instance, InstanceID};
+use crate::qpaxos::{Instance, InstanceID};
 use prost::Message;
 
 use super::super::tokey::ToKey;
