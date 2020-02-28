@@ -46,16 +46,16 @@ impl InstanceID {
         }
     }
 
-    pub fn of_key(s: &str) -> Option<InstanceID> {
+    pub fn from_key(s: &str) -> Option<InstanceID> {
         let items: Vec<&str> = s.split("/").collect();
         if items[1] == "instance" && items.len() == 4 {
-            let rid = match items[2].parse::<i64>() {
-                Ok(v) => v,
+            let rid = match u64::from_str_radix(&items[2][..], 16) {
+                Ok(v) => v as i64,
                 Err(_) => return None,
             };
 
-            let idx = match items[3].parse::<i64>() {
-                Ok(v) => v,
+            let idx = match u64::from_str_radix(&items[3][..], 16) {
+                Ok(v) => v as i64,
                 Err(_) => return None,
             };
 

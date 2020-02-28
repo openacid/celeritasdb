@@ -95,6 +95,19 @@ fn test_instance_id_to_key() {
 }
 
 #[test]
+fn test_InstanceID_from_key() {
+    assert_eq!(
+        InstanceID::from_key("/instance/0000000000000001/000000000000000a").unwrap(),
+        (1, 10).into()
+    );
+
+    assert_eq!(
+        InstanceID::from_key("/instance/ffffffffffffffff/fffffffffffffff6").unwrap(),
+        (-1, -10).into()
+    );
+}
+
+#[test]
 fn test_cmp_instance_id() {
     let cases = vec![
         ((1, 10), (1, 10), "="),
