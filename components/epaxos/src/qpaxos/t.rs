@@ -332,6 +332,4 @@ fn test_reply_commit_pb() {
     // no other fields.
 
     test_enc_dec!(pp, CommitReply);
-
 }
-
