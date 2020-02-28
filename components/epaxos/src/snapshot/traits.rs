@@ -7,8 +7,8 @@ use prost::Message;
 use super::Error;
 use super::InstanceIter;
 
-/// KVEngine offer functions to operate snapshot key-values
-pub trait KVEngine {
+/// Base offer basic key-value access
+pub trait Base {
     /// set a new key-value
     fn set_kv(&mut self, key: Vec<u8>, value: Vec<u8>) -> Result<(), Error>;
     /// get an existing value with key
@@ -16,7 +16,7 @@ pub trait KVEngine {
 }
 
 /// InstanceEngine offer functions to operate snapshot instances
-pub trait InstanceEngine<T>: KVEngine {
+pub trait InstanceEngine<T>: Base {
     /// set a new instance
     fn set_instance(&mut self, iid: InstanceID, inst: Instance) -> Result<(), Error>;
     /// update an existing instance with instance id
@@ -28,7 +28,7 @@ pub trait InstanceEngine<T>: KVEngine {
 }
 
 /// StatusEngine offer functions to operate snapshot status
-pub trait StatusEngine: KVEngine {
+pub trait StatusEngine: Base {
     /// get current maximum instance id with a leader replica
     fn get_max_instance_id(&self, rid: ReplicaID) -> Result<InstanceID, Error>;
 
