@@ -18,7 +18,7 @@ impl<'a> Iterator for InstanceIter<'a, MemEngine> {
         let (key_bytes, val_bytes) = self.engine.next_kv(&k, self.include)?;
 
         let key = String::from_utf8(key_bytes).unwrap();
-        let iid = InstanceID::of_key(&key[..])?;
+        let iid = InstanceID::from_key(&key[..])?;
 
         match Instance::decode(val_bytes.as_slice()) {
             Ok(v) => {
