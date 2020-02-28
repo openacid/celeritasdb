@@ -5,7 +5,7 @@ use super::MemEngine;
 use prost::Message;
 
 use super::super::{
-    Error, InstanceEngine, InstanceIter, KVEngine, StatusEngine, TransactionEngine,
+    Error, InstanceEngine, InstanceIter, Base, StatusEngine, TransactionEngine,
 };
 use crate::qpaxos::{BallotNum, Instance, InstanceID};
 use crate::qpaxos::{Command, OpCode};
@@ -35,7 +35,7 @@ impl MemEngine {
     }
 }
 
-impl KVEngine for MemEngine {
+impl Base for MemEngine {
     fn set_kv(&mut self, key: Vec<u8>, value: Vec<u8>) -> Result<(), Error> {
         self._db.insert(key, value);
         Ok(())
