@@ -36,8 +36,8 @@ impl MemEngine {
 }
 
 impl KVEngine for MemEngine {
-    fn set_kv(&mut self, key: &Vec<u8>, value: &Vec<u8>) -> Result<(), Error> {
-        self._db.insert(key.to_vec(), value.to_vec());
+    fn set_kv(&mut self, key: Vec<u8>, value: Vec<u8>) -> Result<(), Error> {
+        self._db.insert(key, value);
         Ok(())
     }
 
@@ -51,14 +51,14 @@ impl KVEngine for MemEngine {
 }
 
 impl InstanceEngine<MemEngine> for MemEngine {
-    fn set_instance(&mut self, iid: &InstanceID, inst: Instance) -> Result<(), Error> {
+    fn set_instance(&mut self, iid: InstanceID, inst: Instance) -> Result<(), Error> {
         // does not guarantee in a transaction
         let _ = self._mutex.lock().unwrap();
 
         let key = iid.to_key();
         let mut value = vec![];
         inst.encode(&mut value).unwrap();
-        let _ = self.set_kv(&key, &value)?;
+        let _ = self.set_kv(key, value)?;
 
         let max_iid = self.get_max_instance_id(iid.replica_id);
         let max_iid = match max_iid {
@@ -72,20 +72,20 @@ impl InstanceEngine<MemEngine> for MemEngine {
             }
         };
 
-        if &max_iid < iid {
+        if max_iid < iid {
             let key = self.max_instance_id_key(iid.replica_id);
-            let _ = self.set_instance_id(&key, iid.clone())?;
+            let _ = self.set_instance_id(key, iid)?;
         }
 
-        if inst.executed && &max_iid < iid {
+        if inst.executed && max_iid < iid {
             let key = self.max_exec_instance_id_key(iid.replica_id);
-            let _ = self.set_instance_id(&key, iid.clone())?;
+            let _ = self.set_instance_id(key, iid)?;
         }
 
         Ok(())
     }
 
-    fn update_instance(&mut self, iid: &InstanceID, inst: Instance) -> Result<(), Error> {
+    fn update_instance(&mut self, iid: InstanceID, inst: Instance) -> Result<(), Error> {
         self.set_instance(iid, inst)
     }
 
@@ -145,7 +145,7 @@ impl TransactionEngine<MemEngine> for MemEngine {
     fn trans_rollback(&mut self) -> Result<(), Error> {
         Ok(())
     }
-    fn get_kv_for_update(&self, key: &Vec<u8>) -> Result<Vec<u8>, Error> {
+    fn get_kv_for_update(&self, _key: &Vec<u8>) -> Result<Vec<u8>, Error> {
         Ok(vec![])
     }
 }
@@ -164,7 +164,7 @@ mod tests {
             let k = case.0.as_bytes().to_vec();
             let v = case.1.as_bytes().to_vec();
 
-            let _ = engine.set_kv(&k, &v).unwrap();
+            let _ = engine.set_kv(k.clone(), v.clone()).unwrap();
             let act = engine.get_kv(&k).unwrap();
 
             assert_eq!(v, act);
@@ -193,7 +193,7 @@ mod tests {
 
                 let inst = Instance::of(&cmds[..], &ballot, &deps[..]);
 
-                let _ = engine.set_instance(&iid, inst.clone()).unwrap();
+                let _ = engine.set_instance(iid, inst.clone()).unwrap();
 
                 let act = engine.get_max_instance_id(rid).unwrap();
                 assert_eq!(act, iid);
@@ -242,13 +242,13 @@ mod tests {
             let iid = InstanceID::from((rid, idx));
 
             let key = engine.max_instance_id_key(rid);
-            let _ = engine.set_instance_id(&key, iid.clone()).unwrap();
+            let _ = engine.set_instance_id(key, iid.clone()).unwrap();
             let act = engine.get_max_instance_id(rid).unwrap();
 
             assert_eq!(act, iid);
 
             let key = engine.max_exec_instance_id_key(rid);
-            let _ = engine.set_instance_id(&key, iid.clone()).unwrap();
+            let _ = engine.set_instance_id(key, iid.clone()).unwrap();
             let act = engine.get_max_exec_instance_id(rid).unwrap();
 
             assert_eq!(act, iid);
@@ -261,8 +261,8 @@ mod tests {
         let k = "foo".as_bytes().to_vec();
         let v = "bar".as_bytes().to_vec();
         engine.trans_begin();
-        engine.set_kv(&k, &v);
-        engine.trans_commit();
+        engine.set_kv(k.clone(), v.clone()).unwrap();
+        engine.trans_commit().unwrap();
 
         assert_eq!(v, engine.get_kv(&k).unwrap());
     }

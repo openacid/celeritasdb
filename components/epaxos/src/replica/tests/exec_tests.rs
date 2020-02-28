@@ -127,11 +127,11 @@ fn test_find_missing_instances() {
 fn test_execute_commands() {
     let mut rp = new_replica();
 
-    match rp.storage.set_kv(&vec![1], &vec![11]) {
+    match rp.storage.set_kv(vec![1], vec![11]) {
         Err(_) => assert!(false),
         Ok(_) => {}
     }
-    match rp.storage.set_kv(&vec![2], &vec![22]) {
+    match rp.storage.set_kv(vec![2], vec![22]) {
         Err(_) => assert!(false),
         Ok(_) => {}
     }

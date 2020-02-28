@@ -62,7 +62,7 @@ impl<E> Replica<E> {
             if OpCode::NoOp as i32 == cmd.op {
                 rst.push(ExecuteResult::Success);
             } else if OpCode::Set as i32 == cmd.op {
-                self.storage.set_kv(&cmd.key, &cmd.value)?;
+                self.storage.set_kv(cmd.key.clone(), cmd.value.clone())?;
                 rst.push(ExecuteResult::Success);
             } else if OpCode::Get as i32 == cmd.op {
                 match self.storage.get_kv(&cmd.key) {
@@ -80,7 +80,7 @@ impl<E> Replica<E> {
         let mut new_inst = inst.clone();
         new_inst.executed = true;
         self.storage
-            .update_instance(&inst.instance_id.unwrap(), new_inst)?;
+            .update_instance(inst.instance_id.unwrap(), new_inst)?;
 
         Ok(rst)
     }
