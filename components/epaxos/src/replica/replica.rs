@@ -5,7 +5,7 @@ use super::super::conf::ClusterInfo;
 
 use super::super::qpaxos::*;
 
-use super::super::snapshot::TransactionEngine;
+use super::super::snapshot::TxEngine;
 
 #[cfg(test)]
 #[path = "./tests/replica_tests.rs"]
@@ -53,7 +53,7 @@ pub struct Replica<E> {
     pub latest_cp: InstanceID, // record the instance id in the lastest communication
 
     // storage
-    pub storage: Box<dyn TransactionEngine<E>>,
+    pub storage: Box<dyn TxEngine<E>>,
 
     // to recover uncommitted instance
     pub problem_inst_ids: Vec<(InstanceID, SystemTime)>,

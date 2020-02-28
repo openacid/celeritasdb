@@ -50,8 +50,8 @@ pub trait StatusEngine: Base {
     }
 }
 
-/// TransactionEngine offer a transaction to operate key-values and instances atomically
-pub trait TransactionEngine<T>: StatusEngine + InstanceEngine<T> {
+/// TxEngine offer a transactional operation on a storage.
+pub trait TxEngine<T>: StatusEngine + InstanceEngine<T> {
     /// start a transaction
     fn trans_begin(&mut self);
     /// commit a transaction

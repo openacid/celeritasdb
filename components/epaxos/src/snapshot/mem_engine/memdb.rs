@@ -5,7 +5,7 @@ use super::MemEngine;
 use prost::Message;
 
 use super::super::{
-    Error, InstanceEngine, InstanceIter, Base, StatusEngine, TransactionEngine,
+    Error, InstanceEngine, InstanceIter, Base, StatusEngine, TxEngine,
 };
 use crate::qpaxos::{BallotNum, Instance, InstanceID};
 use crate::qpaxos::{Command, OpCode};
@@ -137,7 +137,7 @@ impl StatusEngine for MemEngine {
     }
 }
 
-impl TransactionEngine<MemEngine> for MemEngine {
+impl TxEngine<MemEngine> for MemEngine {
     fn trans_begin(&mut self) {}
     fn trans_commit(&mut self) -> Result<(), Error> {
         Ok(())
