@@ -13,6 +13,7 @@ pub struct InstanceIter<'a, T> {
 impl<'a> Iterator for InstanceIter<'a, MemEngine> {
     type Item = Instance;
 
+    // TODO add unittest. now the only test for this is in mem_engine.
     fn next(&mut self) -> Option<Instance> {
         let k = self.curr_inst_id.to_key();
         let (key_bytes, val_bytes) = self.engine.next_kv(&k, self.include)?;
