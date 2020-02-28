@@ -9,7 +9,7 @@ use super::InstanceIter;
 /// KVEngine offer functions to operate snapshot key-values
 pub trait KVEngine {
     /// set a new key-value
-    fn set_kv(&mut self, key: &Vec<u8>, value: &Vec<u8>) -> Result<(), Error>;
+    fn set_kv(&mut self, key: Vec<u8>, value: Vec<u8>) -> Result<(), Error>;
     /// get an existing value with key
     fn get_kv(&self, key: &Vec<u8>) -> Result<Vec<u8>, Error>;
 }
@@ -17,9 +17,9 @@ pub trait KVEngine {
 /// InstanceEngine offer functions to operate snapshot instances
 pub trait InstanceEngine<T>: KVEngine {
     /// set a new instance
-    fn set_instance(&mut self, iid: &InstanceID, inst: Instance) -> Result<(), Error>;
+    fn set_instance(&mut self, iid: InstanceID, inst: Instance) -> Result<(), Error>;
     /// update an existing instance with instance id
-    fn update_instance(&mut self, iid: &InstanceID, inst: Instance) -> Result<(), Error>;
+    fn update_instance(&mut self, iid: InstanceID, inst: Instance) -> Result<(), Error>;
     /// get an instance with instance id
     fn get_instance(&self, iid: &InstanceID) -> Result<Instance, Error>;
     /// get an iterator to scan all instances with a leader replica id
@@ -42,10 +42,10 @@ pub trait StatusEngine: KVEngine {
         format!("/status/max_exec_instance_id/{:x}", rid).into_bytes()
     }
 
-    fn set_instance_id(&mut self, key: &Vec<u8>, iid: InstanceID) -> Result<(), Error> {
+    fn set_instance_id(&mut self, key: Vec<u8>, iid: InstanceID) -> Result<(), Error> {
         let mut value = vec![];
         iid.encode(&mut value).unwrap();
-        self.set_kv(&key, &value)
+        self.set_kv(key, value)
     }
 }
 
