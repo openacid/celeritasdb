@@ -7,10 +7,10 @@ use std::str;
 fn new_foo_inst() -> Instance {
     let replica = 1;
 
-    let inst_id1 = InstanceID::of(1, 10);
-    let inst_id2 = InstanceID::of(2, 20);
-    let inst_id3 = InstanceID::of(3, 30);
-    let initial_deps = vec![inst_id1.clone(), inst_id2.clone(), inst_id3.clone()];
+    let inst_id1 = InstanceID::from((1, 10));
+    let inst_id2 = InstanceID::from((2, 20));
+    let inst_id3 = InstanceID::from((3, 30));
+    let initial_deps = vec![inst_id1, inst_id2, inst_id3];
 
     let cmd1 = Command::of(OpCode::NoOp, "k1".as_bytes(), "v1".as_bytes());
     let cmd2 = Command::of(OpCode::Get, "k2".as_bytes(), "v2".as_bytes());
@@ -63,31 +63,33 @@ fn test_instance_protobuf() {
 
 #[test]
 fn test_instanceid_derived() {
-    let inst_id1 = InstanceID::of(1, 10);
+    let inst_id1 = InstanceID{replica_id:1, idx:10};
     let inst_id2 = inst_id1;
 
     assert_eq!(inst_id1, inst_id2);
     assert_eq!(inst_id1, (1, 10).into());
+    assert_eq!(inst_id1, InstanceID::from((1, 10)));
 }
 
 #[test]
 fn test_ballotnum_derived() {
-    let b1 = BallotNum::from((1, 10, 5));
+    let b1 = BallotNum{epoch:1, num:10, replica_id:5};
     let b2 = b1;
 
     assert_eq!(b1, b2);
     assert_eq!(b1, (1, 10, 5).into());
+    assert_eq!(b1, BallotNum::from((1, 10, 5)));
 }
 
 #[test]
 fn test_instance_id_to_key() {
-    let k = InstanceID::of(1, 10).to_key();
+    let k = InstanceID::from((1, 10)).to_key();
     assert_eq!(
         "/instance/0000000000000001/000000000000000a",
         str::from_utf8(&k).unwrap()
     );
 
-    let k = InstanceID::of(-1, -10).to_key();
+    let k = InstanceID::from((-1, -10)).to_key();
     assert_eq!(
         "/instance/ffffffffffffffff/fffffffffffffff6",
         str::from_utf8(&k).unwrap()
@@ -224,7 +226,7 @@ fn test_instance_after() {
 }
 
 #[test]
-fn test_command_protobuf() {
+fn test_command_pb() {
     let cmd1 = Command::of(OpCode::NoOp, "key".as_bytes(), "value".as_bytes());
 
     test_enc_dec!(cmd1, Command);

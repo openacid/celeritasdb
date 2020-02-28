@@ -2,7 +2,7 @@ use super::mem_engine::*;
 use crate::qpaxos::{Instance, InstanceID};
 use prost::Message;
 
-use super::super::tokey::ToKey;
+use crate::tokey::ToKey;
 
 pub struct InstanceIter<'a, T> {
     pub curr_inst_id: InstanceID,

@@ -42,14 +42,13 @@ impl InstanceID {
         InstanceID {
             replica_id,
             idx,
-            ..Default::default()
         }
     }
 
     pub fn from_key(s: &str) -> Option<InstanceID> {
         let items: Vec<&str> = s.split("/").collect();
         if items[1] == "instance" && items.len() == 4 {
-            let rid = match u64::from_str_radix(&items[2][..], 16) {
+            let replica_id = match u64::from_str_radix(&items[2][..], 16) {
                 Ok(v) => v as i64,
                 Err(_) => return None,
             };
@@ -60,9 +59,8 @@ impl InstanceID {
             };
 
             return Some(InstanceID {
-                replica_id: rid,
-                idx: idx,
-                ..Default::default()
+                replica_id,
+                idx,
             });
         }
 
@@ -130,7 +128,7 @@ impl MakeRequest {
 
     pub fn fast_accept(inst: &Instance, deps_committed: &[bool]) -> FastAcceptRequest {
         FastAcceptRequest {
-            cmn: MakeRequest::common(inst),
+            cmn: Self::common(inst),
             cmds: inst.cmds.clone(),
             initial_deps: inst.initial_deps.clone(),
             deps_committed: deps_committed.into(),
@@ -139,14 +137,14 @@ impl MakeRequest {
 
     pub fn accept(inst: &Instance) -> AcceptRequest {
         AcceptRequest {
-            cmn: MakeRequest::common(inst),
+            cmn: Self::common(inst),
             final_deps: inst.final_deps.clone(),
         }
     }
 
     pub fn commit(inst: &Instance) -> CommitRequest {
         CommitRequest {
-            cmn: MakeRequest::common(inst),
+            cmn: Self::common(inst),
             cmds: inst.cmds.clone(),
             final_deps: inst.final_deps.clone(),
         }
@@ -154,7 +152,7 @@ impl MakeRequest {
 
     pub fn prepare(inst: &Instance) -> PrepareRequest {
         PrepareRequest {
-            cmn: MakeRequest::common(inst),
+            cmn: Self::common(inst),
         }
     }
 }
@@ -176,7 +174,7 @@ impl MakeReply {
 
     pub fn fast_accept(inst: &Instance, deps_committed: &[bool]) -> FastAcceptReply {
         FastAcceptReply {
-            cmn: MakeReply::common(inst),
+            cmn: Self::common(inst),
             deps: inst.deps.clone(),
             deps_committed: deps_committed.into(),
         }
@@ -184,19 +182,19 @@ impl MakeReply {
 
     pub fn accept(inst: &Instance) -> AcceptReply {
         AcceptReply {
-            cmn: MakeReply::common(inst),
+            cmn: Self::common(inst),
         }
     }
 
     pub fn commit(inst: &Instance) -> CommitReply {
         CommitReply {
-            cmn: MakeReply::common(inst),
+            cmn: Self::common(inst),
         }
     }
 
     pub fn prepare(inst: &Instance) -> PrepareReply {
         PrepareReply {
-            cmn: MakeReply::common(inst),
+            cmn: Self::common(inst),
             deps: inst.deps.clone(),
             final_deps: inst.final_deps.clone(),
             committed: inst.committed,
@@ -209,6 +207,7 @@ pub struct MyQPaxos {}
 
 #[tonic::async_trait]
 impl QPaxos for MyQPaxos {
+
     async fn fast_accept(
         &self,
         request: Request<FastAcceptRequest>,
@@ -222,6 +221,7 @@ impl QPaxos for MyQPaxos {
         println!("Got a request: {:?}", request);
         Ok(Response::new(reply))
     }
+
     async fn accept(
         &self,
         request: Request<AcceptRequest>,
@@ -235,6 +235,7 @@ impl QPaxos for MyQPaxos {
         println!("Got a request: {:?}", request);
         Ok(Response::new(reply))
     }
+
     async fn commit(
         &self,
         request: Request<CommitRequest>,
@@ -248,6 +249,7 @@ impl QPaxos for MyQPaxos {
         println!("Got a request: {:?}", request);
         Ok(Response::new(reply))
     }
+
     async fn prepare(
         &self,
         request: Request<PrepareRequest>,

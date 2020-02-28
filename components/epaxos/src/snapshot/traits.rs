@@ -1,6 +1,7 @@
 use crate::qpaxos::{Instance, InstanceID};
 use crate::replica::ReplicaID;
 
+// required by encode/decode
 use prost::Message;
 
 use super::Error;
