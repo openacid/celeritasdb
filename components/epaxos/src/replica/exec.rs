@@ -13,7 +13,7 @@ pub enum ExecuteResult {
     NotFound,
 }
 
-impl<E> Replica<E> {
+impl Replica {
     // R1          R2
     // -------------
     // |           |

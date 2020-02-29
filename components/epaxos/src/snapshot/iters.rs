@@ -1,16 +1,16 @@
-use super::mem_engine::*;
+use super::traits::*;
 use crate::qpaxos::{Instance, InstanceID};
 use prost::Message;
 
 use crate::tokey::ToKey;
 
-pub struct InstanceIter<'a, T> {
+pub struct InstanceIter<'a> {
     pub curr_inst_id: InstanceID,
     pub include: bool,
-    pub engine: &'a T,
+    pub engine: &'a dyn Base,
 }
 
-impl<'a> Iterator for InstanceIter<'a, MemEngine> {
+impl<'a> Iterator for InstanceIter<'a> {
     type Item = Instance;
 
     // TODO add unittest. now the only test for this is in mem_engine.

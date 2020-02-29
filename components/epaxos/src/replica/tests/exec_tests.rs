@@ -4,7 +4,7 @@ use crate::qpaxos::{Command, Instance, InstanceID, OpCode};
 use crate::replica::{ExecuteResult, Replica, ReplicaConf, ReplicaStatus};
 use crate::snapshot::MemEngine;
 
-fn new_replica() -> Replica<MemEngine> {
+fn new_replica() -> Replica {
     return Replica {
         replica_id: 0,
         group_replica_ids: vec![],
