@@ -53,7 +53,7 @@ pub struct Replica {
     pub latest_cp: InstanceID, // record the instance id in the lastest communication
 
     // storage
-    pub storage: Box<dyn InstanceEngine<RID = ReplicaID, Item = InstanceID>>,
+    pub storage: Box<dyn InstanceEngine<ColumnId = ReplicaID, ObjId = InstanceID, Obj = Instance>>,
 
     // to recover uncommitted instance
     pub problem_inst_ids: Vec<(InstanceID, SystemTime)>,
