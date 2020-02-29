@@ -4,7 +4,7 @@ use std::sync::Mutex;
 use super::MemEngine;
 use prost::Message;
 
-use super::super::{Base, BaseIter, Error, InstanceEngine, InstanceIter, StatusEngine, TxEngine};
+use super::super::*;
 use crate::qpaxos::{BallotNum, Instance, InstanceID};
 use crate::qpaxos::{Command, OpCode};
 use crate::replica::ReplicaID;
@@ -56,17 +56,30 @@ impl Base for MemEngine {
     }
 }
 
+impl ObjectEngine for MemEngine {
+    type ObjId = InstanceID;
+    type Obj = Instance;
+}
+
+impl ColumnedEngine for MemEngine {
+    type ColumnId = ReplicaID;
+    fn make_ref_key(&self, typ: &str, col_id: Self::ColumnId) -> Vec<u8> {
+        match typ {
+            "max" => format!("/status/max_instance_id/{:016x}", col_id).into_bytes(),
+            "exec" => format!("/status/max_exec_instance_id/{:016x}", col_id).into_bytes(),
+            _ => panic!("unknown type ref"),
+        }
+    }
+}
+
 impl InstanceEngine for MemEngine {
     fn set_instance(&mut self, iid: InstanceID, inst: Instance) -> Result<(), Error> {
         // does not guarantee in a transaction
         let _ = self._mutex.lock().unwrap();
 
-        let key = iid.to_key();
-        let mut value = vec![];
-        inst.encode(&mut value).unwrap();
-        let _ = self.set_kv(key, value)?;
+        self.set_obj(iid, &inst).unwrap();
 
-        let max_iid = self.get_max_instance_id(iid.replica_id);
+        let max_iid = self.get_ref("max", iid.replica_id);
         let max_iid = match max_iid {
             Ok(v) => v,
             Err(err) => {
@@ -79,13 +92,11 @@ impl InstanceEngine for MemEngine {
         };
 
         if max_iid < iid {
-            let key = self.max_instance_id_key(iid.replica_id);
-            let _ = self.set_instance_id(key, iid)?;
+            self.set_ref("max", iid.replica_id, iid)?;
         }
 
         if inst.executed && max_iid < iid {
-            let key = self.max_exec_instance_id_key(iid.replica_id);
-            let _ = self.set_instance_id(key, iid)?;
+            self.set_ref("exec", iid.replica_id, iid)?;
         }
 
         Ok(())
@@ -96,31 +107,20 @@ impl InstanceEngine for MemEngine {
     }
 
     fn get_instance(&self, iid: &InstanceID) -> Result<Instance, Error> {
-        let key = iid.to_key();
-        let val_bytes: Vec<u8> = self.get_kv(&key)?;
-
-        match Instance::decode(val_bytes.as_slice()) {
-            Ok(v) => Ok(v),
-            Err(_) => Err(Error::DBError {
-                msg: "parse instance error".to_string(),
-            }),
-        }
+        self.get_obj(iid)
     }
 
-    fn get_instance_iter(&self, rid: ReplicaID) -> Result<InstanceIter, Error> {
+    fn get_instance_iter(&self, rid: ReplicaID) -> InstanceIter {
         let iid = InstanceID::from((rid, 0));
-        Ok(InstanceIter {
+        InstanceIter {
             curr_inst_id: iid,
             include: true,
             engine: self,
-        })
+        }
     }
 }
 
-impl StatusEngine for MemEngine {
-    type RID = ReplicaID;
-    type Item = InstanceID;
-}
+impl StatusEngine for MemEngine {}
 
 impl TxEngine for MemEngine {
     fn trans_begin(&mut self) {}
@@ -204,7 +204,7 @@ mod tests {
 
         for (rid, exp_insts) in cases {
             let mut n = 0;
-            for act_inst in engine.get_instance_iter(rid).unwrap() {
+            for act_inst in engine.get_instance_iter(rid) {
                 assert_eq!(act_inst.cmds, exp_insts[n].cmds);
                 assert_eq!(act_inst.ballot, exp_insts[n].ballot);
 
@@ -226,15 +226,13 @@ mod tests {
 
             let iid = InstanceID::from((rid, idx));
 
-            let key = engine.max_instance_id_key(rid);
-            let _ = engine.set_instance_id(key, iid.clone()).unwrap();
-            let act = engine.get_max_instance_id(rid).unwrap();
+            engine.set_ref("max", rid, iid).unwrap();
+            let act = engine.get_ref("max", rid).unwrap();
 
             assert_eq!(act, iid);
 
-            let key = engine.max_exec_instance_id_key(rid);
-            let _ = engine.set_instance_id(key, iid.clone()).unwrap();
-            let act = engine.get_max_exec_instance_id(rid).unwrap();
+            engine.set_ref("exec", rid, iid).unwrap();
+            let act = engine.get_ref("exec", rid).unwrap();
 
             assert_eq!(act, iid);
         }
