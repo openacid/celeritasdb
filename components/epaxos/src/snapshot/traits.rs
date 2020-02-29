@@ -89,11 +89,11 @@ pub trait StatusEngine: TxEngine + Base {
     }
 
     fn max_instance_id_key(&self, rid: Self::RID) -> Vec<u8> {
-        format!("/status/max_instance_id/{:x}", rid).into_bytes()
+        format!("/status/max_instance_id/{:016x}", rid).into_bytes()
     }
 
     fn max_exec_instance_id_key(&self, rid: Self::RID) -> Vec<u8> {
-        format!("/status/max_exec_instance_id/{:x}", rid).into_bytes()
+        format!("/status/max_exec_instance_id/{:016x}", rid).into_bytes()
     }
 
     fn set_instance_id(&mut self, key: Vec<u8>, iid: InstanceID) -> Result<(), Error> {
