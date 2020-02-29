@@ -63,12 +63,12 @@ pub trait InstanceEngine: StatusEngine {
 pub trait StatusEngine: TxEngine + ColumnedEngine {
     /// get current maximum instance id with a leader replica
     fn get_max_instance_id(&self, col_id: Self::ColumnId) -> Result<Self::ObjId, Error> {
-        self.get_ref("max", rid)
+        self.get_ref("max", col_id)
     }
 
     /// get executed maximum continuous instance id with a leader replica
-    fn get_max_exec_instance_id(&self, rid: Self::ColumnId) -> Result<Self::ObjId, Error> {
-        self.get_ref("exec", rid)
+    fn get_max_exec_instance_id(&self, col_id: Self::ColumnId) -> Result<Self::ObjId, Error> {
+        self.get_ref("exec", col_id)
     }
 
     fn set_instance_id(&mut self, key: Vec<u8>, iid: InstanceID) -> Result<(), Error> {
