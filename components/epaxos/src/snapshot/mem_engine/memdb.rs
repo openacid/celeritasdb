@@ -4,9 +4,7 @@ use std::sync::Mutex;
 use super::MemEngine;
 use prost::Message;
 
-use super::super::{
-    Error, InstanceEngine, InstanceIter, Base, StatusEngine, TxEngine,
-};
+use super::super::{Base, BaseIter, Error, InstanceEngine, InstanceIter, StatusEngine, TxEngine};
 use crate::qpaxos::{BallotNum, Instance, InstanceID};
 use crate::qpaxos::{Command, OpCode};
 use crate::replica::ReplicaID;
@@ -20,18 +18,6 @@ impl MemEngine {
             _db: db,
             _mutex: Mutex::new(0),
         })
-    }
-
-    pub fn next_kv(&self, key: &Vec<u8>, include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
-        for (k, v) in self._db.range(key.to_vec()..) {
-            if include == false && key == k {
-                continue;
-            }
-
-            return Some((k.to_vec(), v.to_vec()));
-        }
-
-        None
     }
 }
 
@@ -48,9 +34,29 @@ impl Base for MemEngine {
             Err(Error::NotFound {})
         }
     }
+
+    fn next_kv(&self, key: &Vec<u8>, include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
+        for (k, v) in self._db.range(key.to_vec()..) {
+            if include == false && key == k {
+                continue;
+            }
+
+            return Some((k.to_vec(), v.to_vec()));
+        }
+
+        None
+    }
+
+    fn get_iter(&self, key: Vec<u8>, include: bool) -> BaseIter {
+        BaseIter {
+            cursor: key,
+            include: include,
+            engine: self,
+        }
+    }
 }
 
-impl InstanceEngine<MemEngine> for MemEngine {
+impl InstanceEngine for MemEngine {
     fn set_instance(&mut self, iid: InstanceID, inst: Instance) -> Result<(), Error> {
         // does not guarantee in a transaction
         let _ = self._mutex.lock().unwrap();
@@ -101,7 +107,7 @@ impl InstanceEngine<MemEngine> for MemEngine {
         }
     }
 
-    fn get_instance_iter(&self, rid: ReplicaID) -> Result<InstanceIter<MemEngine>, Error> {
+    fn get_instance_iter(&self, rid: ReplicaID) -> Result<InstanceIter, Error> {
         let iid = InstanceID::from((rid, 0));
         Ok(InstanceIter {
             curr_inst_id: iid,
@@ -112,32 +118,11 @@ impl InstanceEngine<MemEngine> for MemEngine {
 }
 
 impl StatusEngine for MemEngine {
-    fn get_max_instance_id(&self, rid: ReplicaID) -> Result<InstanceID, Error> {
-        let key = self.max_instance_id_key(rid);
-        let val_bytes: Vec<u8> = self.get_kv(&key)?;
-
-        match InstanceID::decode(val_bytes.as_slice()) {
-            Ok(v) => Ok(v),
-            Err(_) => Err(Error::DBError {
-                msg: "parse instance id error".to_string(),
-            }),
-        }
-    }
-
-    fn get_max_exec_instance_id(&self, rid: ReplicaID) -> Result<InstanceID, Error> {
-        let key = self.max_exec_instance_id_key(rid);
-        let val_bytes: Vec<u8> = self.get_kv(&key)?;
-
-        match InstanceID::decode(val_bytes.as_slice()) {
-            Ok(v) => Ok(v),
-            Err(_) => Err(Error::DBError {
-                msg: "parse instance id error".to_string(),
-            }),
-        }
-    }
+    type RID = ReplicaID;
+    type Item = InstanceID;
 }
 
-impl TxEngine<MemEngine> for MemEngine {
+impl TxEngine for MemEngine {
     fn trans_begin(&mut self) {}
     fn trans_commit(&mut self) -> Result<(), Error> {
         Ok(())
