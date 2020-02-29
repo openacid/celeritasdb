@@ -15,3 +15,6 @@ pub use mem_engine::*;
 
 mod iters;
 pub use iters::*;
+
+#[cfg(test)]
+mod test_engine;

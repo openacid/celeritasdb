@@ -48,34 +48,21 @@ pub trait Base {
 }
 
 /// InstanceEngine offer functions to operate snapshot instances
-pub trait InstanceEngine: StatusEngine {
+pub trait InstanceEngine: TxEngine + ColumnedEngine {
+
     /// set a new instance
-    fn set_instance(&mut self, iid: InstanceID, inst: Instance) -> Result<(), Error>;
+    fn set_instance(&mut self, iid: InstanceID, inst: &Instance) -> Result<(), Error>;
+
     /// update an existing instance with instance id
-    fn update_instance(&mut self, iid: InstanceID, inst: Instance) -> Result<(), Error>;
+    fn update_instance(&mut self, iid: InstanceID, inst: &Instance) -> Result<(), Error> {
+        self.set_instance(iid, inst)
+    }
+
     /// get an instance with instance id
-    fn get_instance(&self, iid: &InstanceID) -> Result<Instance, Error>;
+    fn get_instance(&self, iid: InstanceID) -> Result<Instance, Error>;
+
     /// get an iterator to scan all instances with a leader replica id
-    fn get_instance_iter(&self, rid: ReplicaID) -> InstanceIter;
-}
-
-/// StatusEngine offer functions to operate snapshot status
-pub trait StatusEngine: TxEngine + ColumnedEngine {
-    /// get current maximum instance id with a leader replica
-    fn get_max_instance_id(&self, col_id: Self::ColumnId) -> Result<Self::ObjId, Error> {
-        self.get_ref("max", col_id)
-    }
-
-    /// get executed maximum continuous instance id with a leader replica
-    fn get_max_exec_instance_id(&self, col_id: Self::ColumnId) -> Result<Self::ObjId, Error> {
-        self.get_ref("exec", col_id)
-    }
-
-    fn set_instance_id(&mut self, key: Vec<u8>, iid: InstanceID) -> Result<(), Error> {
-        let mut value = vec![];
-        iid.encode(&mut value).unwrap();
-        self.set_kv(key, value)
-    }
+    fn get_instance_iter(&self, rid: Self::ColumnId) -> InstanceIter;
 }
 
 /// TxEngine offer a transactional operation on a storage.
@@ -104,15 +91,15 @@ pub trait ObjectEngine: Base {
     /// Obj defines the type of an object.
     type Obj: Message + std::default::Default;
 
-    fn set_obj(&mut self, item_id: Self::ObjId, item: &Self::Obj) -> Result<(), Error> {
-        let key = item_id.to_key();
-        let value = self.encode_obj(item)?;
+    fn set_obj(&mut self, objid: Self::ObjId, obj: &Self::Obj) -> Result<(), Error> {
+        let key = objid.to_key();
+        let value = self.encode_obj(obj)?;
 
         self.set_kv(key, value)
     }
 
-    fn get_obj(&self, item_id: &Self::ObjId) -> Result<Self::Obj, Error> {
-        let key = item_id.to_key();
+    fn get_obj(&self, objid: Self::ObjId) -> Result<Self::Obj, Error> {
+        let key = objid.to_key();
         let val_bytes = self.get_kv(&key)?;
 
         let itm = self.decode_obj(&val_bytes)?;
@@ -147,7 +134,7 @@ pub trait ObjectEngine: Base {
 ///
 /// A User should implement make_ref_key() to make reference keys.
 pub trait ColumnedEngine: ObjectEngine {
-    type ColumnId;
+    type ColumnId: Copy;
 
     fn make_ref_key(&self, typ: &str, col_id: Self::ColumnId) -> Vec<u8>;
 
@@ -155,12 +142,12 @@ pub trait ColumnedEngine: ObjectEngine {
         &mut self,
         typ: &str,
         col_id: Self::ColumnId,
-        item_id: Self::ObjId,
+        objid: Self::ObjId,
     ) -> Result<(), Error> {
         let key = self.make_ref_key(typ, col_id);
 
         let mut value = vec![];
-        item_id.encode(&mut value).unwrap();
+        objid.encode(&mut value).unwrap();
 
         self.set_kv(key, value)
     }
@@ -174,6 +161,46 @@ pub trait ColumnedEngine: ObjectEngine {
             Err(_) => Err(Error::DBError {
                 msg: "parse instance id error".to_string(),
             }),
+        }
+    }
+
+    /// set_ref_if set ref if the current value satisifies specified condition.
+    /// The condition is a lambda takes one arguments: the current value of the ref.
+    /// This method should be called with concurrency control.
+    ///
+    /// # Arguments:
+    ///
+    /// `typ`: ref type.
+    /// `col_id`: column id of type Self::ColumnId.
+    /// `objid`: object id of type Self::ObjId.
+    /// `default`: the default value to feed to `cond` if ref is not found.
+    /// `cond`: a lambda takes one argument of type Self::ObjId.
+    fn set_ref_if<P>(
+        &mut self,
+        typ: &str,
+        col_id: Self::ColumnId,
+        objid: Self::ObjId,
+        default: Self::ObjId,
+        cond: P
+    ) -> Result<(), Error> where
+        Self: Sized, 
+        P: Fn(Self::ObjId) -> bool, 
+    {
+        let r0 = self.get_ref(typ, col_id);
+        let r0 = match r0 {
+            Ok(v) => v,
+            Err(e) => match e {
+                Error::NotFound => default,
+                _ => {
+                    return Err(e)
+                }
+            }
+        };
+
+        if cond(r0) {
+            self.set_ref(typ, col_id, objid)
+        } else {
+            Ok(())
         }
     }
 }

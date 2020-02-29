@@ -73,40 +73,23 @@ impl ColumnedEngine for MemEngine {
 }
 
 impl InstanceEngine for MemEngine {
-    fn set_instance(&mut self, iid: InstanceID, inst: Instance) -> Result<(), Error> {
+    fn set_instance(&mut self, iid: InstanceID, inst: &Instance) -> Result<(), Error> {
         // does not guarantee in a transaction
         let _ = self._mutex.lock().unwrap();
 
         self.set_obj(iid, &inst).unwrap();
 
-        let max_iid = self.get_ref("max", iid.replica_id);
-        let max_iid = match max_iid {
-            Ok(v) => v,
-            Err(err) => {
-                if err == Error::NotFound {
-                    InstanceID::from((iid.replica_id, -1))
-                } else {
-                    return Err(err);
-                }
-            }
-        };
+        let lowest = InstanceID::from((iid.replica_id, -1));
 
-        if max_iid < iid {
-            self.set_ref("max", iid.replica_id, iid)?;
-        }
-
-        if inst.executed && max_iid < iid {
-            self.set_ref("exec", iid.replica_id, iid)?;
+        self.set_ref_if("max", iid.replica_id, iid, lowest, |x| x < iid)?;
+        if inst.executed {
+            self.set_ref_if("exec", iid.replica_id, iid, lowest, |x| x < iid)?;
         }
 
         Ok(())
     }
-
-    fn update_instance(&mut self, iid: InstanceID, inst: Instance) -> Result<(), Error> {
-        self.set_instance(iid, inst)
-    }
-
-    fn get_instance(&self, iid: &InstanceID) -> Result<Instance, Error> {
+    /// get an instance with instance id
+    fn get_instance(&self, iid: InstanceID) -> Result<Self::Obj, Error> {
         self.get_obj(iid)
     }
 
@@ -119,8 +102,6 @@ impl InstanceEngine for MemEngine {
         }
     }
 }
-
-impl StatusEngine for MemEngine {}
 
 impl TxEngine for MemEngine {
     fn trans_begin(&mut self) {}
@@ -176,14 +157,13 @@ mod tests {
 
                 let deps = vec![InstanceID::from((rid + 1, idx + 1))];
 
-                let inst = Instance::of(&cmds[..], &ballot, &deps[..]);
+                let mut inst = Instance::of(&cmds[..], &ballot, &deps[..]);
 
-                let _ = engine.set_instance(iid, inst.clone()).unwrap();
-
-                let act = engine.get_max_instance_id(rid).unwrap();
+                engine.set_instance(iid, &inst).unwrap();
+                let act = engine.get_ref("max", rid).unwrap();
                 assert_eq!(act, iid);
 
-                let act = engine.get_instance(&iid).unwrap();
+                let act = engine.get_obj(iid).unwrap();
 
                 assert_eq!(act.cmds, cmds);
                 assert_eq!(act.ballot, Some(ballot));
