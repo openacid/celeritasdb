@@ -5,7 +5,7 @@ use super::super::conf::ClusterInfo;
 
 use super::super::qpaxos::*;
 
-use super::super::snapshot::{InstanceEngine, StatusEngine, TxEngine};
+use super::super::snapshot::{InstanceEngine, TxEngine};
 
 #[cfg(test)]
 #[path = "./tests/replica_tests.rs"]
