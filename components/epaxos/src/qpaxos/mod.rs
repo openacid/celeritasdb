@@ -36,11 +36,7 @@ impl Command {
 
 impl From<(OpCode, &str, &str)> for Command {
     fn from(t: (OpCode, &str, &str)) -> Command {
-        Command::of(
-            t.0,
-            &t.1.as_bytes().to_vec(),
-            &t.2.as_bytes().to_vec(),
-            )
+        Command::of(t.0, &t.1.as_bytes().to_vec(), &t.2.as_bytes().to_vec())
     }
 }
 
@@ -50,10 +46,9 @@ impl From<(&str, &str, &str)> for Command {
             t.0.parse().unwrap(),
             &t.1.as_bytes().to_vec(),
             &t.2.as_bytes().to_vec(),
-            )
+        )
     }
 }
-
 
 impl ToKey for InstanceID {
     fn to_key(&self) -> Vec<u8> {
@@ -63,10 +58,7 @@ impl ToKey for InstanceID {
 
 impl InstanceID {
     pub fn of(replica_id: i64, idx: i64) -> InstanceID {
-        InstanceID {
-            replica_id,
-            idx,
-        }
+        InstanceID { replica_id, idx }
     }
 
     pub fn from_key(s: &str) -> Option<InstanceID> {
@@ -82,10 +74,7 @@ impl InstanceID {
                 Err(_) => return None,
             };
 
-            return Some(InstanceID {
-                replica_id,
-                idx,
-            });
+            return Some(InstanceID { replica_id, idx });
         }
 
         return None;
@@ -231,7 +220,6 @@ pub struct MyQPaxos {}
 
 #[tonic::async_trait]
 impl QPaxos for MyQPaxos {
-
     async fn fast_accept(
         &self,
         request: Request<FastAcceptRequest>,

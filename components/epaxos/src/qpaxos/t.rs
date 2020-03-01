@@ -63,7 +63,10 @@ fn test_instance_protobuf() {
 
 #[test]
 fn test_instanceid_derived() {
-    let inst_id1 = InstanceID{replica_id:1, idx:10};
+    let inst_id1 = InstanceID {
+        replica_id: 1,
+        idx: 10,
+    };
     let inst_id2 = inst_id1;
 
     assert_eq!(inst_id1, inst_id2);
@@ -73,7 +76,11 @@ fn test_instanceid_derived() {
 
 #[test]
 fn test_ballotnum_derived() {
-    let b1 = BallotNum{epoch:1, num:10, replica_id:5};
+    let b1 = BallotNum {
+        epoch: 1,
+        num: 10,
+        replica_id: 5,
+    };
     let b2 = b1;
 
     assert_eq!(b1, b2);

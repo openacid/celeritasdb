@@ -10,14 +10,12 @@ fn test_command_pb() {
 
 #[test]
 fn test_command_from() {
-    let c = Command{
+    let c = Command {
         op: OpCode::Set as i32,
         key: "key".as_bytes().to_vec(),
-        value: "value".as_bytes().to_vec(), 
+        value: "value".as_bytes().to_vec(),
     };
-
 
     assert_eq!(c, (OpCode::Set, "key", "value").into());
     assert_eq!(c, ("Set", "key", "value").into());
 }
-
