@@ -6,6 +6,7 @@ fn main() {
     tonic_build::configure()
         .build_client(true)
         .build_server(true)
+        .type_attribute("OpCode", "#[derive(enum_utils::FromStr)]")
         //TODO command contains vec<u8> that can not be copied.
         // .type_attribute("Command", "#[derive(Copy)]")
         .type_attribute(
