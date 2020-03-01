@@ -33,7 +33,7 @@ fn test_find_missing_instances() {
                 final_deps: vec![(1, 1).into()],
                 ..Default::default()
             }],
-            vec![InstanceID::of(1, 1)],
+            vec![InstanceID::from((1, 1))],
         ),
         // R1               R2              R3
         // |                |               |
@@ -56,7 +56,7 @@ fn test_find_missing_instances() {
                     ..Default::default()
                 },
             ],
-            vec![InstanceID::of(1, 1), (2, 1).into(), (3, 10).into()],
+            vec![InstanceID::from((1, 1)), (2, 1).into(), (3, 10).into()],
         ),
     ];
 
@@ -84,8 +84,8 @@ fn test_find_missing_instances() {
                 final_deps: vec![(1, 1).into(), (2, 6).into(), (3, 6).into()],
                 ..Default::default()
             }],
-            vec![InstanceID::of(1, 1), (2, 5).into(), (3, 5).into()],
-            vec![InstanceID::of(2, 6), (3, 6).into()],
+            vec![InstanceID::from((1, 1)), (2, 5).into(), (3, 5).into()],
+            vec![InstanceID::from((2, 6)), (3, 6).into()],
         ),
         // R1               R2              R3
         // |                |               |
@@ -110,8 +110,8 @@ fn test_find_missing_instances() {
                     ..Default::default()
                 },
             ],
-            vec![InstanceID::of(1, 1), (2, 1).into(), (3, 1).into()],
-            vec![InstanceID::of(3, 2)],
+            vec![InstanceID::from((1, 1)), (2, 1).into(), (3, 1).into()],
+            vec![InstanceID::from((3, 2))],
         ),
     ];
 
@@ -213,7 +213,7 @@ fn test_execute_instances() {
             ..Default::default()
         },
         Instance {
-            instance_id: Some(InstanceID::of(2, 1)),
+            instance_id: Some(InstanceID::from((2, 1))),
             cmds: vec![Command::of(OpCode::NoOp, &[], &[])],
             final_deps: vec![(1, 1).into(), (2, 0).into(), (3, 0).into()],
             ..Default::default()
@@ -227,7 +227,7 @@ fn test_execute_instances() {
     ];
 
     match rp.execute_instances(&min_insts) {
-        Ok(iids) => assert_eq!(vec![InstanceID::of(1, 1)], iids),
+        Ok(iids) => assert_eq!(vec![InstanceID::from((1, 1))], iids),
         Err(_) => assert!(false),
     };
 
@@ -240,7 +240,7 @@ fn test_execute_instances() {
             ..Default::default()
         },
         Instance {
-            instance_id: Some(InstanceID::of(2, 1)),
+            instance_id: Some(InstanceID::from((2, 1))),
             cmds: vec![Command::of(OpCode::NoOp, &[], &[])],
             final_deps: vec![(1, 1).into(), (2, 0).into(), (3, 0).into()],
             ..Default::default()
@@ -255,7 +255,7 @@ fn test_execute_instances() {
 
     match rp.execute_instances(&min_insts) {
         Ok(iids) => assert_eq!(
-            vec![InstanceID::of(1, 1), (2, 1).into(), (3, 1).into()],
+            vec![InstanceID::from((1, 1)), (2, 1).into(), (3, 1).into()],
             iids
         ),
         Err(_) => assert!(false),
@@ -272,7 +272,7 @@ fn test_execute_instances() {
             ..Default::default()
         },
         Instance {
-            instance_id: Some(InstanceID::of(2, 1)),
+            instance_id: Some(InstanceID::from((2, 1))),
             cmds: vec![Command::of(OpCode::NoOp, &[], &[])],
             final_deps: vec![(1, 1).into(), (2, 0).into(), (3, 0).into()],
             ..Default::default()
@@ -286,7 +286,7 @@ fn test_execute_instances() {
     ];
 
     match rp.execute_instances(&min_insts) {
-        Ok(iids) => assert_eq!(vec![InstanceID::of(1, 1), (2, 1).into()], iids),
+        Ok(iids) => assert_eq!(vec![InstanceID::from((1, 1)), (2, 1).into()], iids),
         Err(_) => assert!(false),
     };
 }

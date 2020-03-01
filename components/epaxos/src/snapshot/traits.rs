@@ -1,5 +1,4 @@
-use crate::qpaxos::{Instance, InstanceID};
-use crate::replica::ReplicaID;
+use crate::qpaxos::{Instance, InstanceID, ReplicaID};
 use crate::tokey::ToKey;
 use std::fmt::LowerHex;
 
@@ -58,7 +57,7 @@ pub trait InstanceEngine: TxEngine + ColumnedEngine {
     }
 
     /// get an instance with instance id
-    fn get_instance(&self, iid: InstanceID) -> Result<Instance, Error>;
+    fn get_instance(&self, iid: InstanceID) -> Result<Option<Instance>, Error>;
 
     /// get an iterator to scan all instances with a leader replica id
     fn get_instance_iter(&self, rid: Self::ColumnId) -> InstanceIter;
@@ -97,12 +96,24 @@ pub trait ObjectEngine: Base {
         self.set_kv(key, value)
     }
 
-    fn get_obj(&self, objid: Self::ObjId) -> Result<Self::Obj, Error> {
+    fn get_obj(&self, objid: Self::ObjId) -> Result<Option<Self::Obj>, Error> {
         let key = objid.to_key();
-        let val_bytes = self.get_kv(&key)?;
+        let vbs = self.get_kv(&key);
 
-        let itm = self.decode_obj(&val_bytes)?;
-        Ok(itm)
+        let vbs = match vbs {
+            Ok(v) => v,
+            Err(e) => match e {
+                Error::NotFound => {
+                    return Ok(None);
+                }
+                _ => {
+                    return Err(e);
+                }
+            },
+        };
+
+        let itm = self.decode_obj(&vbs)?;
+        Ok(Some(itm))
     }
 
     fn encode_obj(&self, itm: &Self::Obj) -> Result<Vec<u8>, Error> {

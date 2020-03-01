@@ -43,7 +43,7 @@ impl Replica {
                     .find(|x| x.replica_id == dep_inst_id.replica_id)
                 {
                     if dep_inst_id.idx > iid.idx {
-                        rst.push(InstanceID::of(iid.replica_id, iid.idx + 1));
+                        rst.push(InstanceID::from((iid.replica_id, iid.idx + 1)));
                     }
                 }
             }

@@ -62,7 +62,7 @@ mod tests {
 
                 let _ = engine.set_instance(iid, &inst).unwrap();
 
-                let act = engine.get_obj(iid).unwrap();
+                let act = engine.get_obj(iid).unwrap().unwrap();
                 assert_eq!(act.cmds, cmds);
 
                 ints.push(inst);
