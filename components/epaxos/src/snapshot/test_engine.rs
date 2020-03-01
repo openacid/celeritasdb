@@ -1,7 +1,7 @@
-use crate::qpaxos::*;
+use super::errors::*;
 use super::mem_engine::*;
 use super::traits::*;
-use super::errors::*;
+use crate::qpaxos::*;
 
 #[test]
 fn test_engine_mem_set_instance() {
@@ -40,14 +40,13 @@ fn test_engine_mem_set_instance() {
 }
 
 fn new_foo_inst(leader_id: i64) -> Instance {
-
     let iid1 = InstanceID::from((1, 10));
     let iid2 = InstanceID::from((2, 20));
     let iid3 = InstanceID::from((3, 30));
     let initial_deps = vec![iid1, iid2, iid3];
 
     let cmd1 = ("NoOp", "k1", "v1").into();
-    let cmd2 = ("Get",  "k2", "v2").into();
+    let cmd2 = ("Get", "k2", "v2").into();
     let cmds = vec![cmd1, cmd2];
     let ballot = (0, 0, leader_id).into();
     let ballot2 = (1, 2, leader_id).into();

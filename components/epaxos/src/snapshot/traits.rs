@@ -49,7 +49,6 @@ pub trait Base {
 
 /// InstanceEngine offer functions to operate snapshot instances
 pub trait InstanceEngine: TxEngine + ColumnedEngine {
-
     /// set a new instance
     fn set_instance(&mut self, iid: InstanceID, inst: &Instance) -> Result<(), Error>;
 
@@ -181,20 +180,19 @@ pub trait ColumnedEngine: ObjectEngine {
         col_id: Self::ColumnId,
         objid: Self::ObjId,
         default: Self::ObjId,
-        cond: P
-    ) -> Result<(), Error> where
-        Self: Sized, 
-        P: Fn(Self::ObjId) -> bool, 
+        cond: P,
+    ) -> Result<(), Error>
+    where
+        Self: Sized,
+        P: Fn(Self::ObjId) -> bool,
     {
         let r0 = self.get_ref(typ, col_id);
         let r0 = match r0 {
             Ok(v) => v,
             Err(e) => match e {
                 Error::NotFound => default,
-                _ => {
-                    return Err(e)
-                }
-            }
+                _ => return Err(e),
+            },
         };
 
         if cond(r0) {
