@@ -11,8 +11,6 @@ use super::super::snapshot::{InstanceEngine, TxEngine};
 #[path = "./tests/replica_tests.rs"]
 mod tests;
 
-pub type ReplicaID = i64;
-
 /// information of communication peer
 pub struct ReplicaPeer {
     pub replica_id: ReplicaID,

@@ -5,8 +5,14 @@ use crate::qpaxos::*;
 
 #[test]
 fn test_engine_mem_set_instance() {
-    let leader_id = 2;
     let mut eng = MemEngine::new().unwrap();
+    test_set_instance(&mut eng);
+}
+
+fn test_set_instance(
+    eng: &mut InstanceEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceID>,
+) {
+    let leader_id = 2;
     let mut inst = new_foo_inst(leader_id);
     let iid = inst.instance_id.unwrap();
     eng.set_instance(iid, &inst).unwrap();
@@ -37,6 +43,27 @@ fn test_engine_mem_set_instance() {
     eng.set_instance(iid3, &inst).unwrap();
     assert_eq!(iid2, eng.get_ref("max", leader_id).unwrap());
     assert_eq!(iid, eng.get_ref("exec", leader_id).unwrap());
+}
+
+#[test]
+fn test_engine_mem_get_instance() {
+    let mut eng = MemEngine::new().unwrap();
+    test_get_instance(&mut eng);
+}
+
+fn test_get_instance(
+    eng: &mut InstanceEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceID>,
+) {
+    let leader_id = 2;
+    let mut inst = new_foo_inst(leader_id);
+    let iid = inst.instance_id.unwrap();
+
+    let noninst = eng.get_instance(iid).unwrap();
+    assert_eq!(None, noninst);
+
+    eng.set_instance(iid, &inst).unwrap();
+    let got = eng.get_instance(iid).unwrap();
+    assert_eq!(Some(inst), got);
 }
 
 fn new_foo_inst(leader_id: i64) -> Instance {

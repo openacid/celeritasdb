@@ -5,9 +5,7 @@ use super::MemEngine;
 use prost::Message;
 
 use super::super::*;
-use crate::qpaxos::{BallotNum, Instance, InstanceID};
-use crate::qpaxos::{Command, OpCode};
-use crate::replica::ReplicaID;
+use crate::qpaxos::*;
 
 use super::super::super::tokey::ToKey;
 
@@ -89,14 +87,13 @@ impl InstanceEngine for MemEngine {
         Ok(())
     }
     /// get an instance with instance id
-    fn get_instance(&self, iid: InstanceID) -> Result<Self::Obj, Error> {
+    fn get_instance(&self, iid: InstanceID) -> Result<Option<Instance>, Error> {
         self.get_obj(iid)
     }
 
     fn get_instance_iter(&self, rid: ReplicaID) -> InstanceIter {
-        let iid = InstanceID::from((rid, 0));
         InstanceIter {
-            curr_inst_id: iid,
+            curr_inst_id: (rid, 0).into(),
             include: true,
             engine: self,
         }
@@ -163,7 +160,7 @@ mod tests {
                 let act = engine.get_ref("max", rid).unwrap();
                 assert_eq!(act, iid);
 
-                let act = engine.get_obj(iid).unwrap();
+                let act = engine.get_obj(iid).unwrap().unwrap();
 
                 assert_eq!(act.cmds, cmds);
                 assert_eq!(act.ballot, Some(ballot));

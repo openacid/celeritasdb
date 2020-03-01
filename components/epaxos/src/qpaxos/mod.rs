@@ -14,6 +14,7 @@ mod t;
 mod test_command;
 
 pub type InstanceIdx = i64;
+pub type ReplicaID = i64;
 
 // prost issue, it renames InstanceID to InstanceId
 pub type InstanceID = InstanceId;
@@ -57,10 +58,6 @@ impl ToKey for InstanceID {
 }
 
 impl InstanceID {
-    pub fn of(replica_id: i64, idx: i64) -> InstanceID {
-        InstanceID { replica_id, idx }
-    }
-
     pub fn from_key(s: &str) -> Option<InstanceID> {
         let items: Vec<&str> = s.split("/").collect();
         if items[1] == "instance" && items.len() == 4 {
