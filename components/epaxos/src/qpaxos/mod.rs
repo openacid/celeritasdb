@@ -3,11 +3,15 @@ use tonic::{Request, Response, Status};
 
 use super::tokey::ToKey;
 use derive_more;
+use enum_utils;
 
 include!(concat!(env!("OUT_DIR"), "/qpaxos.rs"));
 
 #[cfg(test)]
 mod t;
+
+#[cfg(test)]
+mod test_command;
 
 pub type InstanceIdx = i64;
 
@@ -26,8 +30,23 @@ impl Command {
             op: op as i32,
             key: key.to_vec(),
             value: value.to_vec(),
-            ..Default::default()
         }
+    }
+}
+
+impl From<(OpCode, &str, &str)> for Command {
+    fn from(t: (OpCode, &str, &str)) -> Command {
+        Command::of(t.0, &t.1.as_bytes().to_vec(), &t.2.as_bytes().to_vec())
+    }
+}
+
+impl From<(&str, &str, &str)> for Command {
+    fn from(t: (&str, &str, &str)) -> Command {
+        Command::of(
+            t.0.parse().unwrap(),
+            &t.1.as_bytes().to_vec(),
+            &t.2.as_bytes().to_vec(),
+        )
     }
 }
 
@@ -39,10 +58,7 @@ impl ToKey for InstanceID {
 
 impl InstanceID {
     pub fn of(replica_id: i64, idx: i64) -> InstanceID {
-        InstanceID {
-            replica_id,
-            idx,
-        }
+        InstanceID { replica_id, idx }
     }
 
     pub fn from_key(s: &str) -> Option<InstanceID> {
@@ -58,10 +74,7 @@ impl InstanceID {
                 Err(_) => return None,
             };
 
-            return Some(InstanceID {
-                replica_id,
-                idx,
-            });
+            return Some(InstanceID { replica_id, idx });
         }
 
         return None;
@@ -207,7 +220,6 @@ pub struct MyQPaxos {}
 
 #[tonic::async_trait]
 impl QPaxos for MyQPaxos {
-
     async fn fast_accept(
         &self,
         request: Request<FastAcceptRequest>,
