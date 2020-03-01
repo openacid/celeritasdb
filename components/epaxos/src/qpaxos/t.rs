@@ -226,13 +226,6 @@ fn test_instance_after() {
 }
 
 #[test]
-fn test_command_pb() {
-    let cmd1 = Command::of(OpCode::NoOp, "key".as_bytes(), "value".as_bytes());
-
-    test_enc_dec!(cmd1, Command);
-}
-
-#[test]
 fn test_request_prepare_pb() {
     let inst = new_foo_inst();
 
