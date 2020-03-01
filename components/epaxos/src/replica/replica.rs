@@ -22,11 +22,11 @@ pub struct ReplicaPeer {
 /// misc configuration info
 #[derive(Default)]
 pub struct ReplicaConf {
-    pub thrifty: bool,        // send msg only to a quorum or the full set
-    pub exec: bool,           // exec comamnd or not
-    pub dreply: bool,         // delay replying to client after command has been executed or not
-    pub beacon: bool,         // periodicity detect the speed of each known replica or not
-    pub inst_co_timeout: i32, // instance committed timeout
+    pub thrifty: bool,               // send msg only to a quorum or the full set
+    pub exec: bool,                  // exec comamnd or not
+    pub dreply: bool, // delay replying to client after command has been executed or not
+    pub beacon: bool, // periodicity detect the speed of each known replica or not
+    pub inst_committed_timeout: i32, // instance committed timeout
 }
 
 /// status of a replica
@@ -42,8 +42,6 @@ pub struct Replica {
     pub replica_id: ReplicaID,             // replica id
     pub group_replica_ids: Vec<ReplicaID>, // all replica ids in this group
     pub status: ReplicaStatus,             // status record used internally
-    pub client_listener: TcpListener,      // tcp listener to client
-    pub listener: TcpListener,             // tcp listener for replicas
     pub peers: Vec<ReplicaPeer>, // peers in communication, if need access from multi-thread, wrap it by Arc<>
     pub conf: ReplicaConf,       // misc conf
 

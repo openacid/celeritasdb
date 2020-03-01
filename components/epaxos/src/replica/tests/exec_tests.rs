@@ -1,5 +1,3 @@
-use std::net::TcpListener;
-
 use crate::qpaxos::{Command, Instance, InstanceID, OpCode};
 use crate::replica::{ExecuteResult, Replica, ReplicaConf, ReplicaStatus};
 use crate::snapshot::MemEngine;
@@ -7,10 +5,8 @@ use crate::snapshot::MemEngine;
 fn new_replica() -> Replica {
     return Replica {
         replica_id: 0,
-        group_replica_ids: vec![],
+        group_replica_ids: vec![1, 2, 3],
         status: ReplicaStatus::Running,
-        client_listener: TcpListener::bind("127.0.0.1:5001").unwrap(),
-        listener: TcpListener::bind("127.0.0.1:6001").unwrap(),
         peers: vec![],
         conf: ReplicaConf {
             ..Default::default()
@@ -289,4 +285,178 @@ fn test_execute_instances() {
         Ok(iids) => assert_eq!(vec![InstanceID::from((1, 1)), (2, 1).into()], iids),
         Err(_) => assert!(false),
     };
+}
+
+#[test]
+fn test_replica_execute() {
+    let mut rp = new_replica();
+
+    let cases = vec![
+        // R1               R2              R3
+        // |                |               |
+        // |                |               |
+        // |                |               |
+        // 1(Committed)     |               |
+        // |                |               |
+        // 0(Executed)      0(Executed)     0(Executed)
+        // |                |               |
+        (
+            vec![Instance {
+                instance_id: Some((1, 1).into()),
+                final_deps: vec![(1, 0).into(), (2, 0).into(), (3, 0).into()],
+                committed: true,
+                ..Default::default()
+            }],
+            vec![(1, 1), (2, 0), (3, 0)],
+            vec![(1, 0), (2, 0), (3, 0)],
+            vec![InstanceID::from((1, 1))],
+        ),
+        // R1               R2              R3
+        // |                |               |
+        // |↙ ``````````````|↙ `````````````2(Committed)
+        // |↙ ``````````````2(Committed).   |
+        // 2(Committed)..   |            ↘  |
+        // |             `↘ ``````````````↘ |
+        // 1(Executed)      1(Executed)     1(Executed)
+        // |                |               |
+        //
+        // (3, 2)->(2, 2)->(1, 2)
+        (
+            vec![
+                Instance {
+                    instance_id: Some((1, 2).into()),
+                    final_deps: vec![(1, 1).into(), (2, 1).into(), (3, 1).into()],
+                    committed: true,
+                    ..Default::default()
+                },
+                Instance {
+                    instance_id: Some((2, 2).into()),
+                    final_deps: vec![(1, 2).into(), (2, 1).into(), (3, 1).into()],
+                    committed: true,
+                    ..Default::default()
+                },
+                Instance {
+                    instance_id: Some((3, 2).into()),
+                    final_deps: vec![(1, 2).into(), (2, 2).into(), (3, 1).into()],
+                    committed: true,
+                    ..Default::default()
+                },
+            ],
+            vec![(1, 2), (2, 2), (3, 2)],
+            vec![(1, 1), (2, 1), (3, 1)],
+            vec![InstanceID::from((1, 2))],
+        ),
+        // R1               R2              R3
+        // |                |               |
+        // |↙ ``````````````|```````````````3(Committed)----.
+        // |↙ ``````````````3(Committed).   |               |
+        // 3(Committed)...↗ |            ↘  |               |
+        // |              ````````````````↘ |               |
+        // 2(Executed)      2(Executed)     2(Executed)     |
+        // |                |          ↖     |              |
+        //                               `------------------`
+        // (1, 3)~(2, 3)~(3, 3)
+        (
+            vec![
+                Instance {
+                    instance_id: Some((1, 3).into()),
+                    final_deps: vec![(1, 2).into(), (2, 3).into(), (3, 2).into()],
+                    committed: true,
+                    ..Default::default()
+                },
+                Instance {
+                    instance_id: Some((2, 3).into()),
+                    final_deps: vec![(1, 3).into(), (2, 2).into(), (3, 2).into()],
+                    committed: true,
+                    ..Default::default()
+                },
+                Instance {
+                    instance_id: Some((3, 3).into()),
+                    final_deps: vec![(1, 3).into(), (2, 2).into(), (3, 2).into()],
+                    committed: true,
+                    ..Default::default()
+                },
+            ],
+            vec![(1, 3), (2, 3), (3, 3)],
+            vec![(1, 2), (2, 2), (3, 2)],
+            vec![InstanceID::from((1, 3)), (2, 3).into(), (3, 3).into()],
+        ),
+        // (1, 4)->(2, 4)~(3, 4)
+        (
+            vec![
+                Instance {
+                    instance_id: Some((1, 4).into()),
+                    final_deps: vec![(1, 3).into(), (2, 4).into(), (3, 4).into()],
+                    committed: true,
+                    ..Default::default()
+                },
+                Instance {
+                    instance_id: Some((2, 4).into()),
+                    final_deps: vec![(1, 3).into(), (2, 3).into(), (3, 4).into()],
+                    committed: true,
+                    ..Default::default()
+                },
+                Instance {
+                    instance_id: Some((3, 4).into()),
+                    final_deps: vec![(1, 4).into(), (2, 4).into(), (3, 3).into()],
+                    committed: true,
+                    ..Default::default()
+                },
+            ],
+            vec![(1, 4), (2, 4), (3, 4)],
+            vec![(1, 3), (2, 3), (3, 3)],
+            vec![InstanceID::from((2, 4))],
+        ),
+        // (1, 5)[NotFound]<-(2, 5)~(3, 5)
+        (
+            vec![
+                Instance {
+                    instance_id: Some((2, 5).into()),
+                    final_deps: vec![(1, 5).into(), (2, 4).into(), (3, 5).into()],
+                    committed: true,
+                    ..Default::default()
+                },
+                Instance {
+                    instance_id: Some((3, 5).into()),
+                    final_deps: vec![(1, 4).into(), (2, 5).into(), (3, 4).into()],
+                    committed: true,
+                    ..Default::default()
+                },
+            ],
+            vec![(1, 4), (2, 5), (3, 5)],
+            vec![(1, 4), (2, 4), (3, 4)],
+            Vec::<InstanceID>::new(),
+        ),
+    ];
+
+    for (insts, max_ref, exec_ref, rst) in cases.iter() {
+        insts.iter().for_each(|inst| {
+            rp.storage.set_instance(&inst).unwrap();
+        });
+
+        for (rid, idx) in max_ref.iter() {
+            rp.storage
+                .set_ref("max", *rid as i64, (*rid as i64, *idx as i64).into())
+                .unwrap();
+        }
+        for (rid, idx) in exec_ref.iter() {
+            rp.storage
+                .set_ref("exec", *rid as i64, (*rid as i64, *idx as i64).into())
+                .unwrap();
+        }
+
+        match rp.execute() {
+            Ok(r) => {
+                assert_eq!(rst, &r);
+                for iid in r.iter() {
+                    assert_eq!(*iid, rp.storage.get_ref("exec", iid.replica_id).unwrap());
+                    assert_eq!(
+                        true,
+                        rp.storage.get_instance(*iid).unwrap().unwrap().executed
+                    );
+                }
+            }
+            Err(_) => assert!(false),
+        }
+    }
 }
