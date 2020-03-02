@@ -99,7 +99,7 @@ fn new_foo_inst(leader_id: i64) -> Instance {
     let ballot = (0, 0, leader_id).into();
     let ballot2 = (1, 2, leader_id).into();
 
-    let mut inst = Instance::of(&cmds[..], &ballot, &initial_deps[..]);
+    let mut inst = Instance::of(&cmds[..], ballot, &initial_deps[..]);
     // TODO move these to Instance::new_instance
     inst.instance_id = Some((leader_id, 1).into());
     inst.deps = [iid2].to_vec();
