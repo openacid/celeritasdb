@@ -48,13 +48,11 @@ pub trait Base {
 
 /// InstanceEngine offer functions to operate snapshot instances
 pub trait InstanceEngine: TxEngine + ColumnedEngine {
-    /// set a new instance
-    fn set_instance(&mut self, iid: InstanceID, inst: &Instance) -> Result<(), Error>;
+    /// Find next available instance id and increase max-instance-id ref.
+    fn next_instance_id(&mut self, rid: ReplicaID) -> Result<InstanceID, Error>;
 
-    /// update an existing instance with instance id
-    fn update_instance(&mut self, iid: InstanceID, inst: &Instance) -> Result<(), Error> {
-        self.set_instance(iid, inst)
-    }
+    /// set an instance
+    fn set_instance(&mut self, iid: InstanceID, inst: &Instance) -> Result<(), Error>;
 
     /// get an instance with instance id
     fn get_instance(&self, iid: InstanceID) -> Result<Option<Instance>, Error>;

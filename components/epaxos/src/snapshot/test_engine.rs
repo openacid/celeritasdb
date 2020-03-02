@@ -10,7 +10,7 @@ fn test_engine_mem_set_instance() {
 }
 
 fn test_set_instance(
-    eng: &mut InstanceEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceID>,
+    eng: &mut dyn InstanceEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceID>,
 ) {
     let leader_id = 2;
     let mut inst = new_foo_inst(leader_id);
@@ -52,7 +52,7 @@ fn test_engine_mem_get_instance() {
 }
 
 fn test_get_instance(
-    eng: &mut InstanceEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceID>,
+    eng: &mut dyn InstanceEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceID>,
 ) {
     let leader_id = 2;
     let mut inst = new_foo_inst(leader_id);
@@ -64,6 +64,30 @@ fn test_get_instance(
     eng.set_instance(iid, &inst).unwrap();
     let got = eng.get_instance(iid).unwrap();
     assert_eq!(Some(inst), got);
+}
+
+#[test]
+fn test_engine_mem_next_instance_id() {
+    let mut eng = MemEngine::new().unwrap();
+    test_next_instance_id(&mut eng);
+}
+
+fn test_next_instance_id(
+    eng: &mut dyn InstanceEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceID>,
+) {
+    let leader_id = 2;
+    let max = (leader_id, 3).into();
+
+    let init = eng.next_instance_id(leader_id).unwrap();
+    assert_eq!(InstanceID::from((leader_id, 0)), init);
+
+    let got = eng.next_instance_id(leader_id).unwrap();
+    assert_eq!(InstanceID::from((leader_id, 1)), got);
+
+    eng.set_ref("max", leader_id, max).unwrap();
+
+    let got = eng.next_instance_id(leader_id).unwrap();
+    assert_eq!(InstanceID::from((leader_id, 4)), got);
 }
 
 fn new_foo_inst(leader_id: i64) -> Instance {

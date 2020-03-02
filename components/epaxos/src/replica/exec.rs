@@ -80,7 +80,7 @@ impl Replica {
         let mut new_inst = inst.clone();
         new_inst.executed = true;
         self.storage
-            .update_instance(inst.instance_id.unwrap(), &new_inst)?;
+            .set_instance(inst.instance_id.unwrap(), &new_inst)?;
 
         Ok(rst)
     }
