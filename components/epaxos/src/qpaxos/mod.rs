@@ -22,6 +22,9 @@ pub type InstanceID = InstanceId;
 pub use q_paxos_client::*;
 pub use q_paxos_server::*;
 
+pub mod conflict;
+pub use conflict::*;
+
 pub struct MakeRequest {}
 pub struct MakeReply {}
 
@@ -32,6 +35,26 @@ impl Command {
             key: key.to_vec(),
             value: value.to_vec(),
         }
+    }
+}
+
+impl Conflict for Command {
+    /// conflict checks if two commands conflicts.
+    /// Two commands conflict iff: if the execution order exchange, the result might be differnt.
+    fn conflict(&self, with: &Self) -> bool {
+        if self.op == OpCode::NoOp as i32 {
+            return false;
+        }
+
+        if with.op == OpCode::NoOp as i32 {
+            return false;
+        }
+
+        if self.op == OpCode::Set as i32 || with.op == OpCode::Set as i32 {
+            return self.key == with.key;
+        }
+
+        false
     }
 }
 

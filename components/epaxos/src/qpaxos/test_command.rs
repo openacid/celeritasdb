@@ -19,3 +19,34 @@ fn test_command_from() {
     assert_eq!(c, (OpCode::Set, "key", "value").into());
     assert_eq!(c, ("Set", "key", "value").into());
 }
+
+#[test]
+fn test_command_conflit() {
+    let nx = Command::from(("NoOp", "x", "1"));
+    let gx = Command::from(("Get", "x", "1"));
+    let sx = Command::from(("Set", "x", "1"));
+
+    let ny = Command::from(("NoOp", "y", "1"));
+    let gy = Command::from(("Get", "y", "1"));
+    let sy = Command::from(("Set", "y", "1"));
+
+    assert!(!nx.conflict(&nx));
+    assert!(!nx.conflict(&gx));
+    assert!(!nx.conflict(&sx));
+
+    assert!(!gx.conflict(&nx));
+    assert!(!gx.conflict(&gx));
+    assert!(gx.conflict(&sx));
+
+    assert!(!sx.conflict(&nx));
+    assert!(sx.conflict(&gx));
+    assert!(sx.conflict(&sx));
+
+    assert!(!sx.conflict(&ny));
+    assert!(!sx.conflict(&gy));
+    assert!(!sx.conflict(&sy));
+
+    assert!(!sy.conflict(&nx));
+    assert!(!sy.conflict(&gx));
+    assert!(!sy.conflict(&sx));
+}

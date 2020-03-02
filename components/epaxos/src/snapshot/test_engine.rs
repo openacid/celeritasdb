@@ -25,7 +25,7 @@ fn test_set_instance(
     eng.set_instance(&inst).unwrap();
     assert_eq!(iid, eng.get_ref("exec", leader_id).unwrap());
 
-    // exec-ref is not updated, max is updated
+    // exec-ref is not updated
 
     inst.executed = false;
     inst.instance_id = Some((leader_id, 10).into());
@@ -33,7 +33,7 @@ fn test_set_instance(
     eng.set_instance(&inst).unwrap();
     assert_eq!(iid, eng.get_ref("exec", leader_id).unwrap());
 
-    // exec-ref is not updated, max is not updated
+    // exec-ref is not updated
 
     inst.executed = false;
     inst.instance_id = Some((leader_id, 0).into());
