@@ -52,7 +52,7 @@ pub trait InstanceEngine: TxEngine + ColumnedEngine {
     fn next_instance_id(&mut self, rid: ReplicaID) -> Result<InstanceID, Error>;
 
     /// set an instance
-    fn set_instance(&mut self, iid: InstanceID, inst: &Instance) -> Result<(), Error>;
+    fn set_instance(&mut self, inst: &Instance) -> Result<(), Error>;
 
     /// get an instance with instance id
     fn get_instance(&self, iid: InstanceID) -> Result<Option<Instance>, Error>;

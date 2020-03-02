@@ -87,15 +87,16 @@ impl InstanceEngine for MemEngine {
         Ok(max)
     }
 
-    fn set_instance(&mut self, iid: InstanceID, inst: &Instance) -> Result<(), Error> {
+    fn set_instance(&mut self, inst: &Instance) -> Result<(), Error> {
         // does not guarantee in a transaction
         let _ = self._mutex.lock().unwrap();
+
+        let iid = inst.instance_id.unwrap();
 
         self.set_obj(iid, &inst).unwrap();
 
         let lowest = InstanceID::from((iid.replica_id, -1));
 
-        self.set_ref_if("max", iid.replica_id, iid, lowest, |x| x < iid)?;
         if inst.executed {
             self.set_ref_if("exec", iid.replica_id, iid, lowest, |x| x < iid)?;
         }
@@ -171,10 +172,9 @@ mod tests {
                 let deps = vec![InstanceID::from((rid + 1, idx + 1))];
 
                 let mut inst = Instance::of(&cmds[..], &ballot, &deps[..]);
+                inst.instance_id = Some(iid);
 
-                engine.set_instance(iid, &inst).unwrap();
-                let act = engine.get_ref("max", rid).unwrap();
-                assert_eq!(act, iid);
+                engine.set_instance(&inst).unwrap();
 
                 let act = engine.get_obj(iid).unwrap().unwrap();
 
