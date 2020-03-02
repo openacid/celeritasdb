@@ -71,6 +71,22 @@ impl ColumnedEngine for MemEngine {
 }
 
 impl InstanceEngine for MemEngine {
+    fn next_instance_id(&mut self, rid: ReplicaID) -> Result<InstanceID, Error> {
+        // TODO locking
+        let max = self.get_ref("max", rid);
+        let mut max = match max {
+            Ok(v) => v,
+            Err(e) => match e {
+                Error::NotFound => (rid, -1).into(),
+                _ => return Err(e),
+            },
+        };
+
+        max.idx += 1;
+        self.set_ref("max", rid, max)?;
+        Ok(max)
+    }
+
     fn set_instance(&mut self, iid: InstanceID, inst: &Instance) -> Result<(), Error> {
         // does not guarantee in a transaction
         let _ = self._mutex.lock().unwrap();
