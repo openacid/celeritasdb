@@ -58,9 +58,10 @@ mod tests {
 
                 let ballot = (rid as i32, idx as i32, 0).into();
                 let deps = vec![InstanceID::from((rid + 1, idx + 1))];
-                let inst = Instance::of(&cmds[..], &ballot, &deps[..]);
+                let mut inst = Instance::of(&cmds[..], &ballot, &deps[..]);
+                inst.instance_id = Some(iid);
 
-                let _ = engine.set_instance(iid, &inst).unwrap();
+                let _ = engine.set_instance(&inst).unwrap();
 
                 let act = engine.get_obj(iid).unwrap().unwrap();
                 assert_eq!(act.cmds, cmds);

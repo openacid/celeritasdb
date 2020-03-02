@@ -15,15 +15,14 @@ fn test_set_instance(
     let leader_id = 2;
     let mut inst = new_foo_inst(leader_id);
     let iid = inst.instance_id.unwrap();
-    eng.set_instance(iid, &inst).unwrap();
+    eng.set_instance(&inst).unwrap();
 
-    assert_eq!(iid, eng.get_ref("max", leader_id).unwrap());
     assert_eq!(Err(Error::NotFound), eng.get_ref("exec", leader_id));
 
     // exec-ref is updated if executed
 
     inst.executed = true;
-    eng.set_instance(iid, &inst).unwrap();
+    eng.set_instance(&inst).unwrap();
     assert_eq!(iid, eng.get_ref("exec", leader_id).unwrap());
 
     // exec-ref is not updated, max is updated
@@ -31,8 +30,7 @@ fn test_set_instance(
     inst.executed = false;
     inst.instance_id = Some((leader_id, 10).into());
     let iid2 = inst.instance_id.unwrap();
-    eng.set_instance(iid2, &inst).unwrap();
-    assert_eq!(iid2, eng.get_ref("max", leader_id).unwrap());
+    eng.set_instance(&inst).unwrap();
     assert_eq!(iid, eng.get_ref("exec", leader_id).unwrap());
 
     // exec-ref is not updated, max is not updated
@@ -40,8 +38,7 @@ fn test_set_instance(
     inst.executed = false;
     inst.instance_id = Some((leader_id, 0).into());
     let iid3 = inst.instance_id.unwrap();
-    eng.set_instance(iid3, &inst).unwrap();
-    assert_eq!(iid2, eng.get_ref("max", leader_id).unwrap());
+    eng.set_instance(&inst).unwrap();
     assert_eq!(iid, eng.get_ref("exec", leader_id).unwrap());
 }
 
@@ -61,7 +58,7 @@ fn test_get_instance(
     let noninst = eng.get_instance(iid).unwrap();
     assert_eq!(None, noninst);
 
-    eng.set_instance(iid, &inst).unwrap();
+    eng.set_instance(&inst).unwrap();
     let got = eng.get_instance(iid).unwrap();
     assert_eq!(Some(inst), got);
 }

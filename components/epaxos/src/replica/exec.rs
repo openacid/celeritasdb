@@ -79,8 +79,7 @@ impl Replica {
 
         let mut new_inst = inst.clone();
         new_inst.executed = true;
-        self.storage
-            .set_instance(inst.instance_id.unwrap(), &new_inst)?;
+        self.storage.set_instance(&new_inst)?;
 
         Ok(rst)
     }
