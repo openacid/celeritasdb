@@ -171,7 +171,7 @@ mod tests {
 
                 let deps = vec![InstanceID::from((rid + 1, idx + 1))];
 
-                let mut inst = Instance::of(&cmds[..], &ballot, &deps[..]);
+                let mut inst = Instance::of(&cmds[..], ballot, &deps[..]);
                 inst.instance_id = Some(iid);
 
                 engine.set_instance(&inst).unwrap();

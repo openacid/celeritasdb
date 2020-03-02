@@ -13,6 +13,9 @@ mod t;
 #[cfg(test)]
 mod test_command;
 
+#[cfg(test)]
+mod test_instance;
+
 pub type InstanceIdx = i64;
 pub type ReplicaID = i64;
 
@@ -39,8 +42,8 @@ impl Command {
 }
 
 impl Conflict for Command {
-    /// conflict checks if two commands conflicts.
-    /// Two commands conflict iff: if the execution order exchange, the result might be differnt.
+    /// conflict checks if two commands conflict.
+    /// Two commands conflict iff: the execution order exchange, the result might be differnt.
     fn conflict(&self, with: &Self) -> bool {
         if self.op == OpCode::NoOp as i32 {
             return false;
@@ -107,11 +110,27 @@ impl ToKey for Instance {
     }
 }
 
+impl Conflict for Instance {
+    /// conflict checks if two instances conflict.
+    /// Two instances conflict iff: command a from self and another command b from with conflict.
+    fn conflict(&self, with: &Self) -> bool {
+        for a in self.cmds.iter() {
+            for b in with.cmds.iter() {
+                if a.conflict(b) {
+                    return true;
+                }
+            }
+        }
+
+        false
+    }
+}
+
 impl Instance {
-    pub fn of(cmds: &[Command], ballot: &BallotNum, deps: &[InstanceID]) -> Instance {
+    pub fn of(cmds: &[Command], ballot: BallotNum, deps: &[InstanceID]) -> Instance {
         Instance {
             cmds: cmds.into(),
-            ballot: Some(ballot.clone()),
+            ballot: Some(ballot),
             initial_deps: deps.into(),
             ..Default::default()
         }

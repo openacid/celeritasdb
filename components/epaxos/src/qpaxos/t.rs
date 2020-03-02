@@ -18,7 +18,7 @@ fn new_foo_inst() -> Instance {
     let ballot = (0, 0, replica).into();
     let ballot2 = (1, 2, replica).into();
 
-    let mut inst = Instance::of(&cmds[..], &ballot, &initial_deps[..]);
+    let mut inst = Instance::of(&cmds[..], ballot, &initial_deps[..]);
     // TODO move these to Instance::new_instance
     inst.instance_id = Some(inst_id1);
     inst.deps = [inst_id2].to_vec();
@@ -56,7 +56,7 @@ fn test_instance_protobuf() {
     let cmds = vec![cmd1, cmd2];
     let ballot = (1, 2, 3).into();
 
-    let inst1 = Instance::of(&cmds[..], &ballot, &initial_deps[..]);
+    let inst1 = Instance::of(&cmds[..], ballot, &initial_deps[..]);
 
     test_enc_dec!(inst1, Instance);
 }
