@@ -58,7 +58,7 @@ pub trait InstanceEngine: TxEngine + ColumnedEngine {
     fn get_instance(&self, iid: InstanceID) -> Result<Option<Instance>, Error>;
 
     /// get an iterator to scan all instances with a leader replica id
-    fn get_instance_iter(&self, rid: Self::ColumnId) -> InstanceIter;
+    fn get_instance_iter(&self, iid: InstanceID, include: bool) -> InstanceIter;
 }
 
 /// TxEngine offer a transactional operation on a storage.
