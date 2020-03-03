@@ -73,6 +73,8 @@ impl ColumnedEngine for MemEngine {
 impl InstanceEngine for MemEngine {
     fn next_instance_id(&mut self, rid: ReplicaID) -> Result<InstanceID, Error> {
         // TODO locking
+        // TODO Need to incr max-ref and add new-instance in a single tx.
+        //      Or iterator may encounter an empty instance slot.
         let max = self.get_ref("max", rid);
         let mut max = match max {
             Ok(v) => v,
@@ -108,10 +110,10 @@ impl InstanceEngine for MemEngine {
         self.get_obj(iid)
     }
 
-    fn get_instance_iter(&self, rid: ReplicaID) -> InstanceIter {
+    fn get_instance_iter(&self, iid: InstanceID, include: bool) -> InstanceIter {
         InstanceIter {
-            curr_inst_id: (rid, 0).into(),
-            include: true,
+            curr_inst_id: iid,
+            include,
             engine: self,
         }
     }
@@ -157,7 +159,7 @@ mod tests {
 
         let mut engine = MemEngine::new().unwrap();
 
-        for rid in 0..3 {
+        for rid in 1..4 {
             for idx in 0..10 {
                 let iid = InstanceID::from((rid, idx));
 
@@ -190,19 +192,24 @@ mod tests {
         }
 
         let cases = vec![
-            (0, &ints[..10]),
-            (2, &ints[20..3 * 10]),
-            (4, &ints[ints.len()..]),
+            ((1, 0).into(), true, &ints[..10]),
+            ((1, 1).into(), true, &ints[1..10]),
+            ((1, 9).into(), true, &ints[9..10]),
+            ((1, 10).into(), true, &[]),
+            ((3, 0).into(), true, &ints[20..3 * 10]),
+            ((0, 0).into(), true, &[]), // before any present instance.
+            ((6, 0).into(), true, &[]), // after all present instance.
+            ((1, 0).into(), false, &ints[1..10]),
+            ((1, 1).into(), false, &ints[2..10]),
+            ((1, 9).into(), false, &[]),
+            ((1, 10).into(), true, &[]),
+            ((3, 0).into(), false, &ints[21..3 * 10]),
         ];
 
-        for (rid, exp_insts) in cases {
+        for (iid, include, exp_insts) in cases {
             let mut n = 0;
-            for act_inst in engine.get_instance_iter(rid) {
-                assert_eq!(act_inst.cmds, exp_insts[n].cmds);
-                assert_eq!(act_inst.ballot, exp_insts[n].ballot);
-
-                assert_eq!(act_inst.instance_id, exp_insts[n].instance_id);
-
+            for act_inst in engine.get_instance_iter(iid, include) {
+                assert_eq!(act_inst, exp_insts[n]);
                 n = n + 1;
             }
 

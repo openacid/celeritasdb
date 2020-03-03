@@ -1,5 +1,5 @@
 use super::traits::*;
-use crate::qpaxos::{Instance, InstanceID};
+use crate::qpaxos::*;
 use prost::Message;
 
 use crate::tokey::ToKey;
@@ -7,7 +7,7 @@ use crate::tokey::ToKey;
 pub struct InstanceIter<'a> {
     pub curr_inst_id: InstanceID,
     pub include: bool,
-    pub engine: &'a dyn Base,
+    pub engine: &'a dyn InstanceEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceId>,
 }
 
 impl<'a> Iterator for InstanceIter<'a> {
@@ -17,21 +17,43 @@ impl<'a> Iterator for InstanceIter<'a> {
         let k = self.curr_inst_id.to_key();
         let (key_bytes, val_bytes) = self.engine.next_kv(&k, self.include)?;
 
-        let key = String::from_utf8(key_bytes).unwrap();
-        let iid = InstanceID::from_key(&key[..])?;
-
-        match Instance::decode(val_bytes.as_slice()) {
-            Ok(v) => {
-                if iid.replica_id == self.curr_inst_id.replica_id {
-                    self.curr_inst_id = iid;
-                    self.include = false;
-                    Some(v)
-                } else {
-                    None
-                }
+        let key = String::from_utf8(key_bytes);
+        let key = match key {
+            Ok(v) => v,
+            Err(e) => {
+                // this is not a key of instance id, done
+                return None;
             }
-            Err(_) => None,
+        };
+
+        let iid = InstanceID::from_key(&key[..]);
+        let iid = match iid {
+            Some(v) => v,
+            None => {
+                // this is not a key of instance id, done
+                return None;
+            }
+        };
+
+        if iid.replica_id != self.curr_inst_id.replica_id {
+            // out of bound, done
+            return None;
         }
+
+        let inst = self.engine.decode_obj(&val_bytes);
+        let inst = match inst {
+            Ok(v) => v,
+            Err(e) => {
+                // TODO handle data damaging.
+                // TODO add test of data corruption
+                panic!(e);
+            }
+        };
+
+        self.curr_inst_id = iid;
+        self.include = false;
+
+        Some(inst)
     }
 }
 
@@ -80,11 +102,7 @@ mod tests {
         for (start_iid, include, exp_insts) in cases {
             let mut n = 0;
 
-            let iter = InstanceIter {
-                curr_inst_id: start_iid,
-                include: include,
-                engine: &engine,
-            };
+            let iter = engine.get_instance_iter(start_iid, include);
 
             for act_inst in iter {
                 assert_eq!(act_inst.cmds, exp_insts[n].cmds);
