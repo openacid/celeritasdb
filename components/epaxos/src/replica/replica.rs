@@ -1,11 +1,11 @@
-use std::net::{SocketAddr, TcpListener, TcpStream};
+use std::net::{SocketAddr, TcpStream};
 use std::time::SystemTime;
 
 use super::super::conf::ClusterInfo;
 
 use super::super::qpaxos::*;
 
-use super::super::snapshot::{InstanceEngine, TxEngine};
+use super::super::snapshot::InstanceEngine;
 
 #[cfg(test)]
 #[path = "./tests/replica_tests.rs"]

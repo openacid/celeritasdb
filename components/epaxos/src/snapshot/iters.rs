@@ -1,6 +1,5 @@
 use super::traits::*;
 use crate::qpaxos::*;
-use prost::Message;
 
 use crate::tokey::ToKey;
 
@@ -20,7 +19,7 @@ impl<'a> Iterator for InstanceIter<'a> {
         let key = String::from_utf8(key_bytes);
         let key = match key {
             Ok(v) => v,
-            Err(e) => {
+            Err(_) => {
                 // this is not a key of instance id, done
                 return None;
             }

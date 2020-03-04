@@ -1,13 +1,10 @@
 use std::collections::BTreeMap;
 use std::sync::Mutex;
 
-use super::MemEngine;
-use prost::Message;
-
 use super::super::*;
-use crate::qpaxos::*;
+use super::MemEngine;
 
-use super::super::super::tokey::ToKey;
+use crate::qpaxos::*;
 
 impl MemEngine {
     pub fn new() -> Result<MemEngine, Error> {
@@ -48,7 +45,7 @@ impl Base for MemEngine {
     fn get_iter(&self, key: Vec<u8>, include: bool) -> BaseIter {
         BaseIter {
             cursor: key,
-            include: include,
+            include,
             engine: self,
         }
     }

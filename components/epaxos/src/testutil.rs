@@ -1,3 +1,4 @@
+#[allow(unused_macros)]
 macro_rules! test_enc_dec {
     // $msg is a prost Message.
     // $typ is one of message.Request or message.Reply

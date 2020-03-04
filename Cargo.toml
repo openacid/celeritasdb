@@ -25,7 +25,7 @@ clap  = { version = "~2.33.0" } # command line argument parse
 epaxos = { path = "components/epaxos" }
 
 [dev-dependencies]
-pretty_assertions = {}
+pretty_assertions = { version = "0.6.1" }
 
 [workspace]
 members = [

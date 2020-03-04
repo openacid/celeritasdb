@@ -1,6 +1,5 @@
 use crate::qpaxos::{Instance, InstanceID, ReplicaID};
 use crate::tokey::ToKey;
-use std::fmt::LowerHex;
 
 // required by encode/decode
 use prost::Message;
