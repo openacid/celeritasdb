@@ -221,6 +221,15 @@ impl MakeReply {
         Some(ReplyCommon {
             last_ballot: inst.last_ballot,
             instance_id: inst.instance_id,
+            err: None,
+        })
+    }
+
+    pub fn err_common(inst: &Instance, err: QError) -> Option<ReplyCommon> {
+        Some(ReplyCommon {
+            last_ballot: None,
+            instance_id: inst.instance_id,
+            err: Some(err),
         })
     }
 

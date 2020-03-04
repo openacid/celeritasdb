@@ -5,7 +5,7 @@ use super::super::conf::ClusterInfo;
 
 use super::super::qpaxos::*;
 
-use super::super::snapshot::InstanceEngine;
+use super::super::snapshot::{Error, InstanceEngine, TxEngine};
 
 #[cfg(test)]
 #[path = "./tests/replica_tests.rs"]
@@ -112,7 +112,52 @@ impl Replica {
         Err("not implemented".to_string())
     }
 
-    fn handle_commit(&mut self, req: &CommitRequest) -> Result<(), String> {
-        Err("not implemented".to_string())
+    fn handle_commit(&mut self, req: &CommitRequest) -> CommitReply {
+        // TODO protocol wrapping may be better to be in server impl instead of being here
+        match self._commit(req) {
+            Ok(inst) => MakeReply::commit(&inst),
+            Err(e) => {
+                // TODO bad request would panic when using unwrap
+                let iid = req.cmn.as_ref().unwrap().instance_id.unwrap();
+                let mut inst = Instance::of(&[], (0, 0, self.replica_id).into(), &[]);
+                inst.instance_id = Some(iid);
+
+                CommitReply {
+                    cmn: MakeReply::err_common(&inst, QError { sto: None }),
+                    ..Default::default()
+                }
+            }
+        }
+    }
+
+    fn _commit(&mut self, req: &CommitRequest) -> Result<Instance, Error> {
+        // TODO locking
+        let cmn = req.cmn.as_ref().unwrap();
+        let iid = cmn.instance_id.unwrap();
+        let inst = self.storage.get_instance(iid)?;
+
+        let mut inst = match inst {
+            Some(inst) => inst,
+            None => {
+                // not found
+                let mut inst = Instance::of(&[], (0, 0, self.replica_id).into(), &[]);
+                inst.instance_id = Some(iid);
+                inst
+            }
+        };
+
+        // TODO issue: after commit, inst.last_ballot might be >= inst.ballot, which might confuse
+        // other procedure.
+        inst.last_ballot = inst.ballot;
+        inst.ballot = cmn.ballot;
+
+        inst.cmds = req.cmds.clone();
+        inst.final_deps = req.final_deps.clone();
+        inst.committed = true;
+
+        inst.ballot = cmn.ballot;
+        self.storage.set_instance(&inst)?;
+
+        Ok(inst)
     }
 }
