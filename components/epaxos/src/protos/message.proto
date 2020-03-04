@@ -3,6 +3,7 @@ syntax = "proto3";
 package qpaxos;
 
 import "command.proto";
+import "errors.proto";
 import "instance.proto";
 
 enum RequestType {
@@ -56,6 +57,7 @@ message ReplyCommon {
     // The ballot stored on acceptor before handling a request.
     BallotNum last_ballot = 11;
     InstanceID instance_id = 13;
+    QError err = 14;
 }
 message FastAcceptReply {
     // deps_status describe what status a dependent instance is in.

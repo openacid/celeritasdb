@@ -1,0 +1,11 @@
+syntax = "proto3";
+
+package qpaxos;
+
+message QError {
+    StorageFailure sto = 1;
+}
+
+message StorageFailure {
+};
+

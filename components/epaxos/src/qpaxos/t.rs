@@ -335,3 +335,31 @@ fn test_reply_commit_pb() {
 
     test_enc_dec!(pp, CommitReply);
 }
+
+#[test]
+fn test_reply_err_common() {
+    let inst = new_foo_inst();
+
+    let pp = MakeReply::err_common(&inst, QError { sto: None });
+
+    assert_eq!(None, pp.as_ref().unwrap().last_ballot);
+    assert_eq!(inst.instance_id, pp.as_ref().unwrap().instance_id);
+    assert_eq!(
+        &QError { sto: None },
+        pp.as_ref().unwrap().err.as_ref().unwrap()
+    );
+
+    let pp = MakeReply::err_common(
+        &inst,
+        QError {
+            sto: Some(StorageFailure {}),
+        },
+    );
+
+    assert_eq!(
+        QError {
+            sto: Some(StorageFailure {})
+        },
+        pp.unwrap().err.unwrap()
+    );
+}

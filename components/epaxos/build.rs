@@ -23,6 +23,7 @@ fn main() {
                 "src/protos/instance.proto",
                 "src/protos/message.proto",
                 "src/protos/qpaxos.proto",
+                "src/protos/errors.proto",
             ],
             &["src/protos/"],
         )
