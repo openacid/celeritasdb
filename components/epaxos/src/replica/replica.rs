@@ -7,10 +7,6 @@ use super::super::qpaxos::*;
 
 use super::super::snapshot::{Error, InstanceEngine, TxEngine};
 
-#[cfg(test)]
-#[path = "./tests/replica_tests.rs"]
-mod tests;
-
 /// information of communication peer
 pub struct ReplicaPeer {
     pub replica_id: ReplicaID,
@@ -112,8 +108,9 @@ impl Replica {
         Err("not implemented".to_string())
     }
 
-    fn handle_commit(&mut self, req: &CommitRequest) -> CommitReply {
+    pub fn handle_commit(&mut self, req: &CommitRequest) -> CommitReply {
         // TODO protocol wrapping may be better to be in server impl instead of being here
+        // TODO check to_replica_id
         match self._commit(req) {
             Ok(inst) => MakeReply::commit(&inst),
             Err(e) => {
