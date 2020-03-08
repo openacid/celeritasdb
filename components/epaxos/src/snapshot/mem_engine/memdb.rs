@@ -246,4 +246,22 @@ mod tests {
 
         assert_eq!(v, engine.get_kv(&k).unwrap());
     }
+
+    #[test]
+    fn test_instance_engine() {
+        {
+            let mut engine = MemEngine::new().unwrap();
+            test_set_instance(&mut engine);
+        }
+
+        {
+            let mut engine = MemEngine::new().unwrap();
+            test_get_instance(&mut engine);
+        }
+
+        {
+            let mut engine = MemEngine::new().unwrap();
+            test_next_instance_id(&mut engine);
+        }
+    }
 }

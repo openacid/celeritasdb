@@ -4,8 +4,8 @@ use crate::tokey::ToKey;
 // required by encode/decode
 use prost::Message;
 
-use super::Error;
-use super::InstanceIter;
+use super::super::Error;
+use super::super::InstanceIter;
 
 pub struct BaseIter<'a> {
     pub cursor: Vec<u8>,

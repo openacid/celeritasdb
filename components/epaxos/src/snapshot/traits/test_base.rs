@@ -1,15 +1,8 @@
-use super::errors::*;
-use super::mem_engine::*;
+use super::super::errors::*;
 use super::traits::*;
 use crate::qpaxos::*;
 
-#[test]
-fn test_engine_mem_set_instance() {
-    let mut eng = MemEngine::new().unwrap();
-    test_set_instance(&mut eng);
-}
-
-fn test_set_instance(
+pub fn test_set_instance(
     eng: &mut dyn InstanceEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceID>,
 ) {
     let leader_id = 2;
@@ -42,13 +35,7 @@ fn test_set_instance(
     assert_eq!(iid, eng.get_ref("exec", leader_id).unwrap());
 }
 
-#[test]
-fn test_engine_mem_get_instance() {
-    let mut eng = MemEngine::new().unwrap();
-    test_get_instance(&mut eng);
-}
-
-fn test_get_instance(
+pub fn test_get_instance(
     eng: &mut dyn InstanceEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceID>,
 ) {
     let leader_id = 2;
@@ -63,13 +50,7 @@ fn test_get_instance(
     assert_eq!(Some(inst), got);
 }
 
-#[test]
-fn test_engine_mem_next_instance_id() {
-    let mut eng = MemEngine::new().unwrap();
-    test_next_instance_id(&mut eng);
-}
-
-fn test_next_instance_id(
+pub fn test_next_instance_id(
     eng: &mut dyn InstanceEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceID>,
 ) {
     let leader_id = 2;
