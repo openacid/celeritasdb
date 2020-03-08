@@ -53,28 +53,22 @@ fn test_handle_commit_request() {
     let none = replica.storage.get_instance(iid).unwrap();
     assert_eq!(None, none);
 
-    let req = MakeRequest::commit(&inst);
+    let req = MakeRequest::commit(replica_id, &inst);
 
     {
         // ok reply with none instance.
         let repl = replica.handle_commit(&req);
+        assert_eq!(None, repl.err);
         let cmn = repl.cmn.unwrap();
         assert_eq!(iid, cmn.instance_id.unwrap());
-        assert_eq!(
-            BallotNum::from((0, 0, replica_id)),
-            cmn.last_ballot.unwrap()
-        );
-        assert_eq!(None, cmn.err);
+        assert_eq!(None, cmn.last_ballot);
 
         // get the committed instance.
         let inst = replica.storage.get_instance(iid).unwrap();
         let inst = inst.unwrap();
         assert_eq!(iid, inst.instance_id.unwrap());
         assert_eq!(blt, inst.ballot.unwrap());
-        assert_eq!(
-            BallotNum::from((0, 0, replica_id)),
-            inst.last_ballot.unwrap()
-        );
+        assert_eq!(None, inst.last_ballot);
         assert_eq!(cmds, inst.cmds);
         assert_eq!(fdeps, inst.final_deps);
     }
@@ -82,10 +76,10 @@ fn test_handle_commit_request() {
     {
         // ok reply when replacing instance.
         let repl = replica.handle_commit(&req);
+        assert_eq!(None, repl.err);
         let cmn = repl.cmn.unwrap();
         assert_eq!(iid, inst.instance_id.unwrap());
         assert_eq!(blt, cmn.last_ballot.unwrap());
-        assert_eq!(None, cmn.err);
 
         // get the committed instance.
         let inst = replica.storage.get_instance(iid).unwrap();

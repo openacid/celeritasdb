@@ -104,63 +104,116 @@ impl Replica {
         Err("not implemented".to_string())
     }
 
-    fn handle_accept(&mut self, req: &AcceptRequest) -> Result<AcceptReply, String> {
-        Err("not implemented".to_string())
+    fn handle_accept(&mut self, req: &AcceptRequest) -> AcceptReply {
+        let inst = self._accept(req);
+        match inst {
+            Ok(inst) => MakeReply::accept(&inst),
+            Err(e) => AcceptReply {
+                err: Some(e.to_qerr()),
+                ..Default::default()
+            },
+        }
+    }
+
+    fn _accept(&mut self, req: &AcceptRequest) -> Result<Instance, Error> {
+        // TODO locking
+        let (ballot, iid) = self._check_req_common(&req.cmn)?;
+
+        let mut inst = self._get_instance(iid)?;
+
+        inst.last_ballot = inst.ballot;
+
+        // allow inst.ballot to be None
+        if Some(ballot) >= inst.ballot {
+            inst.ballot = Some(ballot);
+
+            inst.final_deps = req.final_deps.clone();
+            self.storage.set_instance(&inst)?;
+        }
+
+        Ok(inst)
     }
 
     pub fn handle_commit(&mut self, req: &CommitRequest) -> CommitReply {
         // TODO protocol wrapping may be better to be in server impl instead of being here
         // TODO check to_replica_id
+
         match self._commit(req) {
             Ok(inst) => MakeReply::commit(&inst),
-            Err(e) => {
-                // TODO bad request would panic when using unwrap
-                let iid = req.cmn.as_ref().unwrap().instance_id.unwrap();
-                let mut inst = Instance::of(&[], (0, 0, self.replica_id).into(), &[]);
-                inst.instance_id = Some(iid);
-
-                CommitReply {
-                    cmn: MakeReply::err_common(
-                        &inst,
-                        QError {
-                            sto: None,
-                            req: None,
-                        },
-                    ),
-                    ..Default::default()
-                }
-            }
+            Err(e) => CommitReply {
+                err: Some(e.to_qerr()),
+                ..Default::default()
+            },
         }
     }
 
     fn _commit(&mut self, req: &CommitRequest) -> Result<Instance, Error> {
-        // TODO locking
-        let cmn = req.cmn.as_ref().unwrap();
-        let iid = cmn.instance_id.unwrap();
-        let inst = self.storage.get_instance(iid)?;
+        let (ballot, iid) = self._check_req_common(&req.cmn)?;
 
-        let mut inst = match inst {
-            Some(inst) => inst,
-            None => {
-                // not found
-                let mut inst = Instance::of(&[], (0, 0, self.replica_id).into(), &[]);
-                inst.instance_id = Some(iid);
-                inst
-            }
-        };
+        // TODO locking
+        let mut inst = self._get_instance(iid)?;
 
         // TODO issue: after commit, inst.last_ballot might be >= inst.ballot, which might confuse
         // other procedure.
         inst.last_ballot = inst.ballot;
-        inst.ballot = cmn.ballot;
+        inst.ballot = Some(ballot);
 
         inst.cmds = req.cmds.clone();
         inst.final_deps = req.final_deps.clone();
         inst.committed = true;
 
-        inst.ballot = cmn.ballot;
         self.storage.set_instance(&inst)?;
 
         Ok(inst)
+    }
+
+    fn _check_req_common(
+        &mut self,
+        cm: &Option<RequestCommon>,
+    ) -> Result<(BallotNum, InstanceID), Error> {
+        let cm = match cm {
+            Some(v) => v,
+            None => return Err(Error::LackOf("cmn".into())),
+        };
+
+        let replica_id = cm.to_replica_id;
+        if replica_id != self.replica_id {
+            return Err(Error::NoSuchReplica {
+                replica_id,
+                my_replica_id: self.replica_id,
+            });
+        }
+
+        let ballot = match cm.ballot {
+            Some(v) => v,
+            None => return Err(Error::LackOf("cmn.ballot".into())),
+        };
+
+        let iid = cm.instance_id;
+        let iid = match iid {
+            Some(v) => v,
+            None => return Err(Error::LackOf("cmn.instance_id".into())),
+        };
+
+        Ok((ballot, iid))
+    }
+
+    fn _get_instance(&mut self, iid: InstanceID) -> Result<Instance, Error> {
+        let inst = self.storage.get_instance(iid)?;
+
+        let inst = match inst {
+            Some(inst) => inst,
+            // not found
+            None => self._empty_instance(Some(iid)),
+        };
+
+        Ok(inst)
+    }
+
+    fn _empty_instance(&self, iid: Option<InstanceID>) -> Instance {
+        Instance {
+            instance_id: iid,
+            ..Default::default()
+        }
     }
 }
