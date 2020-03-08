@@ -1,4 +1,4 @@
-use crate::qpaxos::{QError, StorageFailure, InvalidRequest};
+use crate::qpaxos::{InvalidRequest, QError, StorageFailure};
 
 quick_error! {
     /// Errors occur when set/get with snapshot

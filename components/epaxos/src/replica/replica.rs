@@ -120,7 +120,13 @@ impl Replica {
                 inst.instance_id = Some(iid);
 
                 CommitReply {
-                    cmn: MakeReply::err_common(&inst, QError { sto: None, req:None }),
+                    cmn: MakeReply::err_common(
+                        &inst,
+                        QError {
+                            sto: None,
+                            req: None,
+                        },
+                    ),
                     ..Default::default()
                 }
             }
