@@ -55,27 +55,31 @@ message PrepareRequest {
 
 message ReplyCommon {
     // The ballot stored on acceptor before handling a request.
-    BallotNum last_ballot = 11;
+
+    BallotNum  last_ballot = 11;
     InstanceID instance_id = 13;
-    QError err = 14;
 }
 message FastAcceptReply {
     // deps_status describe what status a dependent instance is in.
     // Only `deps` needs these information in order to commit on fast-path.
 
-    ReplyCommon cmn = 1;
+    ReplyCommon         cmn            = 1;
+    QError              err            = 5;
     repeated InstanceID deps           = 32;
-    repeated bool                deps_committed = 33;
+    repeated bool       deps_committed = 33;
 }
 message AcceptReply {
     ReplyCommon cmn = 1;
+    QError      err = 5;
 }
 message CommitReply {
     ReplyCommon cmn = 1;
+    QError      err = 5;
 }
 message PrepareReply {
-    ReplyCommon cmn = 1;
+    ReplyCommon         cmn        = 1;
+    QError              err        = 5;
     repeated InstanceID deps       = 32;
     repeated InstanceID final_deps = 41;
-    bool                         committed  = 51;
+    bool                committed  = 51;
 }

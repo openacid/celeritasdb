@@ -169,42 +169,46 @@ impl Instance {
 /// let req = MakeRequest::prepare(some_instance);
 /// ```
 impl MakeRequest {
-    pub fn common(inst: &Instance) -> Option<RequestCommon> {
+    pub fn common(to_replica_id: i64, inst: &Instance) -> Option<RequestCommon> {
         // TODO need filling to_replica_id
         Some(RequestCommon {
-            to_replica_id: 0,
+            to_replica_id,
             ballot: inst.ballot,
             instance_id: inst.instance_id,
         })
     }
 
-    pub fn fast_accept(inst: &Instance, deps_committed: &[bool]) -> FastAcceptRequest {
+    pub fn fast_accept(
+        to_replica_id: i64,
+        inst: &Instance,
+        deps_committed: &[bool],
+    ) -> FastAcceptRequest {
         FastAcceptRequest {
-            cmn: Self::common(inst),
+            cmn: Self::common(to_replica_id, inst),
             cmds: inst.cmds.clone(),
             initial_deps: inst.initial_deps.clone(),
             deps_committed: deps_committed.into(),
         }
     }
 
-    pub fn accept(inst: &Instance) -> AcceptRequest {
+    pub fn accept(to_replica_id: i64, inst: &Instance) -> AcceptRequest {
         AcceptRequest {
-            cmn: Self::common(inst),
+            cmn: Self::common(to_replica_id, inst),
             final_deps: inst.final_deps.clone(),
         }
     }
 
-    pub fn commit(inst: &Instance) -> CommitRequest {
+    pub fn commit(to_replica_id: i64, inst: &Instance) -> CommitRequest {
         CommitRequest {
-            cmn: Self::common(inst),
+            cmn: Self::common(to_replica_id, inst),
             cmds: inst.cmds.clone(),
             final_deps: inst.final_deps.clone(),
         }
     }
 
-    pub fn prepare(inst: &Instance) -> PrepareRequest {
+    pub fn prepare(to_replica_id: i64, inst: &Instance) -> PrepareRequest {
         PrepareRequest {
-            cmn: Self::common(inst),
+            cmn: Self::common(to_replica_id, inst),
         }
     }
 }
@@ -221,21 +225,14 @@ impl MakeReply {
         Some(ReplyCommon {
             last_ballot: inst.last_ballot,
             instance_id: inst.instance_id,
-            err: None,
-        })
-    }
-
-    pub fn err_common(inst: &Instance, err: QError) -> Option<ReplyCommon> {
-        Some(ReplyCommon {
-            last_ballot: None,
-            instance_id: inst.instance_id,
-            err: Some(err),
+            // err: None,
         })
     }
 
     pub fn fast_accept(inst: &Instance, deps_committed: &[bool]) -> FastAcceptReply {
         FastAcceptReply {
             cmn: Self::common(inst),
+            err: None,
             deps: inst.deps.clone(),
             deps_committed: deps_committed.into(),
         }
@@ -244,18 +241,21 @@ impl MakeReply {
     pub fn accept(inst: &Instance) -> AcceptReply {
         AcceptReply {
             cmn: Self::common(inst),
+            err: None,
         }
     }
 
     pub fn commit(inst: &Instance) -> CommitReply {
         CommitReply {
             cmn: Self::common(inst),
+            err: None,
         }
     }
 
     pub fn prepare(inst: &Instance) -> PrepareReply {
         PrepareReply {
             cmn: Self::common(inst),
+            err: None,
             deps: inst.deps.clone(),
             final_deps: inst.final_deps.clone(),
             committed: inst.committed,

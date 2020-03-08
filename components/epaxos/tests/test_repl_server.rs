@@ -54,7 +54,7 @@ async fn _repl_server() {
 
     // let request = Request::new(message::Request::accept());
     // let request = message::Request::accept().into();
-    let request = qp::MakeRequest::accept(&inst);
+    let request = qp::MakeRequest::accept(0, &inst);
 
     let response = client.accept(request).await.unwrap();
 

@@ -45,7 +45,7 @@ async fn connect_repl() {
         ..Default::default()
     };
 
-    let request = MakeRequest::accept(&inst);
+    let request = MakeRequest::accept(0, &inst);
 
     let response = client.accept(request).await.unwrap();
 

@@ -31,9 +31,10 @@ fn new_foo_inst() -> Instance {
 // TODO test to_replica_id
 
 macro_rules! test_request_common {
-    ($msg:ident, $inst:ident) => {
+    ($msg:ident, $inst:ident, $to_rid:expr) => {
         assert_eq!($inst.ballot, $msg.cmn.as_ref().unwrap().ballot);
         assert_eq!($inst.instance_id, $msg.cmn.as_ref().unwrap().instance_id);
+        assert_eq!($to_rid, $msg.cmn.as_ref().unwrap().to_replica_id);
     };
 }
 
@@ -236,9 +237,9 @@ fn test_instance_after() {
 fn test_request_prepare_pb() {
     let inst = new_foo_inst();
 
-    let pp = MakeRequest::prepare(&inst);
+    let pp = MakeRequest::prepare(100, &inst);
 
-    test_request_common!(pp, inst);
+    test_request_common!(pp, inst, 100);
     // prepare has no other fields.
 
     test_enc_dec!(pp, PrepareRequest);
@@ -263,9 +264,9 @@ fn test_request_fast_accpt_pb() {
     let inst = new_foo_inst();
 
     let deps_committed = &[true, false];
-    let pp = MakeRequest::fast_accept(&inst, deps_committed);
+    let pp = MakeRequest::fast_accept(100, &inst, deps_committed);
 
-    test_request_common!(pp, inst);
+    test_request_common!(pp, inst, 100);
     assert_eq!(inst.cmds, pp.cmds);
     assert_eq!(inst.initial_deps, pp.initial_deps);
     assert_eq!(deps_committed.to_vec(), pp.deps_committed);
@@ -291,9 +292,9 @@ fn test_reply_fast_accept_pb() {
 fn test_request_accept_pb() {
     let inst = new_foo_inst();
 
-    let pp = MakeRequest::accept(&inst);
+    let pp = MakeRequest::accept(100, &inst);
 
-    test_request_common!(pp, inst);
+    test_request_common!(pp, inst, 100);
     assert_eq!(inst.final_deps, pp.final_deps);
 
     test_enc_dec!(pp, AcceptRequest);
@@ -315,9 +316,9 @@ fn test_reply_accept_pb() {
 fn test_request_commit_pb() {
     let inst = new_foo_inst();
 
-    let pp = MakeRequest::commit(&inst);
+    let pp = MakeRequest::commit(100, &inst);
 
-    test_request_common!(pp, inst);
+    test_request_common!(pp, inst, 100);
     assert_eq!(inst.cmds, pp.cmds);
     assert_eq!(inst.final_deps, pp.final_deps);
 
