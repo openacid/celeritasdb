@@ -4,8 +4,14 @@ package qpaxos;
 
 message QError {
     StorageFailure sto = 1;
+    InvalidRequest req = 2;
 }
 
 message StorageFailure {
 };
 
+message InvalidRequest {
+    string field = 1;
+    string problem = 2;
+    string ctx = 3;
+};
