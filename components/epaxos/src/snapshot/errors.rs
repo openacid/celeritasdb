@@ -29,7 +29,7 @@ quick_error! {
 impl Error {
     pub fn to_qerr(&self) -> QError {
         match self {
-            Error::DBError { msg: e } => QError {
+            Error::DBError { msg: _ } => QError {
                 sto: Some(StorageFailure {}),
                 ..Default::default()
             },
@@ -46,7 +46,7 @@ impl Error {
                 req: Some(InvalidRequest {
                     field: "to_replica_id".into(),
                     problem: "NotFound".into(),
-                    ctx: "".into(),
+                    ctx: format!("{}; my replica_id: {}", rid, mrid).into(),
                 }),
                 ..Default::default()
             },

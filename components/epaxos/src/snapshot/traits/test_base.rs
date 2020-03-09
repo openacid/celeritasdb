@@ -22,7 +22,6 @@ pub fn test_set_instance(
 
     inst.executed = false;
     inst.instance_id = Some((leader_id, 10).into());
-    let iid2 = inst.instance_id.unwrap();
     eng.set_instance(&inst).unwrap();
     assert_eq!(iid, eng.get_ref("exec", leader_id).unwrap());
 
@@ -30,7 +29,6 @@ pub fn test_set_instance(
 
     inst.executed = false;
     inst.instance_id = Some((leader_id, 0).into());
-    let iid3 = inst.instance_id.unwrap();
     eng.set_instance(&inst).unwrap();
     assert_eq!(iid, eng.get_ref("exec", leader_id).unwrap());
 }
@@ -39,7 +37,7 @@ pub fn test_get_instance(
     eng: &mut dyn InstanceEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceID>,
 ) {
     let leader_id = 2;
-    let mut inst = new_foo_inst(leader_id);
+    let inst = new_foo_inst(leader_id);
     let iid = inst.instance_id.unwrap();
 
     let noninst = eng.get_instance(iid).unwrap();

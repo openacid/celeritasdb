@@ -5,7 +5,7 @@ use super::super::conf::ClusterInfo;
 
 use super::super::qpaxos::*;
 
-use super::super::snapshot::{Error, InstanceEngine, TxEngine};
+use super::super::snapshot::{Error, InstanceEngine};
 
 /// information of communication peer
 pub struct ReplicaPeer {
@@ -84,10 +84,6 @@ impl Replica {
     /// start exec thread
     fn start_exec_thread(&mut self) {}
 
-    /// this is the main logic to implement recovery procedure in epaxos protocol
-    /// as described in figure 3.
-    fn explicit_prepare(&mut self, instance: &Instance) {}
-
     // FIXME(lsl): these methods predestined to run in multi-thread and change self,
     //             so is it good to implement as a method or a function to take Replica as arg?
     //             but for now, it doesn't matter since we just want the interface.
@@ -136,7 +132,6 @@ impl Replica {
 
     pub fn handle_commit(&mut self, req: &CommitRequest) -> CommitReply {
         // TODO protocol wrapping may be better to be in server impl instead of being here
-        // TODO check to_replica_id
 
         match self._commit(req) {
             Ok(inst) => MakeReply::commit(&inst),

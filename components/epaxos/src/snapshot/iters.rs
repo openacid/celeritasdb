@@ -63,7 +63,7 @@ mod tests {
     use crate::qpaxos::{Command, OpCode};
 
     #[test]
-    fn test_instanceIter() {
+    fn test_instance_iter() {
         let mut ints = Vec::<Instance>::new();
         let mut engine = MemEngine::new().unwrap();
 
