@@ -184,13 +184,11 @@ impl Replica {
             });
         }
 
-        let ballot = cm.ballot.ok_or(
-            Error::LackOf("cmn.ballot".into())
-        )?;
+        let ballot = cm.ballot.ok_or(Error::LackOf("cmn.ballot".into()))?;
 
-        let iid = cm.instance_id.ok_or(
-            Error::LackOf("cmn.instance_id".into())
-        )?;
+        let iid = cm
+            .instance_id
+            .ok_or(Error::LackOf("cmn.instance_id".into()))?;
 
         Ok((ballot, iid))
     }
