@@ -31,6 +31,26 @@ pub use conflict::*;
 pub struct MakeRequest {}
 pub struct MakeReply {}
 
+impl From<(&str, &str, &str)> for InvalidRequest {
+    fn from(t: (&str, &str, &str)) -> InvalidRequest {
+        InvalidRequest {
+            field: t.0.into(),
+            problem: t.1.into(),
+            ctx: t.2.into(),
+        }
+    }
+}
+
+impl From<(&str, &str)> for InvalidRequest {
+    fn from(t: (&str, &str)) -> InvalidRequest {
+        InvalidRequest {
+            field: t.0.into(),
+            problem: t.1.into(),
+            ctx: "".into(),
+        }
+    }
+}
+
 impl Command {
     pub fn of(op: OpCode, key: &[u8], value: &[u8]) -> Command {
         Command {

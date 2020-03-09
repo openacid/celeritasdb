@@ -44,7 +44,7 @@ impl Error {
                 my_replica_id: mrid,
             } => QError {
                 req: Some(InvalidRequest {
-                    field: "to_replica_id".into(),
+                    field: "cmn.to_replica_id".into(),
                     problem: "NotFound".into(),
                     ctx: format!("{}; my replica_id: {}", rid, mrid).into(),
                 }),

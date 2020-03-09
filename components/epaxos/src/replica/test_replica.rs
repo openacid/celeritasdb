@@ -41,6 +41,74 @@ fn new_foo_replica(replica_id: i64) -> Replica {
 }
 
 #[test]
+fn test_handle_xxx_request_invalid() {
+    let replica_id = 2;
+    let mut replica = new_foo_replica(replica_id);
+
+    let cases: Vec<(Option<RequestCommon>, (&str, &str, &str))> = vec![
+        (None, ("cmn", "LackOf", "")),
+        (
+            Some(RequestCommon {
+                to_replica_id: 0,
+                ballot: None,
+                instance_id: None,
+            }),
+            ("cmn.to_replica_id", "NotFound", "0; my replica_id: 2"),
+        ),
+        (
+            Some(RequestCommon {
+                to_replica_id: replica_id,
+                ballot: None,
+                instance_id: None,
+            }),
+            ("cmn.ballot", "LackOf", ""),
+        ),
+        (
+            Some(RequestCommon {
+                to_replica_id: replica_id,
+                ballot: Some((0, 0, 1).into()),
+                instance_id: None,
+            }),
+            ("cmn.instance_id", "LackOf", ""),
+        ),
+    ];
+
+    // InvalidRequest from accept
+    for (cmn, etuple) in cases.clone() {
+        let req = AcceptRequest {
+            cmn,
+            ..Default::default()
+        };
+        let repl = replica.handle_accept(&req);
+        let err = repl.err.unwrap();
+        assert_eq!(
+            QError {
+                req: Some(etuple.into()),
+                ..Default::default()
+            },
+            err
+        );
+    }
+
+    // InvalidRequest from commit
+    for (cmn, etuple) in cases.clone() {
+        let req = CommitRequest {
+            cmn,
+            ..Default::default()
+        };
+        let repl = replica.handle_commit(&req);
+        let err = repl.err.unwrap();
+        assert_eq!(
+            QError {
+                req: Some(etuple.into()),
+                ..Default::default()
+            },
+            err
+        );
+    }
+}
+
+#[test]
 fn test_handle_commit_request() {
     let replica_id = 2;
     let inst = new_foo_inst(replica_id);

@@ -100,7 +100,7 @@ impl Replica {
         Err("not implemented".to_string())
     }
 
-    fn handle_accept(&mut self, req: &AcceptRequest) -> AcceptReply {
+    pub fn handle_accept(&mut self, req: &AcceptRequest) -> AcceptReply {
         let inst = self._accept(req);
         match inst {
             Ok(inst) => MakeReply::accept(&inst),

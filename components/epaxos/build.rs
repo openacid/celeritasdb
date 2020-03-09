@@ -17,6 +17,7 @@ fn main() {
             "BallotNum",
             "#[derive(Copy, Eq, Ord, PartialOrd, derive_more::From)]",
         )
+        .type_attribute("InvalidRequest", "#[derive(derive_more::From)]")
         .compile(
             &[
                 "src/protos/command.proto",
