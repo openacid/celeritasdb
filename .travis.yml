@@ -13,7 +13,6 @@ rust:
 
 script:
   - rustup component add rustfmt
-  - cargo build --verbose --all
     # concurrent test causes port conflict
   - cargo test --verbose --all -- --test-threads=1
 
