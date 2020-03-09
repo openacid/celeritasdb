@@ -109,11 +109,78 @@ fn test_handle_xxx_request_invalid() {
 }
 
 #[test]
+fn test_handle_accept_request() {
+    let replica_id = 2;
+    let inst = new_foo_inst(replica_id);
+    let iid = inst.instance_id.unwrap();
+    let blt = inst.ballot;
+    let fdeps = inst.final_deps.clone();
+
+    let mut replica = new_foo_replica(replica_id);
+    let none = replica.storage.get_instance(iid).unwrap();
+    assert_eq!(None, none);
+
+    {
+        // ok reply with none instance.
+        let req = MakeRequest::accept(replica_id, &inst);
+        let repl = replica.handle_accept(&req);
+        assert_eq!(None, repl.err);
+        _test_repl_cmn_ok(&repl.cmn.unwrap(), iid, None);
+
+        // get the written instance.
+        _test_get_inst(&replica, iid, blt, None, vec![], fdeps.clone());
+    }
+
+    {
+        // ok reply when replacing instance. same ballot.
+        let req = MakeRequest::accept(replica_id, &inst);
+        assert_eq!(
+            req.cmn.clone().unwrap().ballot,
+            replica.storage.get_instance(iid).unwrap().unwrap().ballot
+        );
+
+        let repl = replica.handle_accept(&req);
+        assert_eq!(None, repl.err);
+        _test_repl_cmn_ok(&repl.cmn.unwrap(), iid, blt);
+
+        // get the accepted instance.
+        _test_get_inst(&replica, iid, blt, blt, vec![], fdeps.clone());
+    }
+
+    {
+        // ok reply but not written because of a higher ballot.
+        let req = MakeRequest::accept(replica_id, &inst);
+
+        // make an instance with bigger ballot.
+        let mut curr = replica.storage.get_instance(iid).unwrap().unwrap();
+        let mut bigger = blt.unwrap();
+        bigger.num += 1;
+        let bigger = Some(bigger);
+
+        curr.ballot = bigger;
+        replica.storage.set_instance(&curr).unwrap();
+
+        let curr = replica.storage.get_instance(iid).unwrap().unwrap();
+        assert!(curr.ballot > blt);
+
+        // accept wont update this instance.
+        let repl = replica.handle_accept(&req);
+        assert_eq!(None, repl.err);
+        _test_repl_cmn_ok(&repl.cmn.unwrap(), iid, bigger);
+
+        // get the intact instance.
+        _test_get_inst(&replica, iid, bigger, blt, vec![], fdeps.clone());
+    }
+
+    // TODO test storage error
+}
+
+#[test]
 fn test_handle_commit_request() {
     let replica_id = 2;
     let inst = new_foo_inst(replica_id);
     let iid = inst.instance_id.unwrap();
-    let blt = inst.ballot.unwrap();
+    let blt = inst.ballot;
     let cmds = inst.cmds.clone();
     let fdeps = inst.final_deps.clone();
 
@@ -127,37 +194,42 @@ fn test_handle_commit_request() {
         // ok reply with none instance.
         let repl = replica.handle_commit(&req);
         assert_eq!(None, repl.err);
-        let cmn = repl.cmn.unwrap();
-        assert_eq!(iid, cmn.instance_id.unwrap());
-        assert_eq!(None, cmn.last_ballot);
+        _test_repl_cmn_ok(&repl.cmn.unwrap(), iid, None);
 
         // get the committed instance.
-        let inst = replica.storage.get_instance(iid).unwrap();
-        let inst = inst.unwrap();
-        assert_eq!(iid, inst.instance_id.unwrap());
-        assert_eq!(blt, inst.ballot.unwrap());
-        assert_eq!(None, inst.last_ballot);
-        assert_eq!(cmds, inst.cmds);
-        assert_eq!(fdeps, inst.final_deps);
+        _test_get_inst(&replica, iid, blt, None, cmds.clone(), fdeps.clone());
     }
 
     {
         // ok reply when replacing instance.
         let repl = replica.handle_commit(&req);
         assert_eq!(None, repl.err);
-        let cmn = repl.cmn.unwrap();
-        assert_eq!(iid, inst.instance_id.unwrap());
-        assert_eq!(blt, cmn.last_ballot.unwrap());
+        _test_repl_cmn_ok(&repl.cmn.unwrap(), iid, blt);
 
         // get the committed instance.
-        let inst = replica.storage.get_instance(iid).unwrap();
-        let inst = inst.unwrap();
-        assert_eq!(iid, inst.instance_id.unwrap());
-        assert_eq!(blt, inst.ballot.unwrap());
-        assert_eq!(blt, inst.last_ballot.unwrap());
-        assert_eq!(cmds, inst.cmds);
-        assert_eq!(fdeps, inst.final_deps);
+        _test_get_inst(&replica, iid, blt, blt, cmds.clone(), fdeps.clone());
     }
 
     // TODO test storage error
+}
+
+fn _test_repl_cmn_ok(cmn: &ReplyCommon, iid: InstanceID, last: Option<BallotNum>) {
+    assert_eq!(iid, cmn.instance_id.unwrap());
+    assert_eq!(last, cmn.last_ballot);
+}
+
+fn _test_get_inst(
+    replica: &Replica,
+    iid: InstanceID,
+    blt: Option<BallotNum>,
+    last: Option<BallotNum>,
+    cmds: Vec<Command>,
+    final_deps: Vec<InstanceID>,
+) {
+    let got = replica.storage.get_instance(iid).unwrap().unwrap();
+    assert_eq!(iid, got.instance_id.unwrap());
+    assert_eq!(blt, got.ballot);
+    assert_eq!(last, got.last_ballot);
+    assert_eq!(cmds, got.cmds);
+    assert_eq!(final_deps, got.final_deps);
 }
