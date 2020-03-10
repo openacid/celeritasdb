@@ -66,6 +66,69 @@ pub fn test_next_instance_id(
     assert_eq!(InstanceID::from((leader_id, 4)), got);
 }
 
+pub fn test_get_instance_iter(
+    eng: &mut dyn InstanceEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceID>,
+) {
+    let mut ints = Vec::<Instance>::new();
+
+    for rid in 1..4 {
+        for idx in 0..10 {
+            let iid = InstanceID::from((rid, idx));
+
+            let cmds = vec![Command::of(
+                OpCode::NoOp,
+                format!("k1{:}", rid * idx).as_bytes(),
+                format!("v1{:}", rid * idx).as_bytes(),
+            )];
+
+            let ballot = (rid as i32, idx as i32, 0).into();
+
+            let deps = vec![InstanceID::from((rid + 1, idx + 1))];
+
+            let mut inst = Instance::of(&cmds[..], ballot, &deps[..]);
+            inst.instance_id = Some(iid);
+
+            eng.set_instance(&inst).unwrap();
+
+            let act = eng.get_obj(iid).unwrap().unwrap();
+
+            assert_eq!(act.cmds, cmds);
+            assert_eq!(act.ballot, Some(ballot));
+
+            for (idx, inst_id) in act.initial_deps.iter().enumerate() {
+                assert_eq!(*inst_id, deps[idx]);
+            }
+
+            ints.push(inst);
+        }
+    }
+
+    let cases = vec![
+        ((1, 0).into(), true, &ints[..10]),
+        ((1, 1).into(), true, &ints[1..10]),
+        ((1, 9).into(), true, &ints[9..10]),
+        ((1, 10).into(), true, &[]),
+        ((3, 0).into(), true, &ints[20..3 * 10]),
+        ((0, 0).into(), true, &[]), // before any present instance.
+        ((6, 0).into(), true, &[]), // after all present instance.
+        ((1, 0).into(), false, &ints[1..10]),
+        ((1, 1).into(), false, &ints[2..10]),
+        ((1, 9).into(), false, &[]),
+        ((1, 10).into(), true, &[]),
+        ((3, 0).into(), false, &ints[21..3 * 10]),
+    ];
+
+    for (iid, include, exp_insts) in cases {
+        let mut n = 0;
+        for act_inst in eng.get_instance_iter(iid, include) {
+            assert_eq!(act_inst, exp_insts[n]);
+            n = n + 1;
+        }
+
+        assert_eq!(exp_insts.len(), n);
+    }
+}
+
 fn new_foo_inst(leader_id: i64) -> Instance {
     let iid1 = InstanceID::from((1, 10));
     let iid2 = InstanceID::from((2, 20));
@@ -86,4 +149,62 @@ fn new_foo_inst(leader_id: i64) -> Instance {
     inst.last_ballot = Some(ballot2);
 
     inst
+}
+
+pub fn test_base_trait(eng: &mut dyn Base) {
+    let none = eng.next_kv(&"init".as_bytes().to_vec(), true);
+    assert_eq!(none, None);
+
+    let prefix = "k".as_bytes().to_vec();
+    let kvs = vec![
+        ("k0".as_bytes().to_vec(), "v0".as_bytes().to_vec()),
+        ("k1".as_bytes().to_vec(), "v1".as_bytes().to_vec()),
+        ("k2".as_bytes().to_vec(), "v2".as_bytes().to_vec()),
+        ("k3".as_bytes().to_vec(), "v3".as_bytes().to_vec()),
+    ];
+
+    eng.set_kv(kvs[0].0.clone(), kvs[0].1.clone()).unwrap();
+    let v0 = eng.get_kv(&kvs[0].0).unwrap();
+    assert_eq!(v0, kvs[0].1.clone());
+
+    let next0 = eng.next_kv(&prefix, true);
+    assert_eq!(next0, Some(kvs[0].clone()));
+
+    for (k, v) in kvs.clone() {
+        eng.set_kv(k, v).unwrap();
+    }
+
+    let next0 = eng.next_kv(&kvs[0].0, true);
+    assert_eq!(next0, Some(kvs[0].clone()));
+
+    let next1 = eng.next_kv(&kvs[0].0, false);
+    assert_eq!(next1, Some(kvs[1].clone()));
+
+    let next_last = eng.next_kv(&kvs[3].0.clone(), false);
+    assert_eq!(next_last, None);
+
+    let iter = eng.get_iter(kvs[0].0.clone(), true);
+    for (idx, item) in iter.enumerate() {
+        assert_eq!(kvs[idx], item)
+    }
+}
+
+pub fn test_columned_trait(
+    eng: &mut dyn ColumnedEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceID>,
+) {
+    let cases = vec![(1i64, 2), (2i64, 3)];
+
+    for (rid, idx) in cases {
+        let iid = InstanceID::from((rid, idx));
+
+        eng.set_ref("max", rid, iid).unwrap();
+        let act = eng.get_ref("max", rid).unwrap();
+
+        assert_eq!(act, iid);
+
+        eng.set_ref("exec", rid, iid).unwrap();
+        let act = eng.get_ref("exec", rid).unwrap();
+
+        assert_eq!(act, iid);
+    }
 }

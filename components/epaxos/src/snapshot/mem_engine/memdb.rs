@@ -134,105 +134,15 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_kv() {
-        let cases = vec![("key1", "val1"), ("key2", "val2")];
-
-        for case in cases {
-            let mut engine = MemEngine::new().unwrap();
-
-            let k = case.0.as_bytes().to_vec();
-            let v = case.1.as_bytes().to_vec();
-
-            let _ = engine.set_kv(k.clone(), v.clone()).unwrap();
-            let act = engine.get_kv(&k).unwrap();
-
-            assert_eq!(v, act);
-        }
-    }
-
-    #[test]
-    fn test_instance() {
-        let mut ints = Vec::<Instance>::new();
-
+    fn test_base() {
         let mut engine = MemEngine::new().unwrap();
-
-        for rid in 1..4 {
-            for idx in 0..10 {
-                let iid = InstanceID::from((rid, idx));
-
-                let cmds = vec![Command::of(
-                    OpCode::NoOp,
-                    format!("k1{:}", rid * idx).as_bytes(),
-                    format!("v1{:}", rid * idx).as_bytes(),
-                )];
-
-                let ballot = (rid as i32, idx as i32, 0).into();
-
-                let deps = vec![InstanceID::from((rid + 1, idx + 1))];
-
-                let mut inst = Instance::of(&cmds[..], ballot, &deps[..]);
-                inst.instance_id = Some(iid);
-
-                engine.set_instance(&inst).unwrap();
-
-                let act = engine.get_obj(iid).unwrap().unwrap();
-
-                assert_eq!(act.cmds, cmds);
-                assert_eq!(act.ballot, Some(ballot));
-
-                for (idx, inst_id) in act.initial_deps.iter().enumerate() {
-                    assert_eq!(*inst_id, deps[idx]);
-                }
-
-                ints.push(inst);
-            }
-        }
-
-        let cases = vec![
-            ((1, 0).into(), true, &ints[..10]),
-            ((1, 1).into(), true, &ints[1..10]),
-            ((1, 9).into(), true, &ints[9..10]),
-            ((1, 10).into(), true, &[]),
-            ((3, 0).into(), true, &ints[20..3 * 10]),
-            ((0, 0).into(), true, &[]), // before any present instance.
-            ((6, 0).into(), true, &[]), // after all present instance.
-            ((1, 0).into(), false, &ints[1..10]),
-            ((1, 1).into(), false, &ints[2..10]),
-            ((1, 9).into(), false, &[]),
-            ((1, 10).into(), true, &[]),
-            ((3, 0).into(), false, &ints[21..3 * 10]),
-        ];
-
-        for (iid, include, exp_insts) in cases {
-            let mut n = 0;
-            for act_inst in engine.get_instance_iter(iid, include) {
-                assert_eq!(act_inst, exp_insts[n]);
-                n = n + 1;
-            }
-
-            assert_eq!(exp_insts.len(), n);
-        }
+        test_base_trait(&mut engine);
     }
 
     #[test]
-    fn test_status() {
-        let cases = vec![(1i64, 2), (2i64, 3)];
-
-        for (rid, idx) in cases {
-            let mut engine = MemEngine::new().unwrap();
-
-            let iid = InstanceID::from((rid, idx));
-
-            engine.set_ref("max", rid, iid).unwrap();
-            let act = engine.get_ref("max", rid).unwrap();
-
-            assert_eq!(act, iid);
-
-            engine.set_ref("exec", rid, iid).unwrap();
-            let act = engine.get_ref("exec", rid).unwrap();
-
-            assert_eq!(act, iid);
-        }
+    fn test_columned() {
+        let mut engine = MemEngine::new().unwrap();
+        test_columned_trait(&mut engine);
     }
 
     #[test]
@@ -248,7 +158,7 @@ mod tests {
     }
 
     #[test]
-    fn test_instance_engine() {
+    fn test_instance() {
         {
             let mut engine = MemEngine::new().unwrap();
             test_set_instance(&mut engine);
@@ -262,6 +172,11 @@ mod tests {
         {
             let mut engine = MemEngine::new().unwrap();
             test_next_instance_id(&mut engine);
+        }
+
+        {
+            let mut engine = MemEngine::new().unwrap();
+            test_get_instance_iter(&mut engine);
         }
     }
 }
