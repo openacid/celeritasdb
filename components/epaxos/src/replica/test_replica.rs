@@ -158,6 +158,7 @@ fn test_handle_accept_request() {
         let bigger = Some(bigger);
 
         curr.ballot = bigger;
+        curr.final_deps = vec![];
         replica.storage.set_instance(&curr).unwrap();
 
         let curr = replica.storage.get_instance(iid).unwrap().unwrap();
@@ -169,7 +170,7 @@ fn test_handle_accept_request() {
         _test_repl_cmn_ok(&repl.cmn.unwrap(), iid, bigger);
 
         // get the intact instance.
-        _test_get_inst(&replica, iid, bigger, blt, vec![], fdeps.clone());
+        _test_get_inst(&replica, iid, bigger, blt, vec![], vec![]);
     }
 
     // TODO test storage error
