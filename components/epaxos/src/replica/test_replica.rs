@@ -40,6 +40,26 @@ fn new_foo_replica(replica_id: i64) -> Replica {
     }
 }
 
+macro_rules! test_invalid_req {
+    ($replica:expr, $req_t:ident, $handle:path, $cases: expr) => {
+        for (cmn, etuple) in $cases.clone() {
+            let req = $req_t {
+                cmn,
+                ..Default::default()
+            };
+            let repl = $handle($replica, &req);
+            let err = repl.err.unwrap();
+            assert_eq!(
+                QError {
+                    req: Some(etuple.into()),
+                    ..Default::default()
+                },
+                err
+            );
+        }
+    };
+}
+
 #[test]
 fn test_handle_xxx_request_invalid() {
     let replica_id = 2;
@@ -73,39 +93,8 @@ fn test_handle_xxx_request_invalid() {
         ),
     ];
 
-    // InvalidRequest from accept
-    for (cmn, etuple) in cases.clone() {
-        let req = AcceptRequest {
-            cmn,
-            ..Default::default()
-        };
-        let repl = replica.handle_accept(&req);
-        let err = repl.err.unwrap();
-        assert_eq!(
-            QError {
-                req: Some(etuple.into()),
-                ..Default::default()
-            },
-            err
-        );
-    }
-
-    // InvalidRequest from commit
-    for (cmn, etuple) in cases.clone() {
-        let req = CommitRequest {
-            cmn,
-            ..Default::default()
-        };
-        let repl = replica.handle_commit(&req);
-        let err = repl.err.unwrap();
-        assert_eq!(
-            QError {
-                req: Some(etuple.into()),
-                ..Default::default()
-            },
-            err
-        );
-    }
+    test_invalid_req!(&mut replica, AcceptRequest, Replica::handle_accept, cases);
+    test_invalid_req!(&mut replica, CommitRequest, Replica::handle_commit, cases);
 }
 
 #[test]
