@@ -98,6 +98,156 @@ fn test_handle_xxx_request_invalid() {
 }
 
 #[test]
+fn test_handle_fast_accept_request() {
+    let replica_id = 1;
+    let mut replica = new_foo_replica(replica_id);
+    replica.group_replica_ids = vec![0, 1, 2];
+
+    {
+        let mut inst = new_foo_inst(replica_id);
+        let iid = inst.instance_id.unwrap();
+        let blt = inst.ballot;
+
+        let none = replica.storage.get_instance(iid).unwrap();
+        assert_eq!(None, none);
+
+        let deps_committed = vec![false, false, false];
+        let req = MakeRequest::fast_accept(replica_id, &inst, &deps_committed);
+        let repl = replica.handle_fast_accept(&req);
+
+        inst.deps = inst.initial_deps.clone();
+
+        assert_eq!(None, repl.err);
+        assert_eq!(deps_committed, repl.deps_committed);
+        assert_eq!(inst.deps, repl.deps);
+
+        _test_repl_cmn_ok(&repl.cmn.unwrap(), iid, blt);
+
+        // get the written instance.
+        _test_get_inst(&replica, iid, blt, blt, inst.cmds, vec![]);
+    }
+
+    {
+        // instance space layout, then a is replicated to R1
+        //               .c
+        //             /  |
+        // d          d   |
+        // |          |\ /
+        // a          a-b            c
+        // x y z      x y z      x y z
+        // -----      -----      -----
+        // R0         R1         R2
+
+        // below code that new instance is encapsulated in a func
+        // instx
+        let x_iid = (0, 0).into();
+        let cmd1 = ("Set", "key_x", "val_x").into();
+        let cmds = vec![cmd1];
+        let ballot = (0, 0, 0).into();
+        let initial_deps = vec![];
+
+        let mut instx = Instance::of(&cmds[..], ballot, &initial_deps[..]);
+        instx.deps = vec![(0, 0).into(), (0, 0).into(), (0, 0).into()];
+        instx.instance_id = Some(x_iid);
+        replica.storage.set_instance(&instx).unwrap();
+
+        // insty
+        let y_iid = (1, 0).into();
+        let cmd1 = ("Get", "key_y", "val_y").into();
+        let cmds = vec![cmd1];
+        let ballot = (0, 0, 1).into();
+        let initial_deps = vec![];
+
+        let mut insty = Instance::of(&cmds[..], ballot, &initial_deps[..]);
+        insty.deps = vec![(0, 0).into(), (0, 0).into(), (0, 0).into()];
+        insty.instance_id = Some(y_iid);
+        replica.storage.set_instance(&insty).unwrap();
+
+        // instz
+        let z_iid = (2, 0).into();
+        let cmd1 = ("Get", "key_z", "val_z").into();
+        let cmds = vec![cmd1];
+        let ballot = (0, 0, 2).into();
+        let initial_deps = vec![];
+
+        let mut instz = Instance::of(&cmds[..], ballot, &initial_deps[..]);
+        instz.deps = vec![(0, 0).into(), (0, 0).into(), (0, 0).into()];
+        instz.instance_id = Some(z_iid);
+        replica.storage.set_instance(&instz).unwrap();
+
+        // instb
+        let b_iid = (1, 1).into();
+        let cmd1 = ("Get", "key_b", "val_b").into();
+        let cmds = vec![cmd1];
+        let ballot = (0, 0, 1).into();
+        let initial_deps = vec![];
+
+        let mut instb = Instance::of(&cmds[..], ballot, &initial_deps[..]);
+        instb.deps = vec![x_iid, y_iid, z_iid];
+        instb.instance_id = Some(b_iid);
+        instb.committed = true;
+        replica.storage.set_instance(&instb).unwrap();
+
+        // insta
+        let a_iid = (0, 1).into();
+        let cmd1 = ("Get", "key_a", "val_a").into();
+        let cmds = vec![cmd1];
+        let ballot = (0, 0, 0).into();
+        let initial_deps = vec![x_iid, y_iid, z_iid];
+
+        let mut insta = Instance::of(&cmds[..], ballot, &initial_deps[..]);
+        insta.deps = vec![x_iid, y_iid, z_iid];
+        insta.instance_id = Some(a_iid);
+
+        // instd
+        let d_iid = (0, 2).into();
+        let cmd1 = ("Get", "key_d", "val_d").into();
+        let cmds = vec![cmd1];
+        let ballot = (0, 0, 0).into();
+        let initial_deps = vec![];
+
+        let mut instd = Instance::of(&cmds[..], ballot, &initial_deps[..]);
+        instd.deps = vec![a_iid, b_iid, z_iid];
+        instd.instance_id = Some(d_iid);
+        replica.storage.set_instance(&instd).unwrap();
+
+        // instc
+        let c_iid = (2, 3).into();
+        let cmd1 = ("Get", "key_z", "val_z").into();
+        let cmds = vec![cmd1];
+        let ballot = (0, 0, 2).into();
+        let initial_deps = vec![];
+
+        let mut instc = Instance::of(&cmds[..], ballot, &initial_deps[..]);
+        instc.deps = vec![d_iid, b_iid, z_iid];
+        instc.instance_id = Some(c_iid);
+        replica.storage.set_instance(&instc).unwrap();
+
+        let deps_committed = vec![false, true, false];
+        let req = MakeRequest::fast_accept(replica_id, &insta, &deps_committed);
+        let repl = replica.handle_fast_accept(&req);
+
+        insta.deps = vec![x_iid, b_iid, z_iid];
+
+        assert_eq!(None, repl.err);
+        assert_eq!(deps_committed, repl.deps_committed);
+        assert_eq!(insta.deps, repl.deps);
+
+        _test_repl_cmn_ok(&repl.cmn.unwrap(), insta.instance_id.unwrap(), insta.ballot);
+
+        // get the written instance.
+        _test_get_inst(
+            &replica,
+            insta.instance_id.unwrap(),
+            insta.ballot,
+            insta.ballot,
+            insta.cmds,
+            vec![],
+        );
+    }
+}
+
+#[test]
 fn test_handle_accept_request() {
     let replica_id = 2;
     let inst = new_foo_inst(replica_id);

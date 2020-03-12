@@ -96,8 +96,75 @@ impl Replica {
         Err("not implemented".to_string())
     }
 
-    fn handle_pre_accept(&mut self, req: &FastAcceptRequest) -> Result<FastAcceptReply, String> {
-        Err("not implemented".to_string())
+    pub fn handle_fast_accept(&mut self, req: &FastAcceptRequest) -> FastAcceptReply {
+        match self._fast_accept(req) {
+            Ok((inst, deps_committed)) => MakeReply::fast_accept(&inst, &deps_committed),
+            Err(e) => FastAcceptReply {
+                err: Some(e.to_qerr()),
+                ..Default::default()
+            },
+        }
+    }
+
+    fn _fast_accept(&mut self, req: &FastAcceptRequest) -> Result<(Instance, Vec<bool>), Error> {
+        let (ballot, iid) = self._check_req_common(&req.cmn)?;
+
+        let mut inst = match self.storage.get_instance(iid)? {
+            Some(v) => {
+                if v.ballot.is_none() || v.ballot.unwrap().num != 0 {
+                    return Err(Error::Existed {});
+                }
+                v
+            }
+            None => self._empty_instance(Some(iid)),
+        };
+
+        inst.ballot = Some(ballot);
+        inst.last_ballot = inst.ballot;
+
+        inst.cmds = req.cmds.clone();
+        inst.initial_deps = req.initial_deps.clone();
+        inst.deps = req.initial_deps.clone();
+
+        // TODO update local commited status by deps_committed[i] is true
+        let mut deps_committed = req.deps_committed.clone();
+
+        for rid in self.group_replica_ids.iter() {
+            let start_iid = (*rid, 0).into();
+
+            for x in self.storage.get_instance_iter(start_iid, true) {
+                if let Some(y) = x.deps.iter().find(|y| y.replica_id == iid.replica_id) {
+                    if y.idx >= iid.idx {
+                        continue;
+                    }
+                } else {
+                    continue;
+                }
+
+                if inst.conflict(&x) == false && x.committed == false {
+                    continue;
+                }
+
+                let x_iid = x.instance_id.unwrap();
+
+                if let Some(lx_idx) = inst
+                    .deps
+                    .iter()
+                    .position(|y| y.replica_id == x_iid.replica_id)
+                {
+                    if x_iid > inst.deps[lx_idx] {
+                        inst.deps[lx_idx] = x_iid;
+                        deps_committed[lx_idx] = x.committed;
+                    } else if x_iid == inst.deps[lx_idx] {
+                        deps_committed[lx_idx] = deps_committed[lx_idx] || x.committed;
+                    }
+                }
+            }
+        }
+
+        self.storage.set_instance(&inst)?;
+
+        Ok((inst, deps_committed))
     }
 
     pub fn handle_accept(&mut self, req: &AcceptRequest) -> AcceptReply {

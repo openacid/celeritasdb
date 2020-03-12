@@ -11,6 +11,8 @@ quick_error! {
 
         NotFound{}
 
+        Existed{}
+
         NoSuchReplica{
             replica_id: i64,
             my_replica_id: i64,
@@ -35,6 +37,11 @@ impl Error {
             },
 
             Self::NotFound {} => QError {
+                sto: Some(StorageFailure {}),
+                ..Default::default()
+            },
+
+            Self::Existed {} => QError {
                 sto: Some(StorageFailure {}),
                 ..Default::default()
             },
