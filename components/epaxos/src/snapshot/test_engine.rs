@@ -1,6 +1,6 @@
-use super::super::errors::*;
 use super::traits::*;
 use crate::qpaxos::*;
+use crate::snapshot::errors::*;
 
 pub fn test_set_instance(
     eng: &mut dyn InstanceEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceID>,
