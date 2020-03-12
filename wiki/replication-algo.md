@@ -27,8 +27,8 @@
   - [Slow path](#slow-path)
   - [Commit](#commit)
 - [Messages](#messages)
-  - [PreAccept request](#preaccept-request)
-  - [PreAccept reply](#preaccept-reply)
+  - [FastAccept request](#preaccept-request)
+  - [FastAccept reply](#preaccept-reply)
   - [Accept request](#accept-request)
   - [Accept reply](#accept-reply)
   - [Commit request](#commit-request)
@@ -44,7 +44,7 @@
 - [Execution algorithm](#execution-algorithm)
 - [Recover](#recover)
   - [Cases not need to recover:](#cases-not-need-to-recover)
-  - [Recover PreAccept instance](#recover-preaccept-instance)
+  - [Recover FastAccept instance](#recover-preaccept-instance)
   - [Recover one relation](#recover-one-relation)
     - [Case-1: R1 is unreachable, there could be two possibly committed value of a.deps[1].](#case-1-r1-is-unreachable-there-could-be-two-possibly-committed-value-of-adeps1)
       - [Lemma-1: R1 does not have a &lt; x on it](#lemma-1-r1-does-not-have-a--x-on-it)
@@ -66,7 +66,7 @@
 
 Major changes from epaxos:
 
-- When updating `deps`, only check against PreAccept phase values:
+- When updating `deps`, only check against FastAccept phase values:
   `deps` updated by Accept or Commit is ignored.
 
 - Instances by a same leader has a strong depends-on relation.
@@ -119,7 +119,7 @@ An instance has 4 attributes for `deps`:
 
 - `a.initialDeps`: is instance id set when `a` is created on leader.
 - `a.deps`: when `a` is created it is same as `a.initialDeps`.
-  when `a` is forwarded to other replica through PreAccept,
+  when `a` is forwarded to other replica through FastAccept,
   it is updated instnce id set.
 
 - `a.final_deps` is `deps` updated by Accept or Commit.
@@ -193,7 +193,7 @@ From definition, we infer that:
   a.deps  = a.initialDeps = all_instances_on_this_repilca
   ```
 
-- When a replica receives PreAccept of `a`,
+- When a replica receives FastAccept of `a`,
   it updates `a` to depend on
   all those do not have a relation `>` with `a`
 
@@ -483,11 +483,11 @@ Leader:
    a.initialDeps = a.deps
    ```
 
-2. PreAccept: forward `a` to other replicas.
+2. FastAccept: forward `a` to other replicas.
 
-3. Handle-PreAcceptReply
+3. Handle-FastAcceptReply
 
-   There are two step of PreAcceptReply:
+   There are two step of FastAcceptReply:
 
    If `a` has some committed instances in `a.deps`,
    update the commit status to local instance-space.
@@ -515,7 +515,7 @@ Leader:
 
 Non-leader replicas:
 
-1. Handle-PreAccept
+1. Handle-FastAccept
 
    TODO need proof of linearizability with this.
    TODO explain why this is efficient reducing conflict.
@@ -525,14 +525,15 @@ Non-leader replicas:
    > committed flag are ignored in this pseudo code for clarity
 
    ```
+   La = leaderOf(a)
    for x in all_instances_on_this_repilca:
-       Lx = leaderOf(x)
-       if (not x.deps[Lx] > a
+       if (not x.deps[La] >= a        # x does not depend on a
                and (
                    x ~ a
                    or x is committed
                )):
 
+           Lx = leaderOf(x)
            a.deps[Lx] = max(x, a.deps[Lx])
 
    reply(a)
@@ -560,10 +561,10 @@ Just commit.
 
 - All request messages have 3 common fields:
 
-  - `req_type` identify type: PreAccept, Accept, Commit or Prepare.
+  - `req_type` identify type: FastAccept, Accept, Commit or Prepare.
 
   - `ballot` is the ballot number,
-    - For PreAccept it is always `0`.
+    - For FastAccept it is always `0`.
     - Fast path Accept ballot is `1`.
     - Slow path Accept ballot is `2` or greater.
     - `ballot` in Commit message is useless.
@@ -576,13 +577,13 @@ Just commit.
   - `last_ballot` is the ballot number before processing the request.
   - `instance_id`.
 
-## PreAccept request
+## FastAccept request
 
 - `cmds`: the commands to run.
 - `initial_deps`: the deps when leader initiate the instance.
 - `deps_committed`: a vector of committed flag of every instance in `initial_deps`
 
-## PreAccept reply
+## FastAccept reply
 
 - `deps`: udpated deps by a replica.
 - `deps_committed`: a vector of committed flag of every instance in `deps`
@@ -723,9 +724,9 @@ After Preparing on a quorum(`F+1`):
 
   TODO explain ballot
 
-∴ `P` only need to recover if all of `a` it saw are in PreAccept phase.
+∴ `P` only need to recover if all of `a` it saw are in FastAccept phase.
 
-## Recover PreAccept instance
+## Recover FastAccept instance
 
 Recovery is to choose a value of `a.deps` that could have been committed on
 fast-path.
@@ -828,7 +829,7 @@ the committed `x.deps` must not contain `a`(`x < a`)
 
 ∵ `Nx = ⌊(F+1)/2⌋`.
 
-∴ There are at most `F - 1 + Nx = F + ⌊(F+1)/2⌋ - 1 < F + ⌊(F+1)/2⌋` replicas accepts `x < a` in PreAccept phase:
+∴ There are at most `F - 1 + Nx = F + ⌊(F+1)/2⌋ - 1 < F + ⌊(F+1)/2⌋` replicas accepts `x < a` in FastAccept phase:
 
 > `F` unreached replicas except `R0`, plus `Nx`.
 
