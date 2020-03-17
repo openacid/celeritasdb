@@ -9,6 +9,10 @@ message InstanceID {
     int64 idx = 2;
 };
 
+message InstanceIdVec {
+    repeated InstanceID ids = 1;
+}
+
 enum InstanceStatus {
     NA = 0;
     PreAccepted = 1;
