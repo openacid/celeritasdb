@@ -13,6 +13,7 @@ fn main() {
             "InstanceId",
             "#[derive(Copy, Eq, Ord, PartialOrd, derive_more::From)]",
         )
+        .type_attribute("InstanceIdVec", "#[derive(derive_more::From)]")
         .type_attribute(
             "BallotNum",
             "#[derive(Copy, Eq, Ord, PartialOrd, derive_more::From)]",

@@ -69,7 +69,7 @@ fn test_instance_id_vec_index() {
 }
 
 #[test]
-#[should_panic(expect = "NotFound instance_id with replica_id=2")]
+#[should_panic(expected = "NotFound instance_id with replica_id=2")]
 fn test_instance_id_vec_index_panic() {
     let ids = InstanceIdVec {
         ids: vec![(1, 2).into(), (3, 4).into()],
@@ -101,4 +101,122 @@ fn test_instance_id_vec_with_dup() {
 
     assert_eq!(ids.ids[0], ids[1]);
     assert_eq!(ids.ids[1], ids[3]);
+}
+
+#[test]
+fn test_instance_id_vec_from() {
+    let iid = InstanceId::from((1, 2));
+
+    let sl: &[_] = &[iid];
+    let ids: InstanceIdVec = sl.into();
+    assert_eq!(iid, ids[1]);
+
+    let ids: InstanceIdVec = vec![iid].into();
+    assert_eq!(iid, ids[1]);
+
+    let sl: &[_] = &[(1, 2), (3, 4)];
+    let ids: InstanceIdVec = sl.into();
+    assert_eq!(iid, ids[1]);
+
+    let sl: &[(i32, i64)] = &[(1, 2), (3, 4)];
+    let ids: InstanceIdVec = sl.into();
+    assert_eq!(iid, ids[1]);
+}
+
+#[test]
+fn test_instance_id_vec_from_array() {
+    let iid = InstanceId::from((1, 2));
+
+    let arr: [i32; 0] = [];
+    let ids: InstanceIdVec = arr.into();
+
+    let arr = [(1, 2)];
+    let ids: InstanceIdVec = arr.into();
+    assert_eq!(iid, ids[1]);
+
+    let arr = [(1, 2), (3, 4)];
+    let ids: InstanceIdVec = arr.into();
+    assert_eq!(iid, ids[1]);
+
+    let arr = [(1, 2), (3, 4), (5, 6)];
+    let ids: InstanceIdVec = arr.into();
+    assert_eq!(iid, ids[1]);
+
+    let arr = [(1, 2), (3, 4), (5, 6), (7, 8)];
+    let ids: InstanceIdVec = arr.into();
+    assert_eq!(iid, ids[1]);
+
+    let arr = [(1, 2), (3, 4), (5, 6), (7, 8), (9, 10)];
+    let ids: InstanceIdVec = arr.into();
+    assert_eq!(iid, ids[1]);
+
+    let arr = [(1, 2), (3, 4), (5, 6), (7, 8), (9, 10), (11, 12)];
+    let ids: InstanceIdVec = arr.into();
+    assert_eq!(iid, ids[1]);
+
+    let arr = [(1, 2), (3, 4), (5, 6), (7, 8), (9, 10), (11, 12), (13, 14)];
+    let ids: InstanceIdVec = arr.into();
+    assert_eq!(iid, ids[1]);
+
+    let arr = [
+        (1, 2),
+        (3, 4),
+        (5, 6),
+        (7, 8),
+        (9, 10),
+        (11, 12),
+        (13, 14),
+        (15, 16),
+    ];
+    let ids: InstanceIdVec = arr.into();
+    assert_eq!(iid, ids[1]);
+}
+
+#[test]
+fn test_instance_id_vec_from_array_ref() {
+    let iid = InstanceId::from((1, 2));
+
+    let arr: &[i32; 0] = &[];
+    let ids: InstanceIdVec = arr.into();
+
+    let arr = &[(1, 2)];
+    let ids: InstanceIdVec = arr.into();
+    assert_eq!(iid, ids[1]);
+
+    let arr = &[(1, 2), (3, 4)];
+    let ids: InstanceIdVec = arr.into();
+    assert_eq!(iid, ids[1]);
+
+    let arr = &[(1, 2), (3, 4), (5, 6)];
+    let ids: InstanceIdVec = arr.into();
+    assert_eq!(iid, ids[1]);
+
+    let arr = &[(1, 2), (3, 4), (5, 6), (7, 8)];
+    let ids: InstanceIdVec = arr.into();
+    assert_eq!(iid, ids[1]);
+
+    let arr = &[(1, 2), (3, 4), (5, 6), (7, 8), (9, 10)];
+    let ids: InstanceIdVec = arr.into();
+    assert_eq!(iid, ids[1]);
+
+    let arr = &[(1, 2), (3, 4), (5, 6), (7, 8), (9, 10), (11, 12)];
+    let ids: InstanceIdVec = arr.into();
+    assert_eq!(iid, ids[1]);
+
+    let arr = &[(1, 2), (3, 4), (5, 6), (7, 8), (9, 10), (11, 12), (13, 14)];
+    let ids: InstanceIdVec = arr.into();
+    assert_eq!(iid, ids[1]);
+
+    let arr = &[
+        (1, 2),
+        (3, 4),
+        (5, 6),
+        (7, 8),
+        (9, 10),
+        (11, 12),
+        (13, 14),
+        (15, 16),
+    ];
+    let ids: InstanceIdVec = arr.into();
+    assert_eq!(iid, ids[1]);
 }

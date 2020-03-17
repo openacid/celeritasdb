@@ -166,6 +166,64 @@ impl InstanceIdVec {
     }
 }
 
+impl From<&[InstanceId]> for InstanceIdVec {
+    fn from(v: &[InstanceId]) -> InstanceIdVec {
+        InstanceIdVec { ids: v.into() }
+    }
+}
+
+impl<A: Into<ReplicaID> + Copy, B: Into<i64> + Copy> From<&[(A, B)]> for InstanceIdVec {
+    fn from(v: &[(A, B)]) -> InstanceIdVec {
+        let x: Vec<InstanceId> = v
+            .iter()
+            .map(|x| InstanceId {
+                replica_id: x.0.into(),
+                idx: x.1.into(),
+            })
+            .collect();
+        x.to_vec().into()
+    }
+}
+
+impl<A> From<&[A; 0]> for InstanceIdVec {
+    fn from(_v: &[A; 0]) -> InstanceIdVec {
+        InstanceIdVec { ids: vec![] }
+    }
+}
+
+impl<A> From<[A; 0]> for InstanceIdVec {
+    fn from(_v: [A; 0]) -> InstanceIdVec {
+        InstanceIdVec { ids: vec![] }
+    }
+}
+
+macro_rules! impl_instance_id_vec {
+    ($n:expr) => {
+        impl<A: Into<ReplicaID> + Copy, B: Into<i64> + Copy> From<&[(A, B); $n]> for InstanceIdVec {
+            fn from(v: &[(A, B); $n]) -> InstanceIdVec {
+                let q: &[_] = v;
+                q.into()
+            }
+        }
+
+        impl<A: Into<ReplicaID> + Copy, B: Into<i64> + Copy> From<[(A, B); $n]> for InstanceIdVec {
+            fn from(v: [(A, B); $n]) -> InstanceIdVec {
+                let q: &[_] = &v;
+                q.into()
+            }
+        }
+    };
+}
+
+impl_instance_id_vec!(1);
+impl_instance_id_vec!(2);
+impl_instance_id_vec!(3);
+impl_instance_id_vec!(4);
+impl_instance_id_vec!(5);
+impl_instance_id_vec!(6);
+impl_instance_id_vec!(7);
+impl_instance_id_vec!(8);
+
 impl ToKey for Instance {
     fn to_key(&self) -> Vec<u8> {
         self.instance_id.as_ref().unwrap().to_key()
