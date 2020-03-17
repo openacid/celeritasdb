@@ -21,8 +21,8 @@ fn new_foo_inst() -> Instance {
     let mut inst = Instance::of(&cmds[..], ballot, &initial_deps[..]);
     // TODO move these to Instance::new_instance
     inst.instance_id = Some(inst_id1);
-    inst.deps = [inst_id2].to_vec();
-    inst.final_deps = [inst_id3].to_vec();
+    inst.deps = Some(vec![inst_id2].into());
+    inst.final_deps = Some(vec![inst_id3].into());
     inst.last_ballot = Some(ballot2);
 
     inst
@@ -151,77 +151,77 @@ fn test_instance_after() {
     let cases = vec![
         (
             Instance {
-                final_deps: vec![(1, 1).into()],
+                final_deps: Some([(1, 1)].into()),
                 ..Default::default()
             },
             Instance {
-                final_deps: vec![(1, 1).into()],
+                final_deps: Some([(1, 1)].into()),
                 ..Default::default()
             },
             false,
         ),
         (
             Instance {
-                final_deps: vec![(1, 1).into()],
+                final_deps: Some([(1, 1)].into()),
                 ..Default::default()
             },
             Instance {
-                final_deps: vec![(1, 0).into()],
+                final_deps: Some([(1, 0)].into()),
                 ..Default::default()
             },
             true,
         ),
         (
             Instance {
-                final_deps: vec![(1, 1).into(), (2, 1).into()],
+                final_deps: Some([(1, 1), (2, 1)].into()),
                 ..Default::default()
             },
             Instance {
-                final_deps: vec![(1, 1).into(), (2, 1).into()],
+                final_deps: Some([(1, 1), (2, 1)].into()),
                 ..Default::default()
             },
             false,
         ),
         (
             Instance {
-                final_deps: vec![(1, 1).into(), (2, 1).into()],
+                final_deps: Some([(1, 1), (2, 1)].into()),
                 ..Default::default()
             },
             Instance {
-                final_deps: vec![(1, 1).into(), (2, 0).into()],
+                final_deps: Some([(1, 1), (2, 0)].into()),
                 ..Default::default()
             },
             true,
         ),
         (
             Instance {
-                final_deps: vec![(1, 1).into(), (2, 1).into(), (3, 1).into()],
+                final_deps: Some([(1, 1), (2, 1), (3, 1)].into()),
                 ..Default::default()
             },
             Instance {
-                final_deps: vec![(1, 1).into(), (2, 1).into()],
-                ..Default::default()
-            },
-            false,
-        ),
-        (
-            Instance {
-                final_deps: vec![(1, 1).into(), (2, 1).into()],
-                ..Default::default()
-            },
-            Instance {
-                final_deps: vec![(1, 1).into(), (2, 1).into(), (3, 1).into()],
+                final_deps: Some([(1, 1), (2, 1)].into()),
                 ..Default::default()
             },
             false,
         ),
         (
             Instance {
-                final_deps: vec![(1, 2).into(), (2, 1).into()],
+                final_deps: Some([(1, 1), (2, 1)].into()),
                 ..Default::default()
             },
             Instance {
-                final_deps: vec![(1, 1).into(), (2, 1).into(), (3, 1).into()],
+                final_deps: Some([(1, 1), (2, 1), (3, 1)].into()),
+                ..Default::default()
+            },
+            false,
+        ),
+        (
+            Instance {
+                final_deps: Some([(1, 2), (2, 1)].into()),
+                ..Default::default()
+            },
+            Instance {
+                final_deps: Some([(1, 1), (2, 1), (3, 1)].into()),
                 ..Default::default()
             },
             true,

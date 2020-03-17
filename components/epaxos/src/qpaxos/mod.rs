@@ -251,16 +251,20 @@ impl Instance {
         Instance {
             cmds: cmds.into(),
             ballot: Some(ballot),
-            initial_deps: deps.into(),
+            initial_deps: Some(deps.into()),
             ..Default::default()
         }
     }
 
     pub fn after(&self, other: &Instance) -> bool {
         let mut great = false;
-        for iid in other.final_deps.iter() {
+        // TODO unwrap
+        for iid in other.final_deps.as_ref().unwrap().iter() {
             match self
                 .final_deps
+                // TODO unwrap
+                .as_ref()
+                .unwrap()
                 .iter()
                 .find(|x| x.replica_id == iid.replica_id)
             {

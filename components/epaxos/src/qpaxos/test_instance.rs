@@ -87,6 +87,18 @@ fn test_instance_id_vec_get() {
     assert_eq!(ids.ids[0], ids.get(1).unwrap());
     assert_eq!(ids.ids[1], ids.get(3).unwrap());
     assert_eq!(None, ids.get(2));
+
+    let refids = &ids;
+    assert_eq!(ids.ids[0], refids.get(1).unwrap());
+    assert_eq!(ids.ids[1], refids.get(3).unwrap());
+    assert_eq!(None, ids.get(2));
+
+    let sm = Some(ids.clone());
+    let refids = sm.as_ref().unwrap();
+
+    assert_eq!(ids.ids[0], refids.get(1i64).unwrap());
+    assert_eq!(ids.ids[1], refids.get(3).unwrap());
+    assert_eq!(None, refids.get(2));
 }
 
 #[test]

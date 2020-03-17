@@ -33,7 +33,8 @@ impl Replica {
         let mut rst: Vec<InstanceId> = Vec::new();
 
         for inst in min_insts {
-            for dep_inst_id in inst.final_deps.iter() {
+            // TODO unwrap would panic
+            for dep_inst_id in inst.final_deps.as_ref().unwrap().iter() {
                 if let Some(_) = min_insts.iter().find(|x| match &x.instance_id {
                     Some(iid) => return iid.replica_id == dep_inst_id.replica_id,
                     None => return false,

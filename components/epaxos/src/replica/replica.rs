@@ -133,31 +133,61 @@ impl Replica {
         for rid in self.group_replica_ids.iter() {
             let start_iid = (*rid, i64::MAX).into();
 
-            for x in self.storage.get_instance_iter(start_iid, true, true) {
-                if let Some(y) = x.deps.iter().find(|y| y.replica_id == iid.replica_id) {
+            for local_inst in self.storage.get_instance_iter(start_iid, true, true) {
+                if local_inst.deps == None {
+                    continue;
+                };
+
+                if let Some(y) = local_inst
+                    .deps
+                    .as_ref()
+                    .unwrap()
+                    .iter()
+                    .find(|y| y.replica_id == iid.replica_id)
+                {
                     if y.idx >= iid.idx {
                         continue;
                     }
                 } else {
                     continue;
                 }
+                // TODO try this snippet. not passed. do it later. -- xp
+                // let q = match local_inst.deps {
+                //     Some(v) => &v,
+                //     None => continue
+                // };
 
-                if inst.conflict(&x) == false && x.committed == false {
+                // q.get(iid.replica_id);
+
+                // let y = local_inst.deps.unwrap().get(iid.replica_id);
+                // let y = match y {
+                //     Some(v) => v,
+                //     None => continue
+                // };
+                // // local_inst already depends on req.instance, thus req.instance would never depends on local_inst
+                // if y.idx >= iid.idx {
+                //     continue;
+                // }
+
+                if inst.conflict(&local_inst) == false && local_inst.committed == false {
                     continue;
                 }
 
-                let x_iid = x.instance_id.unwrap();
+                let x_iid = local_inst.instance_id.unwrap();
 
                 if let Some(lx_idx) = inst
                     .deps
+                    .as_ref()
+                    // TODO unwrap
+                    .unwrap()
                     .iter()
                     .position(|y| y.replica_id == x_iid.replica_id)
                 {
-                    if x_iid > inst.deps[lx_idx] {
-                        inst.deps[lx_idx] = x_iid;
-                        deps_committed[lx_idx] = x.committed;
-                    } else if x_iid == inst.deps[lx_idx] {
-                        deps_committed[lx_idx] = deps_committed[lx_idx] || x.committed;
+                    if x_iid > inst.deps.as_ref().unwrap().ids[lx_idx] {
+                        inst.deps.as_mut().unwrap().ids[lx_idx] = x_iid;
+                        deps_committed[lx_idx] = local_inst.committed;
+                    } else if x_iid == inst.deps.as_ref().unwrap().ids[lx_idx] {
+                        deps_committed[lx_idx] = deps_committed[lx_idx] || local_inst.committed;
                     }
                 }
             }

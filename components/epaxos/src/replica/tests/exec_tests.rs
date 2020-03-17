@@ -26,7 +26,7 @@ fn test_find_missing_instances() {
         (
             vec![Instance {
                 instance_id: Some((1, 2).into()),
-                final_deps: vec![(1, 1).into()],
+                final_deps: Some([(1, 1)].into()),
                 ..Default::default()
             }],
             vec![InstanceId::from((1, 1))],
@@ -43,12 +43,12 @@ fn test_find_missing_instances() {
             vec![
                 Instance {
                     instance_id: Some((1, 2).into()),
-                    final_deps: vec![(1, 1).into(), (2, 1).into(), (3, 3).into()],
+                    final_deps: Some([(1, 1), (2, 1), (3, 3)].into()),
                     ..Default::default()
                 },
                 Instance {
                     instance_id: Some((2, 2).into()),
-                    final_deps: vec![(1, 1).into(), (2, 1).into(), (3, 5).into()],
+                    final_deps: Some([(1, 1), (2, 1), (3, 5)].into()),
                     ..Default::default()
                 },
             ],
@@ -77,7 +77,7 @@ fn test_find_missing_instances() {
         (
             vec![Instance {
                 instance_id: Some((1, 2).into()),
-                final_deps: vec![(1, 1).into(), (2, 6).into(), (3, 6).into()],
+                final_deps: Some([(1, 1), (2, 6), (3, 6)].into()),
                 ..Default::default()
             }],
             vec![InstanceId::from((1, 1)), (2, 5).into(), (3, 5).into()],
@@ -97,12 +97,12 @@ fn test_find_missing_instances() {
             vec![
                 Instance {
                     instance_id: Some((1, 2).into()),
-                    final_deps: vec![(1, 1).into(), (2, 1).into(), (3, 1).into()],
+                    final_deps: Some([(1, 1), (2, 1), (3, 1)].into()),
                     ..Default::default()
                 },
                 Instance {
                     instance_id: Some((2, 2).into()),
-                    final_deps: vec![(1, 1).into(), (2, 1).into(), (3, 3).into()],
+                    final_deps: Some([(1, 1), (2, 1), (3, 3)].into()),
                     ..Default::default()
                 },
             ],
@@ -205,19 +205,19 @@ fn test_execute_instances() {
         Instance {
             instance_id: Some((1, 1).into()),
             cmds: vec![Command::of(OpCode::Set, &[2], &[222])],
-            final_deps: vec![(1, 0).into(), (2, 0).into(), (3, 0).into()],
+            final_deps: Some([(1, 0), (2, 0), (3, 0)].into()),
             ..Default::default()
         },
         Instance {
             instance_id: Some(InstanceId::from((2, 1))),
             cmds: vec![Command::of(OpCode::NoOp, &[], &[])],
-            final_deps: vec![(1, 1).into(), (2, 0).into(), (3, 0).into()],
+            final_deps: Some([(1, 1), (2, 0), (3, 0)].into()),
             ..Default::default()
         },
         Instance {
             instance_id: Some((3, 1).into()),
             cmds: vec![Command::of(OpCode::Set, &[1], &[11])],
-            final_deps: vec![(1, 1).into(), (2, 1).into(), (3, 0).into()],
+            final_deps: Some([(1, 1), (2, 1), (3, 0)].into()),
             ..Default::default()
         },
     ];
@@ -232,19 +232,19 @@ fn test_execute_instances() {
         Instance {
             instance_id: Some((1, 1).into()),
             cmds: vec![Command::of(OpCode::Set, &[2], &[222])],
-            final_deps: vec![(1, 0).into(), (2, 1).into(), (3, 0).into()],
+            final_deps: Some([(1, 0), (2, 1), (3, 0)].into()),
             ..Default::default()
         },
         Instance {
             instance_id: Some(InstanceId::from((2, 1))),
             cmds: vec![Command::of(OpCode::NoOp, &[], &[])],
-            final_deps: vec![(1, 1).into(), (2, 0).into(), (3, 0).into()],
+            final_deps: Some([(1, 1), (2, 0), (3, 0)].into()),
             ..Default::default()
         },
         Instance {
             instance_id: Some((3, 1).into()),
             cmds: vec![Command::of(OpCode::Set, &[1], &[11])],
-            final_deps: vec![(1, 1).into(), (2, 0).into(), (3, 0).into()],
+            final_deps: Some([(1, 1), (2, 0), (3, 0)].into()),
             ..Default::default()
         },
     ];
@@ -264,19 +264,19 @@ fn test_execute_instances() {
         Instance {
             instance_id: Some((1, 1).into()),
             cmds: vec![Command::of(OpCode::Set, &[2], &[222])],
-            final_deps: vec![(1, 0).into(), (2, 1).into(), (3, 0).into()],
+            final_deps: Some([(1, 0), (2, 1), (3, 0)].into()),
             ..Default::default()
         },
         Instance {
             instance_id: Some(InstanceId::from((2, 1))),
             cmds: vec![Command::of(OpCode::NoOp, &[], &[])],
-            final_deps: vec![(1, 1).into(), (2, 0).into(), (3, 0).into()],
+            final_deps: Some([(1, 1), (2, 0), (3, 0)].into()),
             ..Default::default()
         },
         Instance {
             instance_id: Some((3, 1).into()),
             cmds: vec![Command::of(OpCode::Set, &[1], &[11])],
-            final_deps: vec![(1, 1).into(), (2, 1).into(), (3, 0).into()],
+            final_deps: Some([(1, 1), (2, 1), (3, 0)].into()),
             ..Default::default()
         },
     ];
@@ -303,7 +303,7 @@ fn test_replica_execute() {
         (
             vec![Instance {
                 instance_id: Some((1, 1).into()),
-                final_deps: vec![(1, 0).into(), (2, 0).into(), (3, 0).into()],
+                final_deps: Some([(1, 0), (2, 0), (3, 0)].into()),
                 committed: true,
                 ..Default::default()
             }],
@@ -325,19 +325,19 @@ fn test_replica_execute() {
             vec![
                 Instance {
                     instance_id: Some((1, 2).into()),
-                    final_deps: vec![(1, 1).into(), (2, 1).into(), (3, 1).into()],
+                    final_deps: Some([(1, 1), (2, 1), (3, 1)].into()),
                     committed: true,
                     ..Default::default()
                 },
                 Instance {
                     instance_id: Some((2, 2).into()),
-                    final_deps: vec![(1, 2).into(), (2, 1).into(), (3, 1).into()],
+                    final_deps: Some([(1, 2), (2, 1), (3, 1)].into()),
                     committed: true,
                     ..Default::default()
                 },
                 Instance {
                     instance_id: Some((3, 2).into()),
-                    final_deps: vec![(1, 2).into(), (2, 2).into(), (3, 1).into()],
+                    final_deps: Some([(1, 2), (2, 2), (3, 1)].into()),
                     committed: true,
                     ..Default::default()
                 },
@@ -360,19 +360,19 @@ fn test_replica_execute() {
             vec![
                 Instance {
                     instance_id: Some((1, 3).into()),
-                    final_deps: vec![(1, 2).into(), (2, 3).into(), (3, 2).into()],
+                    final_deps: Some([(1, 2), (2, 3), (3, 2)].into()),
                     committed: true,
                     ..Default::default()
                 },
                 Instance {
                     instance_id: Some((2, 3).into()),
-                    final_deps: vec![(1, 3).into(), (2, 2).into(), (3, 2).into()],
+                    final_deps: Some([(1, 3), (2, 2), (3, 2)].into()),
                     committed: true,
                     ..Default::default()
                 },
                 Instance {
                     instance_id: Some((3, 3).into()),
-                    final_deps: vec![(1, 3).into(), (2, 2).into(), (3, 2).into()],
+                    final_deps: Some([(1, 3), (2, 2), (3, 2)].into()),
                     committed: true,
                     ..Default::default()
                 },
@@ -386,19 +386,19 @@ fn test_replica_execute() {
             vec![
                 Instance {
                     instance_id: Some((1, 4).into()),
-                    final_deps: vec![(1, 3).into(), (2, 4).into(), (3, 4).into()],
+                    final_deps: Some([(1, 3), (2, 4), (3, 4)].into()),
                     committed: true,
                     ..Default::default()
                 },
                 Instance {
                     instance_id: Some((2, 4).into()),
-                    final_deps: vec![(1, 3).into(), (2, 3).into(), (3, 4).into()],
+                    final_deps: Some([(1, 3), (2, 3), (3, 4)].into()),
                     committed: true,
                     ..Default::default()
                 },
                 Instance {
                     instance_id: Some((3, 4).into()),
-                    final_deps: vec![(1, 4).into(), (2, 4).into(), (3, 3).into()],
+                    final_deps: Some([(1, 4), (2, 4), (3, 3)].into()),
                     committed: true,
                     ..Default::default()
                 },
@@ -412,13 +412,13 @@ fn test_replica_execute() {
             vec![
                 Instance {
                     instance_id: Some((2, 5).into()),
-                    final_deps: vec![(1, 5).into(), (2, 4).into(), (3, 5).into()],
+                    final_deps: Some([(1, 5), (2, 4), (3, 5)].into()),
                     committed: true,
                     ..Default::default()
                 },
                 Instance {
                     instance_id: Some((3, 5).into()),
-                    final_deps: vec![(1, 4).into(), (2, 5).into(), (3, 4).into()],
+                    final_deps: Some([(1, 4), (2, 5), (3, 4)].into()),
                     committed: true,
                     ..Default::default()
                 },

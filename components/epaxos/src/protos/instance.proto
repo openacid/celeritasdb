@@ -36,16 +36,16 @@ message Instance {
     repeated Command cmds  = 21;
 
     // initial_deps is the dependent instance ids when an instance is created.
-    repeated InstanceId initial_deps                = 31;
+    InstanceIdVec initial_deps                = 31;
 
     // deps is the updated instance ids on a replica when handling PreAccept
     // request.
     // When an instance is intiated, it is same as initial_deps.
-    repeated InstanceId deps                        = 32;
+    InstanceIdVec deps                        = 32;
 
     // final_deps is the final dependency chosen by instance leader or recover
     // process, and is set by Accept request or Commit request.
-    repeated InstanceId final_deps                  = 41;
+    InstanceIdVec final_deps                  = 41;
 
     // An instance has several status thus one status field is not enough.
     // To determine the instance status:

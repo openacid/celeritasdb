@@ -17,8 +17,8 @@ fn new_foo_inst(leader_id: i64) -> Instance {
     let mut inst = Instance::of(&cmds[..], ballot, &initial_deps[..]);
     // TODO move these to Instance::new_instance
     inst.instance_id = Some((leader_id, 1).into());
-    inst.deps = [iid2].to_vec();
-    inst.final_deps = [iid3].to_vec();
+    inst.deps = Some([iid2].to_vec().into());
+    inst.final_deps = Some([iid3].to_vec().into());
     inst.last_ballot = Some(ballot2);
 
     inst
@@ -124,7 +124,7 @@ fn test_handle_fast_accept_request() {
         _test_repl_cmn_ok(&repl.cmn.unwrap(), iid, blt);
 
         // get the written instance.
-        _test_get_inst(&replica, iid, blt, blt, inst.cmds, vec![]);
+        _test_get_inst(&replica, iid, blt, blt, inst.cmds, None);
     }
 
     {
@@ -147,7 +147,7 @@ fn test_handle_fast_accept_request() {
         let initial_deps = vec![];
 
         let mut instx = Instance::of(&cmds[..], ballot, &initial_deps[..]);
-        instx.deps = vec![(0, 0).into(), (0, 0).into(), (0, 0).into()];
+        instx.deps = Some([(0, 0), (0, 0), (0, 0)].into());
         instx.instance_id = Some(x_iid);
         replica.storage.set_instance(&instx).unwrap();
 
@@ -159,7 +159,7 @@ fn test_handle_fast_accept_request() {
         let initial_deps = vec![];
 
         let mut insty = Instance::of(&cmds[..], ballot, &initial_deps[..]);
-        insty.deps = vec![(0, 0).into(), (0, 0).into(), (0, 0).into()];
+        insty.deps = Some([(0, 0), (0, 0), (0, 0)].into());
         insty.instance_id = Some(y_iid);
         replica.storage.set_instance(&insty).unwrap();
 
@@ -171,7 +171,7 @@ fn test_handle_fast_accept_request() {
         let initial_deps = vec![];
 
         let mut instz = Instance::of(&cmds[..], ballot, &initial_deps[..]);
-        instz.deps = vec![(0, 0).into(), (0, 0).into(), (0, 0).into()];
+        instz.deps = Some([(0, 0), (0, 0), (0, 0)].into());
         instz.instance_id = Some(z_iid);
         replica.storage.set_instance(&instz).unwrap();
 
@@ -183,7 +183,7 @@ fn test_handle_fast_accept_request() {
         let initial_deps = vec![];
 
         let mut instb = Instance::of(&cmds[..], ballot, &initial_deps[..]);
-        instb.deps = vec![x_iid, y_iid, z_iid];
+        instb.deps = Some(vec![x_iid, y_iid, z_iid].into());
         instb.instance_id = Some(b_iid);
         instb.committed = true;
         replica.storage.set_instance(&instb).unwrap();
@@ -196,7 +196,7 @@ fn test_handle_fast_accept_request() {
         let initial_deps = vec![x_iid, y_iid, z_iid];
 
         let mut insta = Instance::of(&cmds[..], ballot, &initial_deps[..]);
-        insta.deps = vec![x_iid, y_iid, z_iid];
+        insta.deps = Some(vec![x_iid, y_iid, z_iid].into());
         insta.instance_id = Some(a_iid);
 
         // instd
@@ -207,7 +207,7 @@ fn test_handle_fast_accept_request() {
         let initial_deps = vec![];
 
         let mut instd = Instance::of(&cmds[..], ballot, &initial_deps[..]);
-        instd.deps = vec![a_iid, b_iid, z_iid];
+        instd.deps = Some(vec![a_iid, b_iid, z_iid].into());
         instd.instance_id = Some(d_iid);
         replica.storage.set_instance(&instd).unwrap();
 
@@ -219,7 +219,7 @@ fn test_handle_fast_accept_request() {
         let initial_deps = vec![];
 
         let mut instc = Instance::of(&cmds[..], ballot, &initial_deps[..]);
-        instc.deps = vec![d_iid, b_iid, z_iid];
+        instc.deps = Some(vec![d_iid, b_iid, z_iid].into());
         instc.instance_id = Some(c_iid);
         replica.storage.set_instance(&instc).unwrap();
 
@@ -227,7 +227,7 @@ fn test_handle_fast_accept_request() {
         let req = MakeRequest::fast_accept(replica_id, &insta, &deps_committed);
         let repl = replica.handle_fast_accept(&req);
 
-        insta.deps = vec![x_iid, b_iid, z_iid];
+        insta.deps = Some(vec![x_iid, b_iid, z_iid].into());
 
         assert_eq!(None, repl.err);
         assert_eq!(deps_committed, repl.deps_committed);
@@ -242,7 +242,7 @@ fn test_handle_fast_accept_request() {
             insta.ballot,
             insta.ballot,
             insta.cmds,
-            vec![],
+            None,
         );
     }
 }
@@ -297,7 +297,7 @@ fn test_handle_accept_request() {
         let bigger = Some(bigger);
 
         curr.ballot = bigger;
-        curr.final_deps = vec![];
+        curr.final_deps = Some(vec![].into());
         replica.storage.set_instance(&curr).unwrap();
 
         let curr = replica.storage.get_instance(iid).unwrap().unwrap();
@@ -309,7 +309,7 @@ fn test_handle_accept_request() {
         _test_repl_cmn_ok(&repl.cmn.unwrap(), iid, bigger);
 
         // get the intact instance.
-        _test_get_inst(&replica, iid, bigger, blt, vec![], vec![]);
+        _test_get_inst(&replica, iid, bigger, blt, vec![], Some(vec![].into()));
     }
 
     // TODO test storage error
@@ -364,7 +364,7 @@ fn _test_get_inst(
     blt: Option<BallotNum>,
     last: Option<BallotNum>,
     cmds: Vec<Command>,
-    final_deps: Vec<InstanceId>,
+    final_deps: Option<InstanceIdVec>,
 ) {
     let got = replica.storage.get_instance(iid).unwrap().unwrap();
     assert_eq!(iid, got.instance_id.unwrap());

@@ -33,17 +33,17 @@ message RequestCommon {
 message FastAcceptRequest {
     RequestCommon cmn = 1;
     repeated Command     cmds           = 21;
-    repeated InstanceId initial_deps   = 31;
+    InstanceIdVec        initial_deps   = 31;
     repeated bool                deps_committed = 33;
 }
 message AcceptRequest {
     RequestCommon cmn = 1;
-    repeated InstanceId final_deps     = 41;
+    InstanceIdVec final_deps = 41;
 }
 message CommitRequest {
     RequestCommon cmn = 1;
     repeated Command     cmds           = 21;
-    repeated InstanceId final_deps     = 41;
+    InstanceIdVec        final_deps     = 41;
 }
 message PrepareRequest {
     RequestCommon cmn = 1;
@@ -65,7 +65,7 @@ message FastAcceptReply {
 
     ReplyCommon         cmn            = 1;
     QError              err            = 5;
-    repeated InstanceId deps           = 32;
+    InstanceIdVec       deps           = 32;
     repeated bool       deps_committed = 33;
 }
 message AcceptReply {
@@ -79,7 +79,7 @@ message CommitReply {
 message PrepareReply {
     ReplyCommon         cmn        = 1;
     QError              err        = 5;
-    repeated InstanceId deps       = 32;
-    repeated InstanceId final_deps = 41;
+    InstanceIdVec       deps       = 32;
+    InstanceIdVec       final_deps = 41;
     bool                committed  = 51;
 }

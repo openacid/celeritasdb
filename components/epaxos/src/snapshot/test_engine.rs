@@ -95,7 +95,7 @@ pub fn test_get_instance_iter(
             assert_eq!(act.cmds, cmds);
             assert_eq!(act.ballot, Some(ballot));
 
-            for (idx, inst_id) in act.initial_deps.iter().enumerate() {
+            for (idx, inst_id) in act.initial_deps.unwrap().iter().enumerate() {
                 assert_eq!(*inst_id, deps[idx]);
             }
 
@@ -152,8 +152,8 @@ fn new_foo_inst(leader_id: i64) -> Instance {
     let mut inst = Instance::of(&cmds[..], ballot, &initial_deps[..]);
     // TODO move these to Instance::new_instance
     inst.instance_id = Some((leader_id, 1).into());
-    inst.deps = [iid2].to_vec();
-    inst.final_deps = [iid3].to_vec();
+    inst.deps = Some([iid2].to_vec().into());
+    inst.final_deps = Some([iid3].to_vec().into());
     inst.last_ballot = Some(ballot2);
 
     inst
