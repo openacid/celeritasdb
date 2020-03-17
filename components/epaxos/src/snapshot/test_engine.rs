@@ -104,28 +104,36 @@ pub fn test_get_instance_iter(
     }
 
     let cases = vec![
-        ((1, 0).into(), true, &ints[..10]),
-        ((1, 1).into(), true, &ints[1..10]),
-        ((1, 9).into(), true, &ints[9..10]),
-        ((1, 10).into(), true, &[]),
-        ((3, 0).into(), true, &ints[20..3 * 10]),
-        ((0, 0).into(), true, &[]), // before any present instance.
-        ((6, 0).into(), true, &[]), // after all present instance.
-        ((1, 0).into(), false, &ints[1..10]),
-        ((1, 1).into(), false, &ints[2..10]),
-        ((1, 9).into(), false, &[]),
-        ((1, 10).into(), true, &[]),
-        ((3, 0).into(), false, &ints[21..3 * 10]),
+        ((1, 0).into(), true, &ints[..10], &ints[..1]),
+        ((1, 1).into(), true, &ints[1..10], &ints[..2]),
+        ((1, 9).into(), true, &ints[9..10], &ints[..10]),
+        ((1, 10).into(), true, &[], &ints[..10]),
+        ((3, 0).into(), true, &ints[20..30], &ints[20..21]),
+        ((0, 0).into(), true, &[], &[]), // before any present instance.
+        ((6, 0).into(), true, &[], &[]), // after all present instance.
+        ((1, 0).into(), false, &ints[1..10], &[]),
+        ((1, 1).into(), false, &ints[2..10], &ints[..1]),
+        ((1, 9).into(), false, &[], &ints[..9]),
+        ((3, 0).into(), false, &ints[21..30], &[]),
     ];
 
-    for (iid, include, exp_insts) in cases {
+    for (iid, include, exp_insts, rev_exp_insts) in cases {
         let mut n = 0;
-        for act_inst in eng.get_instance_iter(iid, include) {
+        for act_inst in eng.get_instance_iter(iid, include, false) {
             assert_eq!(act_inst, exp_insts[n]);
             n = n + 1;
         }
 
         assert_eq!(exp_insts.len(), n);
+
+        n = 0;
+        let mut exp = vec![];
+        exp.extend(rev_exp_insts.iter().rev());
+        for act_inst in eng.get_instance_iter(iid, include, true) {
+            assert_eq!(act_inst, *exp[n]);
+            n = n + 1;
+        }
+        assert_eq!(exp.len(), n);
     }
 }
 
@@ -183,9 +191,14 @@ pub fn test_base_trait(eng: &mut dyn Base) {
     let next_last = eng.next_kv(&kvs[3].0.clone(), false);
     assert_eq!(next_last, None);
 
-    let iter = eng.get_iter(kvs[0].0.clone(), true);
+    let iter = eng.get_iter(kvs[0].0.clone(), true, false);
     for (idx, item) in iter.enumerate() {
         assert_eq!(kvs[idx], item)
+    }
+
+    let iter = eng.get_iter(kvs[3].0.clone(), true, true);
+    for (idx, item) in iter.enumerate() {
+        assert_eq!(kvs[kvs.len() - idx - 1], item)
     }
 }
 

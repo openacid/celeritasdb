@@ -26,7 +26,7 @@ impl<'a> From<(&'a str, &'a str, &'a str)> for CfKV<'a> {
         let cf = DBColumnFamily::from_str(cfkv.0).unwrap();
 
         CfKV {
-            cf: cf,
+            cf,
             k: cfkv.1.as_bytes(),
             v: cfkv.2.as_bytes(),
         }
@@ -53,7 +53,7 @@ impl RocksDBEngine {
     pub fn new(path: &str) -> Result<RocksDBEngine, Error> {
         let db = open(path)?;
 
-        Ok(RocksDBEngine { db: db })
+        Ok(RocksDBEngine { db })
     }
 
     /// make rocksdb column family handle
@@ -123,22 +123,8 @@ impl RocksDBEngine {
 
         Ok(self.db.write(wb)?)
     }
-}
 
-impl Base for RocksDBEngine {
-    fn set_kv(&mut self, key: Vec<u8>, value: Vec<u8>) -> Result<(), Error> {
-        self.set(&CfKV {
-            cf: &DBColumnFamily::Default,
-            k: &key,
-            v: &value,
-        })
-    }
-
-    fn get_kv(&self, key: &Vec<u8>) -> Result<Vec<u8>, Error> {
-        self.get(&DBColumnFamily::Default, key)
-    }
-
-    fn next_kv(&self, key: &Vec<u8>, include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
+    fn _range(&self, key: &Vec<u8>, include: bool, reverse: bool) -> Option<(Vec<u8>, Vec<u8>)> {
         let mut iter = self.db.iter();
 
         iter.seek(SeekKey::from(&key[..]));
@@ -160,7 +146,11 @@ impl Base for RocksDBEngine {
             None => return None,
         }
 
-        iter.next();
+        if reverse {
+            iter.prev();
+        } else {
+            iter.next();
+        }
         if !iter.valid() {
             // TODO may be a rocksdb panic here
             return None;
@@ -168,12 +158,35 @@ impl Base for RocksDBEngine {
 
         return iter.kv();
     }
+}
 
-    fn get_iter(&self, key: Vec<u8>, include: bool) -> BaseIter {
+impl Base for RocksDBEngine {
+    fn set_kv(&mut self, key: Vec<u8>, value: Vec<u8>) -> Result<(), Error> {
+        self.set(&CfKV {
+            cf: &DBColumnFamily::Default,
+            k: &key,
+            v: &value,
+        })
+    }
+
+    fn get_kv(&self, key: &Vec<u8>) -> Result<Vec<u8>, Error> {
+        self.get(&DBColumnFamily::Default, key)
+    }
+
+    fn next_kv(&self, key: &Vec<u8>, include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
+        self._range(key, include, false)
+    }
+
+    fn prev_kv(&self, key: &Vec<u8>, include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
+        self._range(key, include, true)
+    }
+
+    fn get_iter(&self, key: Vec<u8>, include: bool, reverse: bool) -> BaseIter {
         return BaseIter {
             cursor: key,
-            include: include,
+            include,
             engine: self,
+            reverse,
         };
     }
 }

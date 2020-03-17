@@ -7,6 +7,7 @@ pub struct InstanceIter<'a> {
     pub curr_inst_id: InstanceID,
     pub include: bool,
     pub engine: &'a dyn InstanceEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceId>,
+    pub reverse: bool,
 }
 
 impl<'a> Iterator for InstanceIter<'a> {
@@ -14,7 +15,11 @@ impl<'a> Iterator for InstanceIter<'a> {
 
     fn next(&mut self) -> Option<Instance> {
         let k = self.curr_inst_id.to_key();
-        let (key_bytes, val_bytes) = self.engine.next_kv(&k, self.include)?;
+        let (key_bytes, val_bytes) = if self.reverse {
+            self.engine.prev_kv(&k, self.include)?
+        } else {
+            self.engine.next_kv(&k, self.include)?
+        };
 
         let key = String::from_utf8(key_bytes);
         let key = match key {
@@ -92,16 +97,17 @@ mod tests {
         }
 
         let cases = vec![
-            (InstanceID::from((0, 0)), true, &ints[..10]),
-            (InstanceID::from((0, 0)), false, &ints[1..10]),
-            (InstanceID::from((2, 0)), true, &ints[20..3 * 10]),
-            (InstanceID::from((4, 0)), true, &ints[ints.len()..]),
+            (InstanceID::from((0, 0)), true, &ints[..10], &ints[0..1]),
+            (InstanceID::from((0, 0)), false, &ints[1..10], &[]),
+            (InstanceID::from((2, 0)), true, &ints[20..30], &ints[20..21]),
+            (InstanceID::from((2, 9)), true, &ints[29..30], &ints[20..30]),
+            (InstanceID::from((4, 0)), true, &[], &[]),
         ];
 
-        for (start_iid, include, exp_insts) in cases {
+        for (start_iid, include, exp_insts, rev_exp_insts) in cases {
             let mut n = 0;
 
-            let iter = engine.get_instance_iter(start_iid, include);
+            let iter = engine.get_instance_iter(start_iid, include, false);
 
             for act_inst in iter {
                 assert_eq!(act_inst.cmds, exp_insts[n].cmds);
@@ -113,6 +119,22 @@ mod tests {
             }
 
             assert_eq!(exp_insts.len(), n);
+
+            n = 0;
+            let iter = engine.get_instance_iter(start_iid, include, true);
+
+            let mut exp = vec![];
+            exp.extend(rev_exp_insts.iter().rev());
+            for act_inst in iter {
+                assert_eq!(act_inst.cmds, exp[n].cmds);
+                assert_eq!(act_inst.ballot, exp[n].ballot);
+
+                assert_eq!(act_inst.instance_id, exp[n].instance_id);
+
+                n = n + 1;
+            }
+
+            assert_eq!(exp.len(), n);
         }
     }
 }

@@ -1,4 +1,6 @@
 use std::collections::BTreeMap;
+use std::ops::Bound::Included;
+use std::ops::Bound::Unbounded;
 use std::sync::Mutex;
 
 use super::super::*;
@@ -42,11 +44,24 @@ impl Base for MemEngine {
         None
     }
 
-    fn get_iter(&self, key: Vec<u8>, include: bool) -> BaseIter {
+    fn prev_kv(&self, key: &Vec<u8>, include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
+        for (k, v) in self._db.range((Unbounded, Included(key.to_vec()))).rev() {
+            if include == false && key == k {
+                continue;
+            }
+
+            return Some((k.to_vec(), v.to_vec()));
+        }
+
+        None
+    }
+
+    fn get_iter(&self, key: Vec<u8>, include: bool, reverse: bool) -> BaseIter {
         BaseIter {
             cursor: key,
             include,
             engine: self,
+            reverse,
         }
     }
 }
@@ -107,11 +122,12 @@ impl InstanceEngine for MemEngine {
         self.get_obj(iid)
     }
 
-    fn get_instance_iter(&self, iid: InstanceID, include: bool) -> InstanceIter {
+    fn get_instance_iter(&self, iid: InstanceID, include: bool, reverse: bool) -> InstanceIter {
         InstanceIter {
             curr_inst_id: iid,
             include,
             engine: self,
+            reverse,
         }
     }
 }

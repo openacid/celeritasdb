@@ -11,6 +11,7 @@ pub struct BaseIter<'a> {
     pub cursor: Vec<u8>,
     pub include: bool,
     pub engine: &'a dyn Base,
+    pub reverse: bool,
 }
 
 impl<'a> Iterator for BaseIter<'a> {
@@ -18,7 +19,12 @@ impl<'a> Iterator for BaseIter<'a> {
 
     // TODO add unittest.
     fn next(&mut self) -> Option<Self::Item> {
-        let r = self.engine.next_kv(&self.cursor, self.include);
+        let r = if self.reverse {
+            self.engine.prev_kv(&self.cursor, self.include)
+        } else {
+            self.engine.next_kv(&self.cursor, self.include)
+        };
+
         self.include = false;
         match r {
             Some(kv) => {
@@ -42,7 +48,11 @@ pub trait Base {
     /// or greater or equal the given one(include=true)
     fn next_kv(&self, key: &Vec<u8>, include: bool) -> Option<(Vec<u8>, Vec<u8>)>;
 
-    fn get_iter(&self, key: Vec<u8>, include: bool) -> BaseIter;
+    /// prev_kv returns a key-value pair smaller than the given one(include=false),
+    /// or smaller or equal the given one(include=true)
+    fn prev_kv(&self, key: &Vec<u8>, include: bool) -> Option<(Vec<u8>, Vec<u8>)>;
+
+    fn get_iter(&self, key: Vec<u8>, include: bool, reverse: bool) -> BaseIter;
 }
 
 /// InstanceEngine offer functions to operate snapshot instances
@@ -57,7 +67,7 @@ pub trait InstanceEngine: TxEngine + ColumnedEngine {
     fn get_instance(&self, iid: InstanceID) -> Result<Option<Instance>, Error>;
 
     /// get an iterator to scan all instances with a leader replica id
-    fn get_instance_iter(&self, iid: InstanceID, include: bool) -> InstanceIter;
+    fn get_instance_iter(&self, iid: InstanceID, include: bool, reverse: bool) -> InstanceIter;
 }
 
 /// TxEngine offer a transactional operation on a storage.
