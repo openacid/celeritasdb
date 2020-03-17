@@ -1,3 +1,5 @@
+use std::ops::Index;
+use std::ops::{Deref, DerefMut};
 use tonic;
 use tonic::{Request, Response, Status};
 
@@ -121,6 +123,49 @@ impl InstanceID {
         }
 
         return None;
+    }
+}
+
+/// Let user use method of Vec<InstanceId> directly.
+impl Deref for InstanceIdVec {
+    type Target = Vec<InstanceId>;
+    fn deref(&self) -> &Self::Target {
+        &self.ids
+    }
+}
+
+/// Let user use method of Vec<InstanceId> directly.
+impl DerefMut for InstanceIdVec {
+    fn deref_mut(&mut self) -> &mut Vec<InstanceId> {
+        &mut self.ids
+    }
+}
+
+/// Let user use instance_id_vec[replic_id] to retreive an instance_id.
+/// It panics if replica_id not found.
+/// It returns the first match.
+impl Index<ReplicaID> for InstanceIdVec {
+    type Output = InstanceId;
+    fn index(&self, rid: ReplicaID) -> &Self::Output {
+        for inst in self.ids.iter() {
+            if inst.replica_id == rid {
+                return inst;
+            }
+        }
+        panic!("NotFound instance_id with replica_id={}", rid);
+    }
+}
+
+impl InstanceIdVec {
+    /// get retreive an instance_id with specified replica_id.
+    /// It returns the first match.
+    fn get(&self, rid: ReplicaID) -> Option<InstanceId> {
+        for inst in self.ids.iter() {
+            if inst.replica_id == rid {
+                return Some(*inst);
+            }
+        }
+        None
     }
 }
 
