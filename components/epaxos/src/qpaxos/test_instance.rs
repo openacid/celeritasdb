@@ -79,6 +79,35 @@ fn test_instance_id_vec_index_panic() {
 }
 
 #[test]
+fn test_instance_id_vec_cmd_inst() {
+    let id12 = InstanceId::from((1, 2));
+    let id34 = InstanceId::from((3, 4));
+
+    let ids = InstanceIdVec {
+        ids: vec![id12, id34],
+    };
+
+    assert_eq!(Some(Ordering::Less), ids.partial_cmp(&(1, 3).into()));
+    assert_eq!(Some(Ordering::Equal), ids.partial_cmp(&(1, 2).into()));
+    assert_eq!(Some(Ordering::Greater), ids.partial_cmp(&(1, 1).into()));
+    assert_eq!(Some(Ordering::Less), ids.partial_cmp(&(3, 5).into()));
+    assert_eq!(Some(Ordering::Equal), ids.partial_cmp(&(3, 4).into()));
+    assert_eq!(Some(Ordering::Greater), ids.partial_cmp(&(3, 3).into()));
+    assert_eq!(Some(Ordering::Less), ids.partial_cmp(&(2, 1).into()));
+
+    assert!(ids < (1, 3).into());
+    assert!(ids > (1, 1).into());
+    assert!(ids == InstanceId::from((1, 2)));
+
+    // Absent replica-id always results in Less
+    assert!(ids < (2, 1).into());
+    assert!(ids <= (2, 1).into());
+
+    assert!(!(ids == InstanceId::from((2, 2))));
+    assert!(ids != InstanceId::from((2, 2)));
+}
+
+#[test]
 fn test_instance_id_vec_get() {
     let ids = InstanceIdVec {
         ids: vec![(1, 2).into(), (3, 4).into()],
@@ -99,6 +128,38 @@ fn test_instance_id_vec_get() {
     assert_eq!(ids.ids[0], refids.get(1i64).unwrap());
     assert_eq!(ids.ids[1], refids.get(3).unwrap());
     assert_eq!(None, refids.get(2));
+}
+
+#[test]
+fn test_instance_id_vec_set() {
+    let id01 = InstanceId::from((0, 1));
+    let id12 = InstanceId::from((1, 2));
+    let id13 = InstanceId::from((1, 3));
+    let id34 = InstanceId::from((3, 4));
+    let id56 = InstanceId::from((5, 6));
+
+    let mut ids = InstanceIdVec {
+        ids: vec![id12, id34],
+    };
+
+    let r = ids.set((1, 3).into());
+    assert_eq!((0, Some(id12)), r);
+    assert_eq!(id13, ids.get(1).unwrap());
+
+    // set a same instanceId twice
+    let r = ids.set((1, 3).into());
+    assert_eq!((0, Some(id13)), r);
+    assert_eq!(id13, ids.get(1).unwrap());
+
+    // appended
+    let r = ids.set((0, 1).into());
+    assert_eq!((2, None), r);
+    assert_eq!(id01, ids.get(0).unwrap());
+
+    // appended
+    let r = ids.set((5, 6).into());
+    assert_eq!((3, None), r);
+    assert_eq!(id56, ids.get(5).unwrap());
 }
 
 #[test]

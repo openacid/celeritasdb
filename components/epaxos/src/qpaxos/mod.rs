@@ -1,3 +1,4 @@
+pub use std::cmp::Ordering;
 use std::ops::Index;
 use std::ops::{Deref, DerefMut};
 use tonic;
@@ -153,16 +154,54 @@ impl Index<ReplicaID> for InstanceIdVec {
     }
 }
 
+impl PartialEq<InstanceId> for InstanceIdVec {
+    fn eq(&self, other: &InstanceId) -> bool {
+        self.get(other.replica_id) == Some(*other)
+    }
+}
+
+impl PartialOrd<InstanceId> for InstanceIdVec {
+    fn partial_cmp(&self, other: &InstanceId) -> Option<Ordering> {
+        let mine = self.get(other.replica_id);
+        match mine {
+            Some(iid) => Some(iid.cmp(other)),
+            None => Some(Ordering::Less),
+        }
+    }
+}
+
 impl InstanceIdVec {
     /// get retreive an instance_id with specified replica_id.
     /// It returns the first match.
-    fn get(&self, rid: ReplicaID) -> Option<InstanceId> {
-        for inst in self.ids.iter() {
-            if inst.replica_id == rid {
-                return Some(*inst);
+    pub fn get(&self, rid: ReplicaID) -> Option<InstanceId> {
+        for iid in self.ids.iter() {
+            if iid.replica_id == rid {
+                return Some(*iid);
             }
         }
         None
+    }
+
+    /// set add an instanceId into it or overrides an existing one with the same replicaId.
+    /// It returns the index the added InstanceId is, along with an Option of the replaced value.
+    pub fn set(&mut self, inst_id: InstanceId) -> (usize, Option<InstanceId>) {
+        let mut idx: i64 = -1;
+        for (i, iid) in self.ids.iter().enumerate() {
+            if iid.replica_id == inst_id.replica_id {
+                idx = i as i64;
+                break;
+            }
+        }
+
+        if idx == -1 {
+            let l = self.ids.len();
+            self.ids.push(inst_id);
+            (l, None)
+        } else {
+            let old = self.ids[idx as usize];
+            self.ids[idx as usize] = inst_id;
+            (idx as usize, Some(old))
+        }
     }
 }
 
