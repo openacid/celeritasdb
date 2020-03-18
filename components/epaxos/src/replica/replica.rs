@@ -1,3 +1,4 @@
+use std::i64;
 use std::net::{SocketAddr, TcpStream};
 use std::time::SystemTime;
 
@@ -130,9 +131,9 @@ impl Replica {
         let mut deps_committed = req.deps_committed.clone();
 
         for rid in self.group_replica_ids.iter() {
-            let start_iid = (*rid, 0).into();
+            let start_iid = (*rid, i64::MAX).into();
 
-            for x in self.storage.get_instance_iter(start_iid, true) {
+            for x in self.storage.get_instance_iter(start_iid, true, true) {
                 if let Some(y) = x.deps.iter().find(|y| y.replica_id == iid.replica_id) {
                     if y.idx >= iid.idx {
                         continue;
