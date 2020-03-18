@@ -260,24 +260,18 @@ impl Instance {
         let mut great = false;
         // TODO unwrap
         for iid in other.final_deps.as_ref().unwrap().iter() {
-            match self
-                .final_deps
-                // TODO unwrap
-                .as_ref()
-                .unwrap()
-                .iter()
-                .find(|x| x.replica_id == iid.replica_id)
-            {
-                Some(my_iid) => {
-                    if my_iid.idx < iid.idx {
-                        return false;
-                    }
-
-                    if my_iid.idx > iid.idx {
-                        great = true;
-                    }
-                }
+            // TODO unwrap
+            let myiid = self.final_deps.as_ref().unwrap().get(iid.replica_id);
+            let myiid = match myiid {
+                Some(v) => v,
                 None => continue,
+            };
+
+            if myiid.idx < iid.idx {
+                return false;
+            }
+            if myiid.idx > iid.idx {
+                great = true;
             }
         }
 
