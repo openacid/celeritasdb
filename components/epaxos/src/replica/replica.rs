@@ -134,62 +134,46 @@ impl Replica {
             let start_iid = (*rid, i64::MAX).into();
 
             for local_inst in self.storage.get_instance_iter(start_iid, true, true) {
+                // TODO: this is a bug: deps should always not None
                 if local_inst.deps == None {
                     continue;
                 };
 
-                if let Some(y) = local_inst
-                    .deps
-                    .as_ref()
-                    .unwrap()
-                    .iter()
-                    .find(|y| y.replica_id == iid.replica_id)
-                {
-                    if y.idx >= iid.idx {
-                        continue;
-                    }
+                if local_inst.deps.as_ref().unwrap() >= &iid {
+                    continue;
+                }
+
+                // only update deps if seen a conflict instance, or it is a committed instance.
+                if inst.conflict(&local_inst) || local_inst.committed {
+                    // go on to update deps
                 } else {
                     continue;
                 }
-                // TODO try this snippet. not passed. do it later. -- xp
-                // let q = match local_inst.deps {
-                //     Some(v) => &v,
-                //     None => continue
-                // };
 
-                // q.get(iid.replica_id);
+                // TODO unwrap on a None should be a bug
+                let local_iid = local_inst.instance_id.unwrap();
 
-                // let y = local_inst.deps.unwrap().get(iid.replica_id);
-                // let y = match y {
-                //     Some(v) => v,
-                //     None => continue
-                // };
-                // // local_inst already depends on req.instance, thus req.instance would never depends on local_inst
-                // if y.idx >= iid.idx {
-                //     continue;
-                // }
+                // TODO: test: fast-accept adding a new dep
 
-                if inst.conflict(&local_inst) == false && local_inst.committed == false {
-                    continue;
+                // TODO unwrap on a None should be a bug
+                if inst.deps.as_ref().unwrap() > &local_iid {
+                    // the incoming instance already depends on this local instance, which implies
+                    // it depends on any lower instances.
+                    break;
                 }
 
-                let x_iid = local_inst.instance_id.unwrap();
+                // TODO unwrap on a None should be a bug
+                let fast_deps = inst.deps.as_mut().unwrap();
 
-                if let Some(lx_idx) = inst
-                    .deps
-                    .as_ref()
-                    // TODO unwrap
-                    .unwrap()
-                    .iter()
-                    .position(|y| y.replica_id == x_iid.replica_id)
-                {
-                    if x_iid > inst.deps.as_ref().unwrap().ids[lx_idx] {
-                        inst.deps.as_mut().unwrap().ids[lx_idx] = x_iid;
-                        deps_committed[lx_idx] = local_inst.committed;
-                    } else if x_iid == inst.deps.as_ref().unwrap().ids[lx_idx] {
-                        deps_committed[lx_idx] = deps_committed[lx_idx] || local_inst.committed;
-                    }
+                let (ith, _) = fast_deps.set(local_iid);
+                if ith == deps_committed.len() {
+                    deps_committed.push(local_inst.committed);
+                } else {
+                    deps_committed[ith] = deps_committed[ith] || local_inst.committed;
                 }
+
+                // Here it stops iteration as the highest interfering inst has been seen.
+                break;
             }
         }
 
