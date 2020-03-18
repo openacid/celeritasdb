@@ -67,7 +67,7 @@ impl Base for MemEngine {
 }
 
 impl ObjectEngine for MemEngine {
-    type ObjId = InstanceID;
+    type ObjId = InstanceId;
     type Obj = Instance;
 }
 
@@ -83,7 +83,7 @@ impl ColumnedEngine for MemEngine {
 }
 
 impl InstanceEngine for MemEngine {
-    fn next_instance_id(&mut self, rid: ReplicaID) -> Result<InstanceID, Error> {
+    fn next_instance_id(&mut self, rid: ReplicaID) -> Result<InstanceId, Error> {
         // TODO locking
         // TODO Need to incr max-ref and add new-instance in a single tx.
         //      Or iterator may encounter an empty instance slot.
@@ -109,7 +109,7 @@ impl InstanceEngine for MemEngine {
 
         self.set_obj(iid, &inst).unwrap();
 
-        let lowest = InstanceID::from((iid.replica_id, -1));
+        let lowest = InstanceId::from((iid.replica_id, -1));
 
         if inst.executed {
             self.set_ref_if("exec", iid.replica_id, iid, lowest, |x| x < iid)?;
@@ -118,11 +118,11 @@ impl InstanceEngine for MemEngine {
         Ok(())
     }
     /// get an instance with instance id
-    fn get_instance(&self, iid: InstanceID) -> Result<Option<Instance>, Error> {
+    fn get_instance(&self, iid: InstanceId) -> Result<Option<Instance>, Error> {
         self.get_obj(iid)
     }
 
-    fn get_instance_iter(&self, iid: InstanceID, include: bool, reverse: bool) -> InstanceIter {
+    fn get_instance_iter(&self, iid: InstanceId, include: bool, reverse: bool) -> InstanceIter {
         InstanceIter {
             curr_inst_id: iid,
             include,

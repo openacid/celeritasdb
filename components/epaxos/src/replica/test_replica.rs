@@ -3,9 +3,9 @@ use crate::replica::*;
 use crate::snapshot::MemEngine;
 
 fn new_foo_inst(leader_id: i64) -> Instance {
-    let iid1 = InstanceID::from((1, 10));
-    let iid2 = InstanceID::from((2, 20));
-    let iid3 = InstanceID::from((3, 30));
+    let iid1 = InstanceId::from((1, 10));
+    let iid2 = InstanceId::from((2, 20));
+    let iid3 = InstanceId::from((3, 30));
     let initial_deps = vec![iid1, iid2, iid3];
 
     let cmd1 = ("NoOp", "k1", "v1").into();
@@ -203,18 +203,18 @@ fn test_handle_commit_request() {
     // TODO test storage error
 }
 
-fn _test_repl_cmn_ok(cmn: &ReplyCommon, iid: InstanceID, last: Option<BallotNum>) {
+fn _test_repl_cmn_ok(cmn: &ReplyCommon, iid: InstanceId, last: Option<BallotNum>) {
     assert_eq!(iid, cmn.instance_id.unwrap());
     assert_eq!(last, cmn.last_ballot);
 }
 
 fn _test_get_inst(
     replica: &Replica,
-    iid: InstanceID,
+    iid: InstanceId,
     blt: Option<BallotNum>,
     last: Option<BallotNum>,
     cmds: Vec<Command>,
-    final_deps: Vec<InstanceID>,
+    final_deps: Vec<InstanceId>,
 ) {
     let got = replica.storage.get_instance(iid).unwrap().unwrap();
     assert_eq!(iid, got.instance_id.unwrap());

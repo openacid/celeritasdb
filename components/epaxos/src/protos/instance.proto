@@ -4,13 +4,13 @@ package qpaxos;
 
 import "command.proto";
 
-message InstanceID {
+message InstanceId {
     int64 replica_id = 1;
     int64 idx = 2;
 };
 
 message InstanceIdVec {
-    repeated InstanceID ids = 1;
+    repeated InstanceId ids = 1;
 }
 
 enum InstanceStatus {
@@ -32,20 +32,20 @@ message Instance {
 
     BallotNum last_ballot  = 11;
     BallotNum ballot       = 12;
-    InstanceID instance_id = 13;
+    InstanceId instance_id = 13;
     repeated Command cmds  = 21;
 
     // initial_deps is the dependent instance ids when an instance is created.
-    repeated InstanceID initial_deps                = 31;
+    repeated InstanceId initial_deps                = 31;
 
     // deps is the updated instance ids on a replica when handling PreAccept
     // request.
     // When an instance is intiated, it is same as initial_deps.
-    repeated InstanceID deps                        = 32;
+    repeated InstanceId deps                        = 32;
 
     // final_deps is the final dependency chosen by instance leader or recover
     // process, and is set by Accept request or Commit request.
-    repeated InstanceID final_deps                  = 41;
+    repeated InstanceId final_deps                  = 41;
 
     // An instance has several status thus one status field is not enough.
     // To determine the instance status:

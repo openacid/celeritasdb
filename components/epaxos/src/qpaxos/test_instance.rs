@@ -53,8 +53,8 @@ fn test_instance_id_vec_deref() {
     };
 
     let mut it = ids.iter_mut();
-    assert_eq!(&InstanceID::from((1, 2)), it.next().unwrap());
-    assert_eq!(&InstanceID::from((3, 4)), it.next().unwrap());
+    assert_eq!(&InstanceId::from((1, 2)), it.next().unwrap());
+    assert_eq!(&InstanceId::from((3, 4)), it.next().unwrap());
     assert_eq!(None, it.next());
 }
 

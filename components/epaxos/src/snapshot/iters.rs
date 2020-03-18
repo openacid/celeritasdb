@@ -4,7 +4,7 @@ use crate::qpaxos::*;
 use crate::tokey::ToKey;
 
 pub struct InstanceIter<'a> {
-    pub curr_inst_id: InstanceID,
+    pub curr_inst_id: InstanceId,
     pub include: bool,
     pub engine: &'a dyn InstanceEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceId>,
     pub reverse: bool,
@@ -30,7 +30,7 @@ impl<'a> Iterator for InstanceIter<'a> {
             }
         };
 
-        let iid = InstanceID::from_key(&key[..]);
+        let iid = InstanceId::from_key(&key[..]);
         let iid = match iid {
             Some(v) => v,
             None => {
@@ -74,7 +74,7 @@ mod tests {
 
         for rid in 0..3 {
             for idx in 0..10 {
-                let iid = InstanceID::from((rid, idx));
+                let iid = InstanceId::from((rid, idx));
 
                 let cmds = vec![Command::of(
                     OpCode::NoOp,
@@ -83,7 +83,7 @@ mod tests {
                 )];
 
                 let ballot = (rid as i32, idx as i32, 0).into();
-                let deps = vec![InstanceID::from((rid + 1, idx + 1))];
+                let deps = vec![InstanceId::from((rid + 1, idx + 1))];
                 let mut inst = Instance::of(&cmds[..], ballot, &deps[..]);
                 inst.instance_id = Some(iid);
 
@@ -97,11 +97,11 @@ mod tests {
         }
 
         let cases = vec![
-            (InstanceID::from((0, 0)), true, &ints[..10], &ints[0..1]),
-            (InstanceID::from((0, 0)), false, &ints[1..10], &[]),
-            (InstanceID::from((2, 0)), true, &ints[20..30], &ints[20..21]),
-            (InstanceID::from((2, 9)), true, &ints[29..30], &ints[20..30]),
-            (InstanceID::from((4, 0)), true, &[], &[]),
+            (InstanceId::from((0, 0)), true, &ints[..10], &ints[0..1]),
+            (InstanceId::from((0, 0)), false, &ints[1..10], &[]),
+            (InstanceId::from((2, 0)), true, &ints[20..30], &ints[20..21]),
+            (InstanceId::from((2, 9)), true, &ints[29..30], &ints[20..30]),
+            (InstanceId::from((4, 0)), true, &[], &[]),
         ];
 
         for (start_iid, include, exp_insts, rev_exp_insts) in cases {

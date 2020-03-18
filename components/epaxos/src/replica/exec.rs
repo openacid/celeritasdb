@@ -1,6 +1,6 @@
 use std::time::SystemTime;
 
-use crate::qpaxos::{Instance, InstanceID, OpCode};
+use crate::qpaxos::{Instance, InstanceId, OpCode};
 use crate::replica::{errors::Error, Replica};
 use crate::snapshot::Error as SnapError;
 
@@ -16,7 +16,7 @@ pub enum ExecuteResult {
 }
 
 impl Replica {
-    fn recover_instances(&self, inst_ids: &Vec<InstanceID>) {}
+    fn recover_instances(&self, inst_ids: &Vec<InstanceId>) {}
     // R1          R2
     // -------------
     // |           |
@@ -28,9 +28,9 @@ impl Replica {
     fn find_missing_insts(
         &self,
         min_insts: &Vec<Instance>,
-        exec_up_to: &Vec<InstanceID>,
-    ) -> Option<Vec<InstanceID>> {
-        let mut rst: Vec<InstanceID> = Vec::new();
+        exec_up_to: &Vec<InstanceId>,
+    ) -> Option<Vec<InstanceId>> {
+        let mut rst: Vec<InstanceId> = Vec::new();
 
         for inst in min_insts {
             for dep_inst_id in inst.final_deps.iter() {
@@ -98,7 +98,7 @@ impl Replica {
     /// S = {x | x ∈ S and (∃y: y → x)}
     /// so S = {b, d}
     /// sort S by instance_id and execute
-    fn execute_instances(&mut self, insts: &Vec<Instance>) -> Result<Vec<InstanceID>, Error> {
+    fn execute_instances(&mut self, insts: &Vec<Instance>) -> Result<Vec<InstanceId>, Error> {
         let mut early = vec![false; insts.len()];
         let mut late = vec![false; insts.len()];
         let mut can_exec = Vec::with_capacity(insts.len());
@@ -152,7 +152,7 @@ impl Replica {
     // only save one smallest problem instance of every replica with problem_inst_ids.
     // when find a new problem instance just replace it if instance of this replica
     // already in problem_inst_ids.
-    fn timeout_to_committed(&mut self, iid: InstanceID) -> bool {
+    fn timeout_to_committed(&mut self, iid: InstanceId) -> bool {
         let now = SystemTime::now();
         if let Some(p) = self.problem_inst_ids.iter().find(|x| x.0 == iid) {
             let dt = now.duration_since(p.1).unwrap();
@@ -178,7 +178,7 @@ impl Replica {
 
     fn get_insts_if_committed(
         &mut self,
-        inst_ids: &Vec<InstanceID>,
+        inst_ids: &Vec<InstanceId>,
     ) -> Result<Vec<Instance>, Error> {
         let mut rst = Vec::new();
         let mut recover_iids = Vec::new();
@@ -205,7 +205,7 @@ impl Replica {
         Ok(rst)
     }
 
-    fn execute(&mut self) -> Result<Vec<InstanceID>, Error> {
+    fn execute(&mut self) -> Result<Vec<InstanceId>, Error> {
         let mut exec_up_to = Vec::new();
         let mut smallest_inst_ids = Vec::new();
         for rid in self.group_replica_ids.iter() {

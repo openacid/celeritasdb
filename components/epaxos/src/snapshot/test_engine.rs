@@ -3,7 +3,7 @@ use crate::qpaxos::*;
 use crate::snapshot::errors::*;
 
 pub fn test_set_instance(
-    eng: &mut dyn InstanceEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceID>,
+    eng: &mut dyn InstanceEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceId>,
 ) {
     let leader_id = 2;
     let mut inst = new_foo_inst(leader_id);
@@ -34,7 +34,7 @@ pub fn test_set_instance(
 }
 
 pub fn test_get_instance(
-    eng: &mut dyn InstanceEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceID>,
+    eng: &mut dyn InstanceEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceId>,
 ) {
     let leader_id = 2;
     let inst = new_foo_inst(leader_id);
@@ -49,31 +49,31 @@ pub fn test_get_instance(
 }
 
 pub fn test_next_instance_id(
-    eng: &mut dyn InstanceEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceID>,
+    eng: &mut dyn InstanceEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceId>,
 ) {
     let leader_id = 2;
     let max = (leader_id, 3).into();
 
     let init = eng.next_instance_id(leader_id).unwrap();
-    assert_eq!(InstanceID::from((leader_id, 0)), init);
+    assert_eq!(InstanceId::from((leader_id, 0)), init);
 
     let got = eng.next_instance_id(leader_id).unwrap();
-    assert_eq!(InstanceID::from((leader_id, 1)), got);
+    assert_eq!(InstanceId::from((leader_id, 1)), got);
 
     eng.set_ref("max", leader_id, max).unwrap();
 
     let got = eng.next_instance_id(leader_id).unwrap();
-    assert_eq!(InstanceID::from((leader_id, 4)), got);
+    assert_eq!(InstanceId::from((leader_id, 4)), got);
 }
 
 pub fn test_get_instance_iter(
-    eng: &mut dyn InstanceEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceID>,
+    eng: &mut dyn InstanceEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceId>,
 ) {
     let mut ints = Vec::<Instance>::new();
 
     for rid in 1..4 {
         for idx in 0..10 {
-            let iid = InstanceID::from((rid, idx));
+            let iid = InstanceId::from((rid, idx));
 
             let cmds = vec![Command::of(
                 OpCode::NoOp,
@@ -83,7 +83,7 @@ pub fn test_get_instance_iter(
 
             let ballot = (rid as i32, idx as i32, 0).into();
 
-            let deps = vec![InstanceID::from((rid + 1, idx + 1))];
+            let deps = vec![InstanceId::from((rid + 1, idx + 1))];
 
             let mut inst = Instance::of(&cmds[..], ballot, &deps[..]);
             inst.instance_id = Some(iid);
@@ -138,9 +138,9 @@ pub fn test_get_instance_iter(
 }
 
 fn new_foo_inst(leader_id: i64) -> Instance {
-    let iid1 = InstanceID::from((1, 10));
-    let iid2 = InstanceID::from((2, 20));
-    let iid3 = InstanceID::from((3, 30));
+    let iid1 = InstanceId::from((1, 10));
+    let iid2 = InstanceId::from((2, 20));
+    let iid3 = InstanceId::from((3, 30));
     let initial_deps = vec![iid1, iid2, iid3];
 
     let cmd1 = ("NoOp", "k1", "v1").into();
@@ -203,12 +203,12 @@ pub fn test_base_trait(eng: &mut dyn Base) {
 }
 
 pub fn test_columned_trait(
-    eng: &mut dyn ColumnedEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceID>,
+    eng: &mut dyn ColumnedEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceId>,
 ) {
     let cases = vec![(1i64, 2), (2i64, 3)];
 
     for (rid, idx) in cases {
-        let iid = InstanceID::from((rid, idx));
+        let iid = InstanceId::from((rid, idx));
 
         eng.set_ref("max", rid, iid).unwrap();
         let act = eng.get_ref("max", rid).unwrap();

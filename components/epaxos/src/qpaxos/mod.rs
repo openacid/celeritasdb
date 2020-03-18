@@ -21,9 +21,6 @@ mod test_instance;
 pub type InstanceIdx = i64;
 pub type ReplicaID = i64;
 
-// prost issue, it renames InstanceID to InstanceId
-pub type InstanceID = InstanceId;
-
 pub use q_paxos_client::*;
 pub use q_paxos_server::*;
 
@@ -99,14 +96,14 @@ impl From<(&str, &str, &str)> for Command {
     }
 }
 
-impl ToKey for InstanceID {
+impl ToKey for InstanceId {
     fn to_key(&self) -> Vec<u8> {
         format!("/instance/{:016x}/{:016x}", self.replica_id, self.idx).into_bytes()
     }
 }
 
-impl InstanceID {
-    pub fn from_key(s: &str) -> Option<InstanceID> {
+impl InstanceId {
+    pub fn from_key(s: &str) -> Option<InstanceId> {
         let items: Vec<&str> = s.split("/").collect();
         if items[1] == "instance" && items.len() == 4 {
             let replica_id = match u64::from_str_radix(&items[2][..], 16) {
@@ -119,7 +116,7 @@ impl InstanceID {
                 Err(_) => return None,
             };
 
-            return Some(InstanceID { replica_id, idx });
+            return Some(InstanceId { replica_id, idx });
         }
 
         return None;
@@ -192,7 +189,7 @@ impl Conflict for Instance {
 }
 
 impl Instance {
-    pub fn of(cmds: &[Command], ballot: BallotNum, deps: &[InstanceID]) -> Instance {
+    pub fn of(cmds: &[Command], ballot: BallotNum, deps: &[InstanceId]) -> Instance {
         Instance {
             cmds: cmds.into(),
             ballot: Some(ballot),

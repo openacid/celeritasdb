@@ -42,13 +42,13 @@ pub struct Replica {
     pub conf: ReplicaConf,       // misc conf
 
     pub inst_idx: InstanceIdx,
-    pub latest_cp: InstanceID, // record the instance id in the lastest communication
+    pub latest_cp: InstanceId, // record the instance id in the lastest communication
 
     // storage
-    pub storage: Box<dyn InstanceEngine<ColumnId = ReplicaID, ObjId = InstanceID, Obj = Instance>>,
+    pub storage: Box<dyn InstanceEngine<ColumnId = ReplicaID, ObjId = InstanceId, Obj = Instance>>,
 
     // to recover uncommitted instance
-    pub problem_inst_ids: Vec<(InstanceID, SystemTime)>,
+    pub problem_inst_ids: Vec<(InstanceId, SystemTime)>,
 }
 
 impl Replica {
@@ -165,7 +165,7 @@ impl Replica {
     fn _check_req_common(
         &mut self,
         cm: &Option<RequestCommon>,
-    ) -> Result<(BallotNum, InstanceID), Error> {
+    ) -> Result<(BallotNum, InstanceId), Error> {
         let cm = match cm {
             Some(v) => v,
             None => return Err(Error::LackOf("cmn".into())),
@@ -188,7 +188,7 @@ impl Replica {
         Ok((ballot, iid))
     }
 
-    fn _get_instance(&mut self, iid: InstanceID) -> Result<Instance, Error> {
+    fn _get_instance(&mut self, iid: InstanceId) -> Result<Instance, Error> {
         let inst = self.storage.get_instance(iid)?;
 
         let inst = match inst {
@@ -200,7 +200,7 @@ impl Replica {
         Ok(inst)
     }
 
-    fn _empty_instance(&self, iid: Option<InstanceID>) -> Instance {
+    fn _empty_instance(&self, iid: Option<InstanceId>) -> Instance {
         Instance {
             instance_id: iid,
             ..Default::default()

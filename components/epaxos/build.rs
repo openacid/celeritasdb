@@ -10,7 +10,7 @@ fn main() {
         //TODO command contains vec<u8> that can not be copied.
         // .type_attribute("Command", "#[derive(Copy)]")
         .type_attribute(
-            "InstanceID",
+            "InstanceId",
             "#[derive(Copy, Eq, Ord, PartialOrd, derive_more::From)]",
         )
         .type_attribute(

@@ -4,14 +4,14 @@
 message PrepareReq {
     int64 leader_id = 1;  // the replica owns the instance
     int64 replica_id = 2; // the replica who starts the explict prepare
-    instance.InstanceID instance_id = 3;
+    instance.InstanceId instance_id = 3;
     instance.BallotNum ballot = 4;
 };
 
 message PrepareReply {
     int64 acceptor_id = 1;
     int64 replica_id = 2; // the replica who starts the explict prepare
-    instance.InstanceID instance_id = 3;
+    instance.InstanceId instance_id = 3;
     // successful(true), or failed(false) in case ballot number of msg
     // smaller than that in instance
     bool ok = 4;
@@ -22,7 +22,7 @@ message PrepareReply {
 message PreAcceptReq {
     int64 leader_id = 1;
     int64 replica_id = 2; // the same value with leader_id, weird!
-    instance.InstanceID instance_id = 3;
+    instance.InstanceId instance_id = 3;
     instance.Instance instance = 4;
     instance.BallotNum ballot = 5;
 };
@@ -32,7 +32,7 @@ message PreAcceptReply {
     instance.Instance instance = 2;
     bool ok = 3;
     instance.BallotNum ballot = 4;
-    repeated instance.InstanceID committed_deps = 5;
+    repeated instance.InstanceId committed_deps = 5;
 };
 
 // used in Paxos-Accept
@@ -46,7 +46,7 @@ message AcceptReq {
 
 message AcceptReply {
     int64 replica_id = 1;
-    instance.InstanceID instance_id = 2;
+    instance.InstanceId instance_id = 2;
     bool ok = 3;
     instance.BallotNum ballot = 4;
 };
@@ -61,17 +61,17 @@ message CommitReq {
 message CommitShort {
     int64 leader_id = 1;
     int64 replica_id = 2;
-    instance.InstanceID instance_id = 3;
+    instance.InstanceId instance_id = 3;
     int32 count = 4;
 
     int32 seq = 5;
-    repeated instance.InstanceID deps = 6;
+    repeated instance.InstanceId deps = 6;
 }
 
 message TryPreAcceptReq {
     int64 leader_id = 1;
     int64 replica_id = 2;
-    instance.InstanceID instance_id = 3;
+    instance.InstanceId instance_id = 3;
     instance.BallotNum ballot = 4;
     instance.Instance instance = 5;
 };
@@ -79,10 +79,10 @@ message TryPreAcceptReq {
 message TryPreAcceptReply {
     int64 acceptor_id = 1;
     int64 replica_id = 2;
-    instance.InstanceID instance_id = 3;
+    instance.InstanceId instance_id = 3;
     bool ok = 4;
     instance.BallotNum ballot = 5;
     int64 conflict_replica = 6;
-    instance.InstanceID conflict_instance_id = 7;
+    instance.InstanceId conflict_instance_id = 7;
     instance.InstanceStatus conflict_status = 8;
 };

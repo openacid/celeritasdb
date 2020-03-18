@@ -1,4 +1,4 @@
-use crate::qpaxos::{Instance, InstanceID, ReplicaID};
+use crate::qpaxos::{Instance, InstanceId, ReplicaID};
 use crate::tokey::ToKey;
 
 // required by encode/decode
@@ -58,16 +58,16 @@ pub trait Base {
 /// InstanceEngine offer functions to operate snapshot instances
 pub trait InstanceEngine: TxEngine + ColumnedEngine {
     /// Find next available instance id and increase max-instance-id ref.
-    fn next_instance_id(&mut self, rid: ReplicaID) -> Result<InstanceID, Error>;
+    fn next_instance_id(&mut self, rid: ReplicaID) -> Result<InstanceId, Error>;
 
     /// set an instance
     fn set_instance(&mut self, inst: &Instance) -> Result<(), Error>;
 
     /// get an instance with instance id
-    fn get_instance(&self, iid: InstanceID) -> Result<Option<Instance>, Error>;
+    fn get_instance(&self, iid: InstanceId) -> Result<Option<Instance>, Error>;
 
     /// get an iterator to scan all instances with a leader replica id
-    fn get_instance_iter(&self, iid: InstanceID, include: bool, reverse: bool) -> InstanceIter;
+    fn get_instance_iter(&self, iid: InstanceId, include: bool, reverse: bool) -> InstanceIter;
 }
 
 /// TxEngine offer a transactional operation on a storage.

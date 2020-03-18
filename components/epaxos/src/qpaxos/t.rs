@@ -7,9 +7,9 @@ use std::str;
 fn new_foo_inst() -> Instance {
     let replica = 1;
 
-    let inst_id1 = InstanceID::from((1, 10));
-    let inst_id2 = InstanceID::from((2, 20));
-    let inst_id3 = InstanceID::from((3, 30));
+    let inst_id1 = InstanceId::from((1, 10));
+    let inst_id2 = InstanceId::from((2, 20));
+    let inst_id3 = InstanceId::from((3, 30));
     let initial_deps = vec![inst_id1, inst_id2, inst_id3];
 
     let cmd1 = Command::of(OpCode::NoOp, "k1".as_bytes(), "v1".as_bytes());
@@ -64,7 +64,7 @@ fn test_instance_protobuf() {
 
 #[test]
 fn test_instanceid_derived() {
-    let inst_id1 = InstanceID {
+    let inst_id1 = InstanceId {
         replica_id: 1,
         idx: 10,
     };
@@ -72,7 +72,7 @@ fn test_instanceid_derived() {
 
     assert_eq!(inst_id1, inst_id2);
     assert_eq!(inst_id1, (1, 10).into());
-    assert_eq!(inst_id1, InstanceID::from((1, 10)));
+    assert_eq!(inst_id1, InstanceId::from((1, 10)));
 }
 
 #[test]
@@ -91,13 +91,13 @@ fn test_ballotnum_derived() {
 
 #[test]
 fn test_instance_id_to_key() {
-    let k = InstanceID::from((1, 10)).to_key();
+    let k = InstanceId::from((1, 10)).to_key();
     assert_eq!(
         "/instance/0000000000000001/000000000000000a",
         str::from_utf8(&k).unwrap()
     );
 
-    let k = InstanceID::from((-1, -10)).to_key();
+    let k = InstanceId::from((-1, -10)).to_key();
     assert_eq!(
         "/instance/ffffffffffffffff/fffffffffffffff6",
         str::from_utf8(&k).unwrap()
@@ -105,14 +105,14 @@ fn test_instance_id_to_key() {
 }
 
 #[test]
-fn test_InstanceID_from_key() {
+fn test_InstanceId_from_key() {
     assert_eq!(
-        InstanceID::from_key("/instance/0000000000000001/000000000000000a").unwrap(),
+        InstanceId::from_key("/instance/0000000000000001/000000000000000a").unwrap(),
         (1, 10).into()
     );
 
     assert_eq!(
-        InstanceID::from_key("/instance/ffffffffffffffff/fffffffffffffff6").unwrap(),
+        InstanceId::from_key("/instance/ffffffffffffffff/fffffffffffffff6").unwrap(),
         (-1, -10).into()
     );
 }
@@ -131,8 +131,8 @@ fn test_cmp_instance_id() {
     ];
 
     for (t1, t2, op) in cases {
-        let i1: InstanceID = t1.into();
-        let i2: InstanceID = t2.into();
+        let i1: InstanceId = t1.into();
+        let i2: InstanceId = t2.into();
         match op {
             "=" => assert_eq!(i1 == i2, true),
             "<=" => assert_eq!(i1 <= i2, true),

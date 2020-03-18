@@ -28,22 +28,22 @@ message RequestCommon {
 
     // Sender's ballot
     BallotNum ballot = 12;
-    InstanceID instance_id = 13;
+    InstanceId instance_id = 13;
 }
 message FastAcceptRequest {
     RequestCommon cmn = 1;
     repeated Command     cmds           = 21;
-    repeated InstanceID initial_deps   = 31;
+    repeated InstanceId initial_deps   = 31;
     repeated bool                deps_committed = 33;
 }
 message AcceptRequest {
     RequestCommon cmn = 1;
-    repeated InstanceID final_deps     = 41;
+    repeated InstanceId final_deps     = 41;
 }
 message CommitRequest {
     RequestCommon cmn = 1;
     repeated Command     cmds           = 21;
-    repeated InstanceID final_deps     = 41;
+    repeated InstanceId final_deps     = 41;
 }
 message PrepareRequest {
     RequestCommon cmn = 1;
@@ -57,7 +57,7 @@ message ReplyCommon {
     // The ballot stored on acceptor before handling a request.
 
     BallotNum  last_ballot = 11;
-    InstanceID instance_id = 13;
+    InstanceId instance_id = 13;
 }
 message FastAcceptReply {
     // deps_status describe what status a dependent instance is in.
@@ -65,7 +65,7 @@ message FastAcceptReply {
 
     ReplyCommon         cmn            = 1;
     QError              err            = 5;
-    repeated InstanceID deps           = 32;
+    repeated InstanceId deps           = 32;
     repeated bool       deps_committed = 33;
 }
 message AcceptReply {
@@ -79,7 +79,7 @@ message CommitReply {
 message PrepareReply {
     ReplyCommon         cmn        = 1;
     QError              err        = 5;
-    repeated InstanceID deps       = 32;
-    repeated InstanceID final_deps = 41;
+    repeated InstanceId deps       = 32;
+    repeated InstanceId final_deps = 41;
     bool                committed  = 51;
 }
