@@ -3,25 +3,17 @@ use crate::replica::*;
 use crate::snapshot::MemEngine;
 
 fn new_foo_inst(leader_id: i64) -> Instance {
-    let iid1 = InstanceId::from((1, 10));
-    let iid2 = InstanceId::from((2, 20));
-    let iid3 = InstanceId::from((3, 30));
-    let initial_deps = vec![iid1, iid2, iid3];
+    let mut ii = inst!(
+        (leader_id, 1),
+        (2, 2, _),
+        [("NoOp", "k1", "v1"), ("Get", "k2", "v2")],
+        [(1, 10), (2, 20), (3, 30)],
+        [(2, 20)]
+    );
+    ii.last_ballot = Some((1, 2, leader_id).into());
+    ii.final_deps = Some(instids![(3, 30)].into());
 
-    let cmd1 = ("NoOp", "k1", "v1").into();
-    let cmd2 = ("Get", "k2", "v2").into();
-    let cmds = vec![cmd1, cmd2];
-    let ballot = (2, 2, leader_id).into();
-    let ballot2 = (1, 2, leader_id).into();
-
-    let mut inst = Instance::of(&cmds[..], ballot, &initial_deps[..]);
-    // TODO move these to Instance::new_instance
-    inst.instance_id = Some((leader_id, 1).into());
-    inst.deps = Some([iid2].to_vec().into());
-    inst.final_deps = Some([iid3].to_vec().into());
-    inst.last_ballot = Some(ballot2);
-
-    inst
+    ii
 }
 
 fn new_foo_replica(replica_id: i64) -> Replica {

@@ -11,7 +11,7 @@ use enum_utils;
 include!(concat!(env!("OUT_DIR"), "/qpaxos.rs"));
 
 #[macro_use]
-mod macros;
+pub mod macros;
 
 pub type InstanceIdx = i64;
 pub type ReplicaID = i64;
@@ -21,6 +21,8 @@ pub use q_paxos_server::*;
 
 pub mod conflict;
 pub use conflict::*;
+#[macro_use]
+pub use macros::*;
 
 #[cfg(test)]
 mod t;

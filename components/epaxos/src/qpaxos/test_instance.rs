@@ -1,4 +1,3 @@
-#[macro_use]
 use crate::qpaxos::*;
 
 #[test]
@@ -12,6 +11,13 @@ fn test_instance_id_from() {
 }
 
 #[test]
+fn test_macro_instid() {
+    let id = instid!(1, 2);
+
+    assert_eq!(InstanceId::from((1, 2)), id);
+}
+
+#[test]
 fn test_macro_instids() {
     let ids = instids![(1, 2), (3i32, 4i64)];
 
@@ -21,13 +27,118 @@ fn test_macro_instids() {
 }
 
 #[test]
+fn test_macro_ballot() {
+    let b = ballot!(1, 2, 3);
+
+    assert_eq!(BallotNum::from((1, 2, 3)), b);
+}
+
+#[test]
+fn test_macro_inst_all_arg() {
+    let want = Instance {
+        instance_id: Some((1, 2).into()),
+        last_ballot: Some((4, 5, 2).into()),
+        ballot: Some((3, 4, 2).into()),
+        cmds: vec![("Set", "x", "y").into(), ("Get", "a", "b").into()],
+        initial_deps: Some(InstanceIdVec {
+            ids: vec![(11, 12).into(), (13, 14).into()],
+        }),
+        deps: Some(InstanceIdVec {
+            ids: vec![(12, 13).into(), (14, 15).into()],
+        }),
+        final_deps: Some(InstanceIdVec {
+            ids: vec![(13, 14).into(), (15, 16).into()],
+        }),
+        committed: true,
+        executed: true,
+    };
+
+    assert_eq!(
+        want,
+        inst!(
+            (1, 2),
+            (4, 5, 2),
+            (3, 4, 2),
+            [("Set", "x", "y"), ("Get", "a", "b")],
+            [(11, 12), (13, 14)],
+            [(12, 13), (14, 15)],
+            [(13, 14), (15, 16)],
+            true,
+            true,
+        )
+    );
+}
+
+#[test]
+fn test_macro_inst() {
+    let mut want = Instance {
+        instance_id: Some((1, 2).into()),
+        last_ballot: None,
+        ballot: Some((3, 4, 1).into()),
+        cmds: vec![("Set", "x", "y").into(), ("Get", "a", "b").into()],
+        initial_deps: Some(InstanceIdVec {
+            ids: vec![(11, 12).into(), (13, 14).into()],
+        }),
+        deps: None,
+        final_deps: None,
+        committed: false,
+        executed: false,
+    };
+
+    // only initial_deps
+    assert_eq!(
+        want,
+        inst!(
+            (1, 2),
+            (3, 4, _),
+            [("Set", "x", "y"), ("Get", "a", "b")],
+            [(11, 12), (13, 14)]
+        )
+    );
+
+    // shortcut to set deps to initial_deps
+    want.deps = want.initial_deps.clone();
+    assert_eq!(
+        want,
+        inst!(
+            (1, 2),
+            (3, 4, _),
+            [("Set", "x", "y"), ("Get", "a", "b")],
+            [(11, 12), (13, 14)],
+            "withdeps",
+        )
+    );
+
+    // initial_deps and deps
+    want.deps = Some(instids![(10, 0), (11, 12)].into());
+    assert_eq!(
+        want,
+        inst!(
+            (1, 2),
+            (3, 4, _),
+            [("Set", "x", "y"), ("Get", "a", "b")],
+            [(11, 12), (13, 14)],
+            [(10, 0), (11, 12)],
+        )
+    );
+
+    // initial_deps is None
+    want.initial_deps = None;
+    want.deps = None;
+    assert_eq!(
+        want,
+        inst!((1, 2), (3, 4, _), [("Set", "x", "y"), ("Get", "a", "b")],)
+    );
+}
+
+#[test]
 fn test_instance_conflict() {
     let nx = Command::from(("NoOp", "x", "1"));
     let gx = Command::from(("Get", "x", "1"));
     let sx = Command::from(("Set", "x", "1"));
 
     let ny = Command::from(("NoOp", "y", "1"));
-    let gy = Command::from(("Get", "y", "1"));
+    let _gy = Command::from(("Get", "y", "1"));
     let sy = Command::from(("Set", "y", "1"));
 
     let nxny = Instance::of(&[nx.clone(), ny.clone()], (0, 0, 0).into(), &[]);
@@ -222,6 +333,7 @@ fn test_instance_id_vec_from_array() {
 
     let arr: [i32; 0] = [];
     let ids: InstanceIdVec = arr.into();
+    assert_eq!(0, ids.len());
 
     let arr = [(1, 2)];
     let ids: InstanceIdVec = arr.into();
@@ -271,6 +383,7 @@ fn test_instance_id_vec_from_array_ref() {
 
     let arr: &[i32; 0] = &[];
     let ids: InstanceIdVec = arr.into();
+    assert_eq!(0, ids.len());
 
     let arr = &[(1, 2)];
     let ids: InstanceIdVec = arr.into();

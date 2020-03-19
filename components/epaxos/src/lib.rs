@@ -5,6 +5,8 @@ extern crate quick_error;
 mod testutil;
 
 pub mod conf;
+
+#[macro_use]
 pub mod qpaxos;
 pub mod replica;
 pub mod snapshot;
