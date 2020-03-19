@@ -3,10 +3,10 @@ use std::net::{SocketAddr, TcpStream};
 use std::time::SystemTime;
 
 use super::super::conf::ClusterInfo;
-
 use super::super::qpaxos::*;
-
 use super::super::snapshot::{Error, InstanceEngine};
+use crate::replica::AcceptStatus;
+use crate::replica::InstanceStatus;
 
 /// ref_or_bug extracts a immutable ref from an Option.
 /// If the Option is None a bug handler is triggered.
@@ -40,25 +40,15 @@ pub struct ReplicaPeer {
 #[derive(Default)]
 pub struct ReplicaConf {
     pub thrifty: bool,               // send msg only to a quorum or the full set
-    pub exec: bool,                  // exec comamnd or not
     pub dreply: bool, // delay replying to client after command has been executed or not
     pub beacon: bool, // periodicity detect the speed of each known replica or not
     pub inst_committed_timeout: i32, // instance committed timeout
-}
-
-/// status of a replica
-pub enum ReplicaStatus {
-    Joining,
-    Running,
-    ShuttingDown,
-    Down,
 }
 
 /// structure to represent a replica
 pub struct Replica {
     pub replica_id: ReplicaID,             // replica id
     pub group_replica_ids: Vec<ReplicaID>, // all replica ids in this group
-    pub status: ReplicaStatus,             // status record used internally
     pub peers: Vec<ReplicaPeer>, // peers in communication, if need access from multi-thread, wrap it by Arc<>
     pub conf: ReplicaConf,       // misc conf
 
@@ -213,6 +203,7 @@ impl Replica {
         let (ballot, iid) = self._check_req_common(&req.cmn)?;
 
         let mut inst = self._get_instance(iid)?;
+        // TODO check instance status if committed or executed
 
         inst.last_ballot = inst.ballot;
 
@@ -263,10 +254,7 @@ impl Replica {
         &mut self,
         cm: &Option<RequestCommon>,
     ) -> Result<(BallotNum, InstanceId), Error> {
-        let cm = match cm {
-            Some(v) => v,
-            None => return Err(Error::LackOf("cmn".into())),
-        };
+        let cm = cm.as_ref().ok_or(Error::LackOf("cmn".into()))?;
 
         let replica_id = cm.to_replica_id;
         if replica_id != self.replica_id {
@@ -278,6 +266,21 @@ impl Replica {
 
         let ballot = cm.ballot.ok_or(Error::LackOf("cmn.ballot".into()))?;
 
+        let iid = cm
+            .instance_id
+            .ok_or(Error::LackOf("cmn.instance_id".into()))?;
+
+        Ok((ballot, iid))
+    }
+
+    fn _check_repl_common(
+        &mut self,
+        cm: &Option<ReplyCommon>,
+    ) -> Result<(BallotNum, InstanceId), Error> {
+        let cm = cm.as_ref().ok_or(Error::LackOf("cmn".into()))?;
+        let ballot = cm
+            .last_ballot
+            .ok_or(Error::LackOf("cmn.last_ballot".into()))?;
         let iid = cm
             .instance_id
             .ok_or(Error::LackOf("cmn.instance_id".into()))?;
@@ -303,4 +306,50 @@ impl Replica {
             ..Default::default()
         }
     }
+
+    fn _bcast_fast_accept(&mut self, req: &FastAcceptRequest) {}
+
+    fn _bcast_accept(&mut self, req: &AcceptRequest) {}
+
+    fn _bcast_commit(&mut self, inst: &Instance) {}
+
+    pub fn quorum(&self) -> i32 {
+        let f = self.group_replica_ids.len() as i32 / 2;
+        f + 1
+    }
+
+    pub fn fast_quorum(&self) -> i32 {
+        let f = self.group_replica_ids.len() as i32 / 2;
+        f + (f + 1) / 2
+    }
+}
+
+pub fn handle_accept_reply(
+    ra: &mut Replica,
+    repl: &AcceptReply,
+    st: &mut AcceptStatus,
+) -> Result<(), Error> {
+    if let Some(_) = repl.err {
+        return Ok(());
+    }
+
+    let (last_ballot, iid) = ra._check_repl_common(&repl.cmn)?;
+    let mut inst = ra._get_instance(iid)?;
+
+    // ignore delay reply
+    if inst.status() != InstanceStatus::Accepted {
+        return Ok(());
+    }
+
+    if inst.ballot.unwrap() < last_ballot {
+        return Ok(());
+    }
+
+    if st.finish() {
+        inst.committed = true;
+        ra.storage.set_instance(&inst)?;
+        ra._bcast_commit(&inst);
+    }
+
+    Ok(())
 }

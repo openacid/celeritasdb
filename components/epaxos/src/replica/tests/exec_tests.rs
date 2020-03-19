@@ -1,12 +1,11 @@
 use crate::qpaxos::{Command, Instance, InstanceId, OpCode};
-use crate::replica::{ExecuteResult, Replica, ReplicaConf, ReplicaStatus};
+use crate::replica::{ExecuteResult, Replica, ReplicaConf};
 use crate::snapshot::MemEngine;
 
 fn new_replica() -> Replica {
     return Replica {
         replica_id: 0,
         group_replica_ids: vec![1, 2, 3],
-        status: ReplicaStatus::Running,
         peers: vec![],
         conf: ReplicaConf {
             ..Default::default()
