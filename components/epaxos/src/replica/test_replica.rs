@@ -2,6 +2,41 @@ use crate::qpaxos::*;
 use crate::replica::*;
 use crate::snapshot::MemEngine;
 
+/// Create an instance with command "set x=y".
+/// Use this when only deps are concerned.
+/// The initial_deps and deps are all set to the second arg.
+macro_rules! foo_inst {
+    (($rid:expr, $idx: expr),
+     [$(($dep_rid:expr, $dep_idx:expr)),* $(,)*]
+    ) => {
+        inst!(($rid, $idx), (0, 0, _),
+              [("Set", "x", "y")],
+              [$(($dep_rid, $dep_idx)),*],
+              "withdeps"
+        )
+    };
+
+    (None,
+     [$(($dep_rid:expr, $dep_idx:expr)),* $(,)*]
+    ) => {
+        Instance {
+            instance_id: None,
+            ..inst!((0, 0), (0, 0, _),
+                      [("Set", "x", "y")],
+                      [$(($dep_rid, $dep_idx)),*],
+                      "withdeps"
+                     )
+        }
+    };
+
+    (($rid:expr, $idx: expr)
+    ) => {
+        inst!(($rid, $idx), (0, 0, _),
+              [("Set", "x", "y")],
+        )
+    };
+}
+
 fn new_foo_inst(leader_id: i64) -> Instance {
     let mut ii = inst!(
         (leader_id, 1),
@@ -16,10 +51,11 @@ fn new_foo_inst(leader_id: i64) -> Instance {
     ii
 }
 
-fn new_foo_replica(replica_id: i64) -> Replica {
-    Replica {
+/// Create a stupid replica with some instances stored.
+fn new_foo_replica(replica_id: i64, insts: &[((i64, i64), &Instance)]) -> Replica {
+    let mut r = Replica {
         replica_id,
-        group_replica_ids: vec![1, 2, 3],
+        group_replica_ids: vec![0, 1, 2],
         status: ReplicaStatus::Running,
         peers: vec![],
         conf: ReplicaConf {
@@ -29,7 +65,13 @@ fn new_foo_replica(replica_id: i64) -> Replica {
         latest_cp: (1, 1).into(),
         storage: Box::new(MemEngine::new().unwrap()),
         problem_inst_ids: vec![],
+    };
+
+    for (iid, inst) in insts.iter() {
+        r.storage.set_obj((*iid).into(), inst).unwrap();
     }
+
+    r
 }
 
 macro_rules! test_invalid_req {
@@ -55,7 +97,7 @@ macro_rules! test_invalid_req {
 #[test]
 fn test_handle_xxx_request_invalid() {
     let replica_id = 2;
-    let mut replica = new_foo_replica(replica_id);
+    let mut replica = new_foo_replica(replica_id, &vec![]);
 
     let cases: Vec<(Option<RequestCommon>, (&str, &str, &str))> = vec![
         (None, ("cmn", "LackOf", "")),
@@ -90,10 +132,34 @@ fn test_handle_xxx_request_invalid() {
 }
 
 #[test]
+#[should_panic(expected = "local_inst.deps is unexpected to be None")]
+fn test_handle_fast_accept_request_panic_local_deps_none() {
+    let inst = foo_inst!((0, 0));
+    let req_inst = foo_inst!((1, 0), [(0, 0)]);
+
+    _handle_fast_accept_request((0, 0), inst, req_inst);
+}
+
+#[test]
+#[should_panic(expected = "local_inst.instance_id is unexpected to be None")]
+fn test_handle_fast_accept_request_panic_local_instance_id_none() {
+    let inst = foo_inst!(None, [(2, 0)]);
+    let req_inst = foo_inst!((1, 0), [(0, 0)]);
+
+    _handle_fast_accept_request((0, 0), inst, req_inst);
+}
+
+fn _handle_fast_accept_request(iid: (i64, i64), inst: Instance, req_inst: Instance) {
+    let mut replica = new_foo_replica(1, &[(iid, &inst)]);
+
+    let req = MakeRequest::fast_accept(1, &req_inst, &vec![false]);
+    replica.handle_fast_accept(&req);
+}
+
+#[test]
 fn test_handle_fast_accept_request() {
     let replica_id = 1;
-    let mut replica = new_foo_replica(replica_id);
-    replica.group_replica_ids = vec![0, 1, 2];
+    let mut replica = new_foo_replica(replica_id, &vec![]);
 
     {
         let mut inst = new_foo_inst(replica_id);
@@ -247,7 +313,7 @@ fn test_handle_accept_request() {
     let blt = inst.ballot;
     let fdeps = inst.final_deps.clone();
 
-    let mut replica = new_foo_replica(replica_id);
+    let mut replica = new_foo_replica(replica_id, &vec![]);
     let none = replica.storage.get_instance(iid).unwrap();
     assert_eq!(None, none);
 
@@ -316,7 +382,7 @@ fn test_handle_commit_request() {
     let cmds = inst.cmds.clone();
     let fdeps = inst.final_deps.clone();
 
-    let mut replica = new_foo_replica(replica_id);
+    let mut replica = new_foo_replica(replica_id, &vec![]);
     let none = replica.storage.get_instance(iid).unwrap();
     assert_eq!(None, none);
 

@@ -8,6 +8,26 @@ use super::super::qpaxos::*;
 
 use super::super::snapshot::{Error, InstanceEngine};
 
+/// ref_or_bug extracts a immutable ref from an Option.
+/// If the Option is None a bug handler is triggered.
+/// Without specifying bug handler, it just calls a panic!()
+macro_rules! ref_or_bug {
+    ($fld:expr, $bug_handler:expr) => {
+        if $fld == None {
+            $bug_handler;
+        } else {
+            $fld.as_ref().unwrap()
+        }
+    };
+
+    ($fld:expr) => {
+        ref_or_bug!(
+            $fld,
+            panic!("{} is unexpected to be None", stringify!($fld))
+        )
+    };
+}
+
 /// information of communication peer
 pub struct ReplicaPeer {
     pub replica_id: ReplicaID,
@@ -123,6 +143,8 @@ impl Replica {
         inst.ballot = Some(ballot);
         inst.last_ballot = inst.ballot;
 
+        let req_deps = ref_or_bug!(req.initial_deps);
+
         inst.cmds = req.cmds.clone();
         inst.initial_deps = req.initial_deps.clone();
         inst.deps = req.initial_deps.clone();
@@ -134,12 +156,10 @@ impl Replica {
             let start_iid = (*rid, i64::MAX).into();
 
             for local_inst in self.storage.get_instance_iter(start_iid, true, true) {
-                // TODO: this is a bug: deps should always not None
-                if local_inst.deps == None {
-                    continue;
-                };
+                let local_deps = ref_or_bug!(local_inst.deps);
+                let local_iid = ref_or_bug!(local_inst.instance_id);
 
-                if local_inst.deps.as_ref().unwrap() >= &iid {
+                if local_deps >= &iid {
                     continue;
                 }
 
@@ -150,22 +170,17 @@ impl Replica {
                     continue;
                 }
 
-                // TODO unwrap on a None should be a bug
-                let local_iid = local_inst.instance_id.unwrap();
-
                 // TODO: test: fast-accept adding a new dep
 
-                // TODO unwrap on a None should be a bug
-                if inst.deps.as_ref().unwrap() > &local_iid {
+                if req_deps > &local_iid {
                     // the incoming instance already depends on this local instance, which implies
                     // it depends on any lower instances.
                     break;
                 }
 
-                // TODO unwrap on a None should be a bug
-                let fast_deps = inst.deps.as_mut().unwrap();
+                let req_deps = inst.deps.as_mut().unwrap();
 
-                let (ith, _) = fast_deps.set(local_iid);
+                let (ith, _) = req_deps.set(*local_iid);
                 if ith == deps_committed.len() {
                     deps_committed.push(local_inst.committed);
                 } else {
