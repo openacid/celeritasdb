@@ -9,10 +9,7 @@ fn main() {
         .type_attribute("OpCode", "#[derive(enum_utils::FromStr)]")
         //TODO command contains vec<u8> that can not be copied.
         // .type_attribute("Command", "#[derive(Copy)]")
-        .type_attribute(
-            "InstanceId",
-            "#[derive(Copy, Eq, Ord, PartialOrd, derive_more::From)]",
-        )
+        .type_attribute("InstanceId", "#[derive(Copy, Eq, Ord, PartialOrd)]")
         .type_attribute("InstanceIdVec", "#[derive(derive_more::From)]")
         .type_attribute(
             "BallotNum",

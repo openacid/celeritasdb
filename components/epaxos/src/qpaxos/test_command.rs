@@ -1,3 +1,4 @@
+#[macro_use]
 use crate::qpaxos::*;
 use prost::Message;
 
@@ -49,4 +50,13 @@ fn test_command_conflit() {
     assert!(!sy.conflict(&nx));
     assert!(!sy.conflict(&gx));
     assert!(!sy.conflict(&sx));
+}
+
+#[test]
+fn test_macro_cmds() {
+    let cmds = cmds![("Set", "key", "value"), (OpCode::Get, "a", "b")];
+
+    assert_eq!(cmds[0], (OpCode::Set, "key", "value").into());
+    assert_eq!(cmds[1], ("Get", "a", "b").into());
+    assert_eq!(2, cmds.len());
 }

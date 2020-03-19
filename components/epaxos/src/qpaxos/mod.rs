@@ -10,14 +10,8 @@ use enum_utils;
 
 include!(concat!(env!("OUT_DIR"), "/qpaxos.rs"));
 
-#[cfg(test)]
-mod t;
-
-#[cfg(test)]
-mod test_command;
-
-#[cfg(test)]
-mod test_instance;
+#[macro_use]
+mod macros;
 
 pub type InstanceIdx = i64;
 pub type ReplicaID = i64;
@@ -27,6 +21,15 @@ pub use q_paxos_server::*;
 
 pub mod conflict;
 pub use conflict::*;
+
+#[cfg(test)]
+mod t;
+
+#[cfg(test)]
+mod test_command;
+
+#[cfg(test)]
+mod test_instance;
 
 pub struct MakeRequest {}
 pub struct MakeReply {}
@@ -100,6 +103,15 @@ impl From<(&str, &str, &str)> for Command {
 impl ToKey for InstanceId {
     fn to_key(&self) -> Vec<u8> {
         format!("/instance/{:016x}/{:016x}", self.replica_id, self.idx).into_bytes()
+    }
+}
+
+impl<A: Into<ReplicaID> + Copy, B: Into<i64> + Copy> From<(A, B)> for InstanceId {
+    fn from(t: (A, B)) -> InstanceId {
+        InstanceId {
+            replica_id: t.0.into(),
+            idx: t.1.into(),
+        }
     }
 }
 

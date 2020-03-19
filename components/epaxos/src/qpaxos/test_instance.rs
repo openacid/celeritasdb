@@ -1,4 +1,24 @@
+#[macro_use]
 use crate::qpaxos::*;
+
+#[test]
+fn test_instance_id_from() {
+    let id = InstanceId {
+        replica_id: 3,
+        idx: 4,
+    };
+    assert_eq!(id, (3, 4).into());
+    assert_eq!(id, (3i32, 4i64).into());
+}
+
+#[test]
+fn test_macro_instids() {
+    let ids = instids![(1, 2), (3i32, 4i64)];
+
+    assert_eq!(InstanceId::from((1, 2)), ids[0]);
+    assert_eq!(InstanceId::from((3, 4)), ids[1]);
+    assert_eq!(2, ids.len());
+}
 
 #[test]
 fn test_instance_conflict() {
