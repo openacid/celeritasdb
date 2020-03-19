@@ -1,5 +1,8 @@
+use std::collections::HashMap;
+
 use crate::qpaxos::*;
 use crate::replica::*;
+use crate::snapshot::Error as SnapError;
 use crate::snapshot::MemEngine;
 
 fn new_foo_inst(leader_id: i64) -> Instance {
@@ -37,6 +40,8 @@ fn new_foo_replica(replica_id: i64) -> Replica {
         latest_cp: (1, 1).into(),
         storage: Box::new(MemEngine::new().unwrap()),
         problem_inst_ids: vec![],
+        accept_ok: HashMap::new(),
+        fast_accept_ok: HashMap::new(),
     }
 }
 
@@ -124,7 +129,7 @@ fn test_handle_fast_accept_request() {
         _test_repl_cmn_ok(&repl.cmn.unwrap(), iid, blt);
 
         // get the written instance.
-        _test_get_inst(&replica, iid, blt, blt, inst.cmds, None);
+        _test_get_inst(&replica, iid, blt, blt, inst.cmds, None, false, false);
     }
 
     {
@@ -243,6 +248,8 @@ fn test_handle_fast_accept_request() {
             insta.ballot,
             insta.cmds,
             None,
+            false,
+            false,
         );
     }
 }
@@ -267,7 +274,16 @@ fn test_handle_accept_request() {
         _test_repl_cmn_ok(&repl.cmn.unwrap(), iid, None);
 
         // get the written instance.
-        _test_get_inst(&replica, iid, blt, None, vec![], fdeps.clone());
+        _test_get_inst(
+            &replica,
+            iid,
+            blt,
+            None,
+            vec![],
+            fdeps.clone(),
+            false,
+            false,
+        );
     }
 
     {
@@ -283,7 +299,7 @@ fn test_handle_accept_request() {
         _test_repl_cmn_ok(&repl.cmn.unwrap(), iid, blt);
 
         // get the accepted instance.
-        _test_get_inst(&replica, iid, blt, blt, vec![], fdeps.clone());
+        _test_get_inst(&replica, iid, blt, blt, vec![], fdeps.clone(), false, false);
     }
 
     {
@@ -309,7 +325,16 @@ fn test_handle_accept_request() {
         _test_repl_cmn_ok(&repl.cmn.unwrap(), iid, bigger);
 
         // get the intact instance.
-        _test_get_inst(&replica, iid, bigger, blt, vec![], Some(vec![].into()));
+        _test_get_inst(
+            &replica,
+            iid,
+            bigger,
+            blt,
+            vec![],
+            Some(vec![].into()),
+            false,
+            false,
+        );
     }
 
     // TODO test storage error
@@ -337,7 +362,16 @@ fn test_handle_commit_request() {
         _test_repl_cmn_ok(&repl.cmn.unwrap(), iid, None);
 
         // get the committed instance.
-        _test_get_inst(&replica, iid, blt, None, cmds.clone(), fdeps.clone());
+        _test_get_inst(
+            &replica,
+            iid,
+            blt,
+            None,
+            cmds.clone(),
+            fdeps.clone(),
+            true,
+            false,
+        );
     }
 
     {
@@ -347,10 +381,88 @@ fn test_handle_commit_request() {
         _test_repl_cmn_ok(&repl.cmn.unwrap(), iid, blt);
 
         // get the committed instance.
-        _test_get_inst(&replica, iid, blt, blt, cmds.clone(), fdeps.clone());
+        _test_get_inst(
+            &replica,
+            iid,
+            blt,
+            blt,
+            cmds.clone(),
+            fdeps.clone(),
+            true,
+            false,
+        );
     }
 
     // TODO test storage error
+}
+#[test]
+fn test_handle_accept_reply() {
+    let replica_id = 2;
+    let mut rp = new_foo_replica(replica_id);
+    let mut foo_inst = new_foo_inst(replica_id);
+    let iid = foo_inst.instance_id.unwrap();
+
+    {
+        // success to commit
+        foo_inst.committed = false;
+        foo_inst.executed = false;
+        rp.storage.set_instance(&foo_inst).unwrap();
+        let repl = MakeReply::accept(&foo_inst);
+        rp.handle_accept_reply(&repl);
+
+        _test_get_inst(
+            &rp,
+            iid,
+            foo_inst.ballot,
+            foo_inst.last_ballot,
+            foo_inst.cmds.clone(),
+            foo_inst.final_deps.clone(),
+            true,
+            false,
+        )
+    }
+
+    {
+        // with reply err
+        foo_inst.committed = false;
+        foo_inst.executed = false;
+        rp.storage.set_instance(&foo_inst).unwrap();
+        let mut repl = MakeReply::accept(&foo_inst);
+        repl.err = Some(SnapError::LackOf("test".to_string()).to_qerr());
+        rp.handle_accept_reply(&repl);
+
+        _test_get_inst(
+            &rp,
+            iid,
+            foo_inst.ballot,
+            foo_inst.last_ballot,
+            foo_inst.cmds.clone(),
+            foo_inst.final_deps.clone(),
+            false,
+            false,
+        )
+    }
+
+    {
+        // with high ballot num
+        foo_inst.committed = false;
+        foo_inst.executed = false;
+        rp.storage.set_instance(&foo_inst).unwrap();
+        let mut repl = MakeReply::accept(&foo_inst);
+        repl.cmn.as_mut().unwrap().last_ballot = Some((10, 2, replica_id).into());
+        rp.handle_accept_reply(&repl);
+
+        _test_get_inst(
+            &rp,
+            iid,
+            foo_inst.ballot,
+            foo_inst.last_ballot,
+            foo_inst.cmds.clone(),
+            foo_inst.final_deps.clone(),
+            false,
+            false,
+        )
+    }
 }
 
 fn _test_repl_cmn_ok(cmn: &ReplyCommon, iid: InstanceId, last: Option<BallotNum>) {
@@ -365,6 +477,8 @@ fn _test_get_inst(
     last: Option<BallotNum>,
     cmds: Vec<Command>,
     final_deps: Option<InstanceIdVec>,
+    committed: bool,
+    executed: bool,
 ) {
     let got = replica.storage.get_instance(iid).unwrap().unwrap();
     assert_eq!(iid, got.instance_id.unwrap());
@@ -372,4 +486,6 @@ fn _test_get_inst(
     assert_eq!(last, got.last_ballot);
     assert_eq!(cmds, got.cmds);
     assert_eq!(final_deps, got.final_deps);
+    assert_eq!(committed, got.committed);
+    assert_eq!(executed, got.executed);
 }

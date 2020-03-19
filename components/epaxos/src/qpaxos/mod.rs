@@ -30,6 +30,15 @@ pub use conflict::*;
 pub struct MakeRequest {}
 pub struct MakeReply {}
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, PartialOrd, Ord)]
+pub enum InstanceStatus {
+    Na,
+    PreAccepted,
+    Accepted,
+    Committed,
+    Executed,
+}
+
 impl From<(&str, &str, &str)> for InvalidRequest {
     fn from(t: (&str, &str, &str)) -> InvalidRequest {
         InvalidRequest {
@@ -254,6 +263,27 @@ impl Instance {
             initial_deps: Some(deps.into()),
             ..Default::default()
         }
+    }
+
+    pub fn status(&self) -> InstanceStatus {
+        if self.executed {
+            return InstanceStatus::Executed;
+        }
+
+        if self.committed {
+            return InstanceStatus::Committed;
+        }
+
+
+        if self.final_deps.is_some() && self.final_deps.as_ref().unwrap().len() > 0 {
+            return InstanceStatus::Accepted;
+        }
+
+        if self.deps.is_some() && self.deps.as_ref().unwrap().len() > 0 {
+            return InstanceStatus::PreAccepted;
+        }
+
+        InstanceStatus::Na
     }
 
     pub fn after(&self, other: &Instance) -> bool {

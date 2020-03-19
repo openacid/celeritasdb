@@ -11,7 +11,7 @@ fn main() {
         // .type_attribute("Command", "#[derive(Copy)]")
         .type_attribute(
             "InstanceId",
-            "#[derive(Copy, Eq, Ord, PartialOrd, derive_more::From)]",
+            "#[derive(Copy, Hash, Eq, Ord, PartialOrd, derive_more::From)]",
         )
         .type_attribute("InstanceIdVec", "#[derive(derive_more::From)]")
         .type_attribute(

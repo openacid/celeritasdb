@@ -13,14 +13,6 @@ message InstanceIdVec {
     repeated InstanceId ids = 1;
 }
 
-enum InstanceStatus {
-    NA = 0;
-    PreAccepted = 1;
-    Accepted = 2;
-    Committed = 3;
-    Executed = 4;
-};
-
 message BallotNum {
     int32 epoch = 1;
     int32 num = 2;

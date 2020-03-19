@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use crate::qpaxos::{Command, Instance, InstanceId, OpCode};
 use crate::replica::{ExecuteResult, Replica, ReplicaConf, ReplicaStatus};
 use crate::snapshot::MemEngine;
@@ -15,6 +17,8 @@ fn new_replica() -> Replica {
         latest_cp: (1, 1).into(),
         storage: Box::new(MemEngine::new().unwrap()),
         problem_inst_ids: vec![],
+        accept_ok: HashMap::new(),
+        fast_accept_ok: HashMap::new(),
     };
 }
 

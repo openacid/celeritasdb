@@ -1,3 +1,4 @@
+use std::collections::HashMap;
 use std::i64;
 use std::net::{SocketAddr, TcpStream};
 use std::time::SystemTime;
@@ -20,7 +21,6 @@ pub struct ReplicaPeer {
 #[derive(Default)]
 pub struct ReplicaConf {
     pub thrifty: bool,               // send msg only to a quorum or the full set
-    pub exec: bool,                  // exec comamnd or not
     pub dreply: bool, // delay replying to client after command has been executed or not
     pub beacon: bool, // periodicity detect the speed of each known replica or not
     pub inst_committed_timeout: i32, // instance committed timeout
@@ -50,6 +50,9 @@ pub struct Replica {
 
     // to recover uncommitted instance
     pub problem_inst_ids: Vec<(InstanceId, SystemTime)>,
+
+    pub fast_accept_ok: HashMap<InstanceId, i32>,
+    pub accept_ok: HashMap<InstanceId, i32>,
 }
 
 impl Replica {
@@ -214,6 +217,7 @@ impl Replica {
         let (ballot, iid) = self._check_req_common(&req.cmn)?;
 
         let mut inst = self._get_instance(iid)?;
+        // TODO check instance status if committed or executed
 
         inst.last_ballot = inst.ballot;
 
@@ -226,6 +230,47 @@ impl Replica {
         }
 
         Ok(inst)
+    }
+
+    pub fn handle_accept_reply(&mut self, repl: &AcceptReply) {
+        match self._accept_reply(repl) {
+            Ok(_) => {}
+            Err(e) => {
+                println!("handle accept reply err: {:?}", e);
+            }
+        }
+    }
+
+    fn _accept_reply(&mut self, repl: &AcceptReply) -> Result<(), Error> {
+        if let Some(_) = repl.err {
+            return Ok(());
+        }
+
+        let (last_ballot, iid) = self._check_repl_common(&repl.cmn)?;
+        let mut inst = self._get_instance(iid)?;
+
+        // ignore delay reply
+        if inst.status() != InstanceStatus::Accepted {
+            return Ok(());
+        }
+
+        if inst.ballot.unwrap() < last_ballot {
+            return Ok(());
+        }
+
+        let cnt = self.accept_ok.entry(iid).or_insert(0);
+        *cnt += 1;
+
+        if *cnt + 1 >= self.quorum() {
+            self.accept_ok.remove(&iid);
+            inst.committed = true;
+            self.storage.set_instance(&inst)?;
+            // TODO reply to client
+            if !self.conf.dreply {}
+            self._bcast_commit(&inst);
+        }
+
+        Ok(())
     }
 
     pub fn handle_commit(&mut self, req: &CommitRequest) -> CommitReply {
@@ -264,10 +309,7 @@ impl Replica {
         &mut self,
         cm: &Option<RequestCommon>,
     ) -> Result<(BallotNum, InstanceId), Error> {
-        let cm = match cm {
-            Some(v) => v,
-            None => return Err(Error::LackOf("cmn".into())),
-        };
+        let cm = cm.as_ref().ok_or(Error::LackOf("cmn".into()))?;
 
         let replica_id = cm.to_replica_id;
         if replica_id != self.replica_id {
@@ -279,6 +321,21 @@ impl Replica {
 
         let ballot = cm.ballot.ok_or(Error::LackOf("cmn.ballot".into()))?;
 
+        let iid = cm
+            .instance_id
+            .ok_or(Error::LackOf("cmn.instance_id".into()))?;
+
+        Ok((ballot, iid))
+    }
+
+    fn _check_repl_common(
+        &mut self,
+        cm: &Option<ReplyCommon>,
+    ) -> Result<(BallotNum, InstanceId), Error> {
+        let cm = cm.as_ref().ok_or(Error::LackOf("cmn".into()))?;
+        let ballot = cm
+            .last_ballot
+            .ok_or(Error::LackOf("cmn.last_ballot".into()))?;
         let iid = cm
             .instance_id
             .ok_or(Error::LackOf("cmn.instance_id".into()))?;
@@ -303,5 +360,27 @@ impl Replica {
             instance_id: iid,
             ..Default::default()
         }
+    }
+
+    fn _bcast_fast_accept(&mut self, req: &FastAcceptRequest) {
+        let iid = req.cmn.as_ref().unwrap().instance_id.unwrap();
+        self.fast_accept_ok.remove(&iid);
+    }
+
+    fn _bcast_accept(&mut self, req: &AcceptRequest) {
+        let iid = req.cmn.as_ref().unwrap().instance_id.unwrap();
+        self.accept_ok.remove(&iid);
+    }
+
+    fn _bcast_commit(&mut self, inst: &Instance) {}
+
+    fn quorum(&self) -> i32 {
+        let f = self.group_replica_ids.len() as i32 / 2;
+        f + 1
+    }
+
+    fn fast_quorum(&self) -> i32 {
+        let f = self.group_replica_ids.len() as i32 / 2;
+        f + (f + 1) / 2
     }
 }
