@@ -274,7 +274,6 @@ impl Instance {
             return InstanceStatus::Committed;
         }
 
-
         if self.final_deps.is_some() && self.final_deps.as_ref().unwrap().len() > 0 {
             return InstanceStatus::Accepted;
         }
