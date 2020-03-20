@@ -46,14 +46,14 @@ macro_rules! ballot {
 #[allow(unused_macros)]
 macro_rules! inst {
     // instance_id, ballot, cmds, initial_deps=None
-    (($replica_id:expr, $idx:expr),
+    ($id:expr,
      ($epoch:expr, $num:expr, _),
      [$( ($op:expr, $key:expr, $val:expr)),*]
      $(,)*
      ) => {
         Instance {
             initial_deps: None,
-            ..inst!(($replica_id, $idx), ($epoch, $num, _),
+            ..inst!($id, ($epoch, $num, _),
                     [$(($op, $key, $val)),*],
                     [],
             )
@@ -61,15 +61,15 @@ macro_rules! inst {
     };
 
     // instance_id, ballot, cmds, initial_deps
-    (($replica_id:expr, $idx:expr),
+    ($id:expr,
      ($epoch:expr, $num:expr, _),
      [$( ($op:expr, $key:expr, $val:expr)),*],
      [$( ($idep_rid:expr, $idep_idx:expr)),*]
      $(,)*
      ) => {
         Instance {
-            instance_id: Some(($replica_id, $idx).into()),
-            ballot: Some(($epoch, $num, $replica_id).into()),
+            instance_id: Some($id.into()),
+            ballot: Some(($epoch, $num, InstanceId::from($id).replica_id).into()),
             cmds: cmds![$( ($op, $key, $val)),*].into(),
             initial_deps: Some(
                 instids![$( ($idep_rid, $idep_idx)),*].into()
@@ -79,7 +79,7 @@ macro_rules! inst {
     };
 
     // instance_id, ballot, cmds, initial_deps, deps=initial_deps
-    (($replica_id:expr, $idx:expr),
+    ($id:expr,
      ($epoch:expr, $num:expr, _),
      [$( ($op:expr, $key:expr, $val:expr)),*],
      [$( ($idep_rid:expr, $idep_idx:expr)),*],
@@ -87,8 +87,8 @@ macro_rules! inst {
      $(,)*
      ) => {
         Instance {
-            instance_id: Some(($replica_id, $idx).into()),
-            ballot: Some(($epoch, $num, $replica_id).into()),
+            instance_id: Some($id.into()),
+            ballot: Some(($epoch, $num, InstanceId::from($id).replica_id).into()),
             cmds: cmds![$( ($op, $key, $val)),*].into(),
             initial_deps: Some(
                 instids![$( ($idep_rid, $idep_idx)),*].into()
@@ -101,7 +101,7 @@ macro_rules! inst {
     };
 
     // instance_id, ballot, cmds, initial_deps, specified deps
-    (($replica_id:expr, $idx:expr),
+    ($id:expr,
      ($epoch:expr, $num:expr, _),
      [$( ($op:expr, $key:expr, $val:expr)),*],
      [$( ($idep_rid:expr, $idep_idx:expr)),*],
@@ -109,8 +109,8 @@ macro_rules! inst {
      $(,)*
      ) => {
         Instance {
-            instance_id: Some(($replica_id, $idx).into()),
-            ballot: Some(($epoch, $num, $replica_id).into()),
+            instance_id: Some($id.into()),
+            ballot: Some(($epoch, $num, InstanceId::from($id).replica_id).into()),
             cmds: cmds![$( ($op, $key, $val)),*].into(),
             initial_deps: Some(
                 instids![$( ($idep_rid, $idep_idx)),*].into()
@@ -123,7 +123,7 @@ macro_rules! inst {
     };
 
     // all arg
-    (($replica_id:expr, $idx:expr),
+    ($id:expr,
      ($lepoch:expr, $lnum:expr, $lbrid:expr),
      ($epoch:expr, $num:expr, $brid:expr),
      [$( ($op:expr, $key:expr, $val:expr)),*],
@@ -135,7 +135,7 @@ macro_rules! inst {
      $(,)*
      ) => {
         Instance {
-            instance_id: Some(($replica_id, $idx).into()),
+            instance_id: Some($id.into()),
             last_ballot: Some(($lepoch, $lnum, $lbrid).into()),
             ballot: Some(($epoch, $num, $brid).into()),
             cmds: cmds![$( ($op, $key, $val)),*].into(),

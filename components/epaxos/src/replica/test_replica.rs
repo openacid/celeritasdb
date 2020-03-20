@@ -7,12 +7,30 @@ use crate::snapshot::MemEngine;
 /// Create an instance with command "set x=y".
 /// Use this when only deps are concerned.
 /// The initial_deps and deps are all set to the second arg.
+/// supported pattern:
+/// foo_inst!(iid, cmds, initial_deps)
+/// foo_inst!(iid, key, initial_deps) // an instance with a single cmd: Set `key`
+/// foo_inst!(iid, initial_deps)
+/// foo_inst!(None, initial_deps)
+/// foo_inst!(iid)
 macro_rules! foo_inst {
-    (($rid:expr, $idx: expr),
+    ($id:expr,
+     [$( ($op:expr, $key:expr, $val:expr)),*],
      [$(($dep_rid:expr, $dep_idx:expr)),* $(,)*]
     ) => {
-        inst!(($rid, $idx), (0, 0, _),
-              [("Set", "x", "y")],
+        inst!($id, (0, 0, _),
+              [$( ($op, $key, $val)),*],
+              [$(($dep_rid, $dep_idx)),*],
+              "withdeps"
+        )
+    };
+
+    ($id:expr,
+     $key:expr,
+     [$(($dep_rid:expr, $dep_idx:expr)),* $(,)*]
+    ) => {
+        inst!($id, (0, 0, _),
+              [("Set", $key, $key)],
               [$(($dep_rid, $dep_idx)),*],
               "withdeps"
         )
@@ -31,9 +49,19 @@ macro_rules! foo_inst {
         }
     };
 
-    (($rid:expr, $idx: expr)
+    ($id:expr,
+     [$(($dep_rid:expr, $dep_idx:expr)),* $(,)*]
     ) => {
-        inst!(($rid, $idx), (0, 0, _),
+        inst!($id, (0, 0, _),
+              [("Set", "x", "y")],
+              [$(($dep_rid, $dep_idx)),*],
+              "withdeps"
+        )
+    };
+
+    ($id:expr
+    ) => {
+        inst!($id, (0, 0, _),
               [("Set", "x", "y")],
         )
     };
@@ -198,89 +226,44 @@ fn test_handle_fast_accept_request() {
         // R0         R1         R2
 
         // below code that new instance is encapsulated in a func
-        // instx
-        let x_iid = (0, 0).into();
-        let cmd1 = ("Set", "key_x", "val_x").into();
-        let cmds = vec![cmd1];
-        let ballot = (0, 0, 0).into();
-        let initial_deps = vec![];
 
-        let mut instx = Instance::of(&cmds[..], ballot, &initial_deps[..]);
-        instx.deps = Some([(0, 0), (0, 0), (0, 0)].into());
-        instx.instance_id = Some(x_iid);
-        replica.storage.set_instance(&instx).unwrap();
+        let x_iid = instid!(0, 0);
+        let instx = foo_inst!(x_iid, "key_x", [(0, 0), (0, 0), (0, 0)]);
 
-        // insty
-        let y_iid = (1, 0).into();
-        let cmd1 = ("Get", "key_y", "val_y").into();
-        let cmds = vec![cmd1];
-        let ballot = (0, 0, 1).into();
-        let initial_deps = vec![];
+        let y_iid = instid!(1, 0);
+        let insty = foo_inst!(y_iid, "key_y", [(0, 0), (0, 0), (0, 0)]);
 
-        let mut insty = Instance::of(&cmds[..], ballot, &initial_deps[..]);
-        insty.deps = Some([(0, 0), (0, 0), (0, 0)].into());
-        insty.instance_id = Some(y_iid);
-        replica.storage.set_instance(&insty).unwrap();
+        let z_iid = instid!(2, 0);
+        let instz = foo_inst!(z_iid, "key_z", [(0, 0), (0, 0), (0, 0)]);
 
-        // instz
-        let z_iid = (2, 0).into();
-        let cmd1 = ("Get", "key_z", "val_z").into();
-        let cmds = vec![cmd1];
-        let ballot = (0, 0, 2).into();
-        let initial_deps = vec![];
-
-        let mut instz = Instance::of(&cmds[..], ballot, &initial_deps[..]);
-        instz.deps = Some([(0, 0), (0, 0), (0, 0)].into());
-        instz.instance_id = Some(z_iid);
-        replica.storage.set_instance(&instz).unwrap();
-
-        // instb
-        let b_iid = (1, 1).into();
-        let cmd1 = ("Get", "key_b", "val_b").into();
-        let cmds = vec![cmd1];
-        let ballot = (0, 0, 1).into();
-        let initial_deps = vec![];
-
-        let mut instb = Instance::of(&cmds[..], ballot, &initial_deps[..]);
-        instb.deps = Some(vec![x_iid, y_iid, z_iid].into());
-        instb.instance_id = Some(b_iid);
+        // instb -> {x, y, z} committed
+        let b_iid = instid!(1, 1);
+        let mut instb = foo_inst!(b_iid, "key_b", [(0, 0), (1, 0), (2, 0)]);
         instb.committed = true;
-        replica.storage.set_instance(&instb).unwrap();
 
-        // insta
-        let a_iid = (0, 1).into();
-        let cmd1 = ("Get", "key_a", "val_a").into();
-        let cmds = vec![cmd1];
-        let ballot = (0, 0, 0).into();
-        let initial_deps = vec![x_iid, y_iid, z_iid];
+        // insta -> {x, y, z}
+        let a_iid = instid!(0, 1);
+        let mut insta = foo_inst!(a_iid, "key_a", [(0, 0), (1, 0), (2, 0)]);
 
-        let mut insta = Instance::of(&cmds[..], ballot, &initial_deps[..]);
-        insta.deps = Some(vec![x_iid, y_iid, z_iid].into());
-        insta.instance_id = Some(a_iid);
+        // instd -> {a, b, z}
+        let d_iid = instid!(0, 2);
+        let instd = foo_inst!(d_iid, "key_d", [(0, 1), (1, 1), (2, 0)]);
 
-        // instd
-        let d_iid = (0, 2).into();
-        let cmd1 = ("Get", "key_d", "val_d").into();
-        let cmds = vec![cmd1];
-        let ballot = (0, 0, 0).into();
-        let initial_deps = vec![];
+        // instc -> {d, b, z}
+        let c_iid = instid!(2, 3);
+        let instc = foo_inst!(c_iid, "key_z", [(0, 2), (1, 1), (2, 0)]);
 
-        let mut instd = Instance::of(&cmds[..], ballot, &initial_deps[..]);
-        instd.deps = Some(vec![a_iid, b_iid, z_iid].into());
-        instd.instance_id = Some(d_iid);
-        replica.storage.set_instance(&instd).unwrap();
-
-        // instc
-        let c_iid = (2, 3).into();
-        let cmd1 = ("Get", "key_z", "val_z").into();
-        let cmds = vec![cmd1];
-        let ballot = (0, 0, 2).into();
-        let initial_deps = vec![];
-
-        let mut instc = Instance::of(&cmds[..], ballot, &initial_deps[..]);
-        instc.deps = Some(vec![d_iid, b_iid, z_iid].into());
-        instc.instance_id = Some(c_iid);
-        replica.storage.set_instance(&instc).unwrap();
+        let mut replica = new_foo_replica(
+            replica_id,
+            &vec![
+                ((0, 0), &instx),
+                ((0, 2), &instd),
+                ((1, 0), &insty),
+                ((1, 1), &instb),
+                ((2, 0), &instz),
+                ((2, 3), &instc),
+            ],
+        );
 
         let deps_committed = vec![false, true, false];
         let req = MakeRequest::fast_accept(replica_id, &insta, &deps_committed);

@@ -67,6 +67,22 @@ fn test_macro_inst_all_arg() {
             true,
         )
     );
+
+    // id is InstanceId
+    assert_eq!(
+        want,
+        inst!(
+            InstanceId::from((1, 2)),
+            (4, 5, 2),
+            (3, 4, 2),
+            [("Set", "x", "y"), ("Get", "a", "b")],
+            [(11, 12), (13, 14)],
+            [(12, 13), (14, 15)],
+            [(13, 14), (15, 16)],
+            true,
+            true,
+        )
+    );
 }
 
 #[test]
