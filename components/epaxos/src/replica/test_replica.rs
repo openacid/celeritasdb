@@ -54,7 +54,7 @@ fn new_foo_inst(leader_id: i64) -> Instance {
 }
 
 /// Create a stupid replica with some instances stored.
-fn new_foo_replica(replica_id: i64, insts: &[((i64, i64), &Instance)]) -> Replica {
+pub fn new_foo_replica(replica_id: i64, insts: &[((i64, i64), &Instance)]) -> Replica {
     let mut r = Replica {
         replica_id,
         group_replica_ids: vec![0, 1, 2],

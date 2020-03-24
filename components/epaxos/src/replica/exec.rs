@@ -1,12 +1,8 @@
 use std::time::SystemTime;
 
-use crate::qpaxos::{Instance, InstanceId, OpCode};
+use crate::qpaxos::{Instance, InstanceId, InstanceIdVec, OpCode};
 use crate::replica::{errors::Error, Replica};
 use crate::snapshot::Error as SnapError;
-
-#[cfg(test)]
-#[path = "./tests/exec_tests.rs"]
-mod tests;
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ExecuteResult {
@@ -16,7 +12,7 @@ pub enum ExecuteResult {
 }
 
 impl Replica {
-    fn recover_instances(&self, inst_ids: &Vec<InstanceId>) {}
+    fn recover_instances(&self, inst_ids: &InstanceIdVec) {}
     // R1          R2
     // -------------
     // |           |
@@ -25,32 +21,40 @@ impl Replica {
     // a(Executed) |
     //
     // instances((a, d]) not exist in this replica, recover instance(a+1) first
-    fn find_missing_insts(
+    pub fn find_missing_insts(
         &self,
         min_insts: &Vec<Instance>,
-        exec_up_to: &Vec<InstanceId>,
-    ) -> Option<Vec<InstanceId>> {
-        let mut rst: Vec<InstanceId> = Vec::new();
+        exec_up_to: &InstanceIdVec,
+    ) -> Option<InstanceIdVec> {
+        let mut rst = InstanceIdVec::from([0; 0]);
+        let mut iids = InstanceIdVec::from([0; 0]);
+        let mut all_dep_iids = InstanceIdVec::from([0; 0]);
 
-        for inst in min_insts {
-            // TODO unwrap would panic
-            for dep_inst_id in inst.final_deps.as_ref().unwrap().iter() {
-                if let Some(_) = min_insts.iter().find(|x| match &x.instance_id {
-                    Some(iid) => return iid.replica_id == dep_inst_id.replica_id,
-                    None => return false,
-                }) {
-                    continue;
-                }
+        for inst in min_insts.iter() {
+            iids.push(inst.instance_id.unwrap());
+            all_dep_iids.extend(inst.final_deps.as_ref().unwrap().iter());
+        }
 
-                if let Some(iid) = exec_up_to
-                    .iter()
-                    .find(|x| x.replica_id == dep_inst_id.replica_id)
-                {
-                    if dep_inst_id.idx > iid.idx {
-                        rst.push((iid.replica_id, iid.idx + 1).into());
-                    }
-                }
+        for dep_iid in all_dep_iids.iter() {
+            if let Some(_) = iids.get(dep_iid.replica_id) {
+                continue;
             }
+
+            let missing: InstanceId = match exec_up_to.get(dep_iid.replica_id) {
+                None => (dep_iid.replica_id, 0).into(),
+                Some(iid) => {
+                    if dep_iid.idx <= iid.idx {
+                        continue;
+                    }
+
+                    (dep_iid.replica_id, iid.idx + 1).into()
+                }
+            };
+
+            if let Some(_) = rst.get(dep_iid.replica_id) {
+                continue;
+            }
+            rst.push(missing);
         }
 
         if rst.len() > 0 {
@@ -60,7 +64,7 @@ impl Replica {
         None
     }
 
-    fn execute_commands(&mut self, inst: &Instance) -> Result<Vec<ExecuteResult>, Error> {
+    pub fn execute_commands(&mut self, inst: &Instance) -> Result<Vec<ExecuteResult>, Error> {
         let mut rst = Vec::new();
         for cmd in inst.cmds.iter() {
             if OpCode::NoOp as i32 == cmd.op {
@@ -99,7 +103,7 @@ impl Replica {
     /// S = {x | x ∈ S and (∃y: y → x)}
     /// so S = {b, d}
     /// sort S by instance_id and execute
-    fn execute_instances(&mut self, insts: &Vec<Instance>) -> Result<Vec<InstanceId>, Error> {
+    pub fn execute_instances(&mut self, insts: &Vec<Instance>) -> Result<Vec<InstanceId>, Error> {
         let mut early = vec![false; insts.len()];
         let mut late = vec![false; insts.len()];
         let mut can_exec = Vec::with_capacity(insts.len());
@@ -153,7 +157,7 @@ impl Replica {
     // only save one smallest problem instance of every replica with problem_inst_ids.
     // when find a new problem instance just replace it if instance of this replica
     // already in problem_inst_ids.
-    fn timeout_to_committed(&mut self, iid: InstanceId) -> bool {
+    pub fn timeout_to_committed(&mut self, iid: InstanceId) -> bool {
         let now = SystemTime::now();
         if let Some(p) = self.problem_inst_ids.iter().find(|x| x.0 == iid) {
             let dt = now.duration_since(p.1).unwrap();
@@ -177,12 +181,12 @@ impl Replica {
         false
     }
 
-    fn get_insts_if_committed(
+    pub fn get_insts_if_committed(
         &mut self,
         inst_ids: &Vec<InstanceId>,
     ) -> Result<Vec<Instance>, Error> {
         let mut rst = Vec::new();
-        let mut recover_iids = Vec::new();
+        let mut recover_iids = InstanceIdVec::from([0; 0]);
 
         for iid in inst_ids.iter() {
             let inst = match self.storage.get_instance(*iid)? {
@@ -206,9 +210,9 @@ impl Replica {
         Ok(rst)
     }
 
-    fn execute(&mut self) -> Result<Vec<InstanceId>, Error> {
-        let mut exec_up_to = Vec::new();
-        let mut smallest_inst_ids = Vec::new();
+    pub fn execute(&mut self) -> Result<Vec<InstanceId>, Error> {
+        let mut exec_up_to = InstanceIdVec::from([0; 0]);
+        let mut smallest_inst_ids = InstanceIdVec::from([0; 0]);
         for rid in self.group_replica_ids.iter() {
             let exec_iid = self.storage.get_ref("exec", *rid)?;
             let max_iid = self.storage.get_ref("max", *rid)?;

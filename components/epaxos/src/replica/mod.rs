@@ -12,3 +12,6 @@ pub use status::*;
 
 #[cfg(test)]
 mod test_replica;
+
+#[cfg(test)]
+mod test_exec;

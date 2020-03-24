@@ -21,7 +21,6 @@ pub use q_paxos_server::*;
 
 pub mod conflict;
 pub use conflict::*;
-#[macro_use]
 pub use macros::*;
 
 #[cfg(test)]
@@ -110,6 +109,15 @@ impl ToKey for InstanceId {
 
 impl<A: Into<ReplicaID> + Copy, B: Into<i64> + Copy> From<(A, B)> for InstanceId {
     fn from(t: (A, B)) -> InstanceId {
+        InstanceId {
+            replica_id: t.0.into(),
+            idx: t.1.into(),
+        }
+    }
+}
+
+impl<A: Into<ReplicaID> + Copy, B: Into<i64> + Copy> From<&(A, B)> for InstanceId {
+    fn from(t: &(A, B)) -> InstanceId {
         InstanceId {
             replica_id: t.0.into(),
             idx: t.1.into(),
@@ -227,14 +235,10 @@ impl From<&[InstanceId]> for InstanceIdVec {
 
 impl<A: Into<ReplicaID> + Copy, B: Into<i64> + Copy> From<&[(A, B)]> for InstanceIdVec {
     fn from(v: &[(A, B)]) -> InstanceIdVec {
-        let x: Vec<InstanceId> = v
-            .iter()
-            .map(|x| InstanceId {
-                replica_id: x.0.into(),
-                idx: x.1.into(),
-            })
-            .collect();
-        x.to_vec().into()
+        v.iter()
+            .map(|x| x.into())
+            .collect::<Vec<InstanceId>>()
+            .into()
     }
 }
 
