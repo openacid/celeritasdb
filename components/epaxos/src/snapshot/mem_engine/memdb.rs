@@ -12,20 +12,24 @@ impl MemEngine {
     pub fn new() -> Result<MemEngine, Error> {
         let db = BTreeMap::new();
         Ok(MemEngine {
-            _db: db,
-            _mutex: Mutex::new(0),
+            _db: Mutex::new(db),
         })
     }
 }
 
 impl Base for MemEngine {
+    // TODO lock().unwrap() need to deal with poisoning
+    // https://doc.rust-lang.org/std/sync/struct.Mutex.html#poisoning
+
     fn set_kv(&mut self, key: Vec<u8>, value: Vec<u8>) -> Result<(), Error> {
-        self._db.insert(key, value);
+        let mut bt = self._db.lock().unwrap();
+        bt.insert(key, value);
         Ok(())
     }
 
     fn get_kv(&self, key: &Vec<u8>) -> Result<Vec<u8>, Error> {
-        if let Some(v) = self._db.get(key) {
+        let bt = self._db.lock().unwrap();
+        if let Some(v) = bt.get(key) {
             Ok(v.to_vec())
         } else {
             Err(Error::NotFound {})
@@ -33,7 +37,9 @@ impl Base for MemEngine {
     }
 
     fn next_kv(&self, key: &Vec<u8>, include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
-        for (k, v) in self._db.range(key.to_vec()..) {
+        let bt = self._db.lock().unwrap();
+
+        for (k, v) in bt.range(key.to_vec()..) {
             if include == false && key == k {
                 continue;
             }
@@ -45,7 +51,9 @@ impl Base for MemEngine {
     }
 
     fn prev_kv(&self, key: &Vec<u8>, include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
-        for (k, v) in self._db.range((Unbounded, Included(key.to_vec()))).rev() {
+        let bt = self._db.lock().unwrap();
+
+        for (k, v) in bt.range((Unbounded, Included(key.to_vec()))).rev() {
             if include == false && key == k {
                 continue;
             }
@@ -102,8 +110,7 @@ impl InstanceEngine for MemEngine {
     }
 
     fn set_instance(&mut self, inst: &Instance) -> Result<(), Error> {
-        // does not guarantee in a transaction
-        let _ = self._mutex.lock().unwrap();
+        // TODO does not guarantee in a transaction
 
         let iid = inst.instance_id.unwrap();
 
