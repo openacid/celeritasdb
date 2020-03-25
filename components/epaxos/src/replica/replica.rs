@@ -353,13 +353,15 @@ impl Replica {
     fn _bcast_commit(&mut self, inst: &Instance) {}
 
     pub fn quorum(&self) -> i32 {
-        let f = self.group_replica_ids.len() as i32 / 2;
-        f + 1
+        let n = self.group_replica_ids.len() as i32;
+        n / 2 + 1
     }
 
     pub fn fast_quorum(&self) -> i32 {
-        let f = self.group_replica_ids.len() as i32 / 2;
-        f + (f + 1) / 2
+        let n = self.group_replica_ids.len() as i32;
+        let q = n / 2 + 1;
+        let f = (n - 1) / 2;
+        f + q / 2
     }
 }
 
