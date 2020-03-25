@@ -31,29 +31,25 @@ impl Instance {
     }
 }
 
-macro_rules! impl_instance_status {
-    ($n:ident) => {
-        pub struct $n {
-            pub quorum: i32,
-            pub ok_count: i32,
-        }
-
-        impl $n {
-            pub fn new(quorum: i32) -> Self {
-                Self {
-                    quorum,
-                    ok_count: 1,
-                }
-            }
-
-            pub fn finish(&mut self) -> bool {
-                self.ok_count += 1;
-                self.ok_count >= self.quorum
-            }
-        }
-    };
+pub struct Status {
+    pub quorum: i32,
+    pub ok_count: i32,
 }
 
-impl_instance_status!(FastAcceptStatus);
-impl_instance_status!(AcceptStatus);
-impl_instance_status!(PrepareStatus);
+impl Status {
+    pub fn new(quorum: i32) -> Self {
+        Self {
+            quorum,
+            ok_count: 1,
+        }
+    }
+
+    pub fn finish(&mut self) -> bool {
+        self.ok_count += 1;
+        self.ok_count >= self.quorum
+    }
+}
+
+pub type FastAcceptStatus = Status;
+pub type AcceptStatus = Status;
+pub type PrepareStatus = Status;
