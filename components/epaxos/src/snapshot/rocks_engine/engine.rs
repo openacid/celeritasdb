@@ -67,7 +67,7 @@ impl RocksDBEngine {
     }
 
     /// Set a key-value pair to rocksdb.
-    fn set(&mut self, cfkv: &CfKV) -> Result<(), Error> {
+    fn set(&self, cfkv: &CfKV) -> Result<(), Error> {
         let cfh = self._make_cf_handle(cfkv.cf)?;
         Ok(self.db.put_cf(cfh, cfkv.k, cfkv.v)?)
     }
@@ -112,7 +112,7 @@ impl RocksDBEngine {
     }
 
     /// Set multi keys-values to rocksdb atomically.
-    fn _mset(&mut self, cfkvs: &Vec<CfKV>) -> Result<(), Error> {
+    fn _mset(&self, cfkvs: &Vec<CfKV>) -> Result<(), Error> {
         let wb = WriteBatch::new();
 
         for cfkv in cfkvs {
@@ -161,7 +161,7 @@ impl RocksDBEngine {
 }
 
 impl Base for RocksDBEngine {
-    fn set_kv(&mut self, key: Vec<u8>, value: Vec<u8>) -> Result<(), Error> {
+    fn set_kv(&self, key: Vec<u8>, value: Vec<u8>) -> Result<(), Error> {
         self.set(&CfKV {
             cf: &DBColumnFamily::Default,
             k: &key,

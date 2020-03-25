@@ -1,5 +1,6 @@
 use crate::qpaxos::{Instance, InstanceId, ReplicaID};
 use crate::tokey::ToKey;
+use std::sync::{Arc, Mutex};
 
 // required by encode/decode
 use prost::Message;
@@ -39,7 +40,7 @@ impl<'a> Iterator for BaseIter<'a> {
 /// Base offer basic key-value access
 pub trait Base {
     /// set a new key-value
-    fn set_kv(&mut self, key: Vec<u8>, value: Vec<u8>) -> Result<(), Error>;
+    fn set_kv(&self, key: Vec<u8>, value: Vec<u8>) -> Result<(), Error>;
 
     /// get an existing value with key
     fn get_kv(&self, key: &Vec<u8>) -> Result<Vec<u8>, Error>;
@@ -55,13 +56,16 @@ pub trait Base {
     fn get_iter(&self, key: Vec<u8>, include: bool, reverse: bool) -> BaseIter;
 }
 
+pub type Storage =
+    Arc<dyn InstanceEngine<ColumnId = ReplicaID, ObjId = InstanceId, Obj = Instance>>;
+
 /// InstanceEngine offer functions to operate snapshot instances
 pub trait InstanceEngine: TxEngine + ColumnedEngine {
     /// Find next available instance id and increase max-instance-id ref.
-    fn next_instance_id(&mut self, rid: ReplicaID) -> Result<InstanceId, Error>;
+    fn next_instance_id(&self, rid: ReplicaID) -> Result<InstanceId, Error>;
 
     /// set an instance
-    fn set_instance(&mut self, inst: &Instance) -> Result<(), Error>;
+    fn set_instance(&self, inst: &Instance) -> Result<(), Error>;
 
     /// get an instance with instance id
     fn get_instance(&self, iid: InstanceId) -> Result<Option<Instance>, Error>;
@@ -73,11 +77,11 @@ pub trait InstanceEngine: TxEngine + ColumnedEngine {
 /// TxEngine offer a transactional operation on a storage.
 pub trait TxEngine {
     /// start a transaction
-    fn trans_begin(&mut self);
+    fn trans_begin(&self);
     /// commit a transaction
-    fn trans_commit(&mut self) -> Result<(), Error>;
+    fn trans_commit(&self) -> Result<(), Error>;
     /// rollback a transaction
-    fn trans_rollback(&mut self) -> Result<(), Error>;
+    fn trans_rollback(&self) -> Result<(), Error>;
     /// get a key to set exclusively, must be called in an transaction
     fn get_kv_for_update(&self, key: &Vec<u8>) -> Result<Vec<u8>, Error>;
 }
@@ -96,7 +100,7 @@ pub trait ObjectEngine: Base {
     /// Obj defines the type of an object.
     type Obj: Message + std::default::Default;
 
-    fn set_obj(&mut self, objid: Self::ObjId, obj: &Self::Obj) -> Result<(), Error> {
+    fn set_obj(&self, objid: Self::ObjId, obj: &Self::Obj) -> Result<(), Error> {
         let key = objid.to_key();
         let value = self.encode_obj(obj)?;
 
@@ -155,12 +159,7 @@ pub trait ColumnedEngine: ObjectEngine {
 
     fn make_ref_key(&self, typ: &str, col_id: Self::ColumnId) -> Vec<u8>;
 
-    fn set_ref(
-        &mut self,
-        typ: &str,
-        col_id: Self::ColumnId,
-        objid: Self::ObjId,
-    ) -> Result<(), Error> {
+    fn set_ref(&self, typ: &str, col_id: Self::ColumnId, objid: Self::ObjId) -> Result<(), Error> {
         let key = self.make_ref_key(typ, col_id);
 
         let mut value = vec![];
@@ -193,7 +192,7 @@ pub trait ColumnedEngine: ObjectEngine {
     /// `default`: the default value to feed to `cond` if ref is not found.
     /// `cond`: a lambda takes one argument of type Self::ObjId.
     fn set_ref_if<P>(
-        &mut self,
+        &self,
         typ: &str,
         col_id: Self::ColumnId,
         objid: Self::ObjId,

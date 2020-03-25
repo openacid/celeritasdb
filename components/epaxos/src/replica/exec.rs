@@ -64,7 +64,7 @@ impl Replica {
         None
     }
 
-    pub fn execute_commands(&mut self, inst: &Instance) -> Result<Vec<ExecuteResult>, Error> {
+    pub fn execute_commands(&self, inst: &Instance) -> Result<Vec<ExecuteResult>, Error> {
         let mut rst = Vec::new();
         for cmd in inst.cmds.iter() {
             if OpCode::NoOp as i32 == cmd.op {

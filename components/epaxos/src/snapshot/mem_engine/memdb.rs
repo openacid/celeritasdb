@@ -21,7 +21,7 @@ impl Base for MemEngine {
     // TODO lock().unwrap() need to deal with poisoning
     // https://doc.rust-lang.org/std/sync/struct.Mutex.html#poisoning
 
-    fn set_kv(&mut self, key: Vec<u8>, value: Vec<u8>) -> Result<(), Error> {
+    fn set_kv(&self, key: Vec<u8>, value: Vec<u8>) -> Result<(), Error> {
         let mut bt = self._db.lock().unwrap();
         bt.insert(key, value);
         Ok(())
@@ -91,7 +91,7 @@ impl ColumnedEngine for MemEngine {
 }
 
 impl InstanceEngine for MemEngine {
-    fn next_instance_id(&mut self, rid: ReplicaID) -> Result<InstanceId, Error> {
+    fn next_instance_id(&self, rid: ReplicaID) -> Result<InstanceId, Error> {
         // TODO locking
         // TODO Need to incr max-ref and add new-instance in a single tx.
         //      Or iterator may encounter an empty instance slot.
@@ -109,7 +109,7 @@ impl InstanceEngine for MemEngine {
         Ok(max)
     }
 
-    fn set_instance(&mut self, inst: &Instance) -> Result<(), Error> {
+    fn set_instance(&self, inst: &Instance) -> Result<(), Error> {
         // TODO does not guarantee in a transaction
 
         let iid = inst.instance_id.unwrap();
@@ -140,11 +140,11 @@ impl InstanceEngine for MemEngine {
 }
 
 impl TxEngine for MemEngine {
-    fn trans_begin(&mut self) {}
-    fn trans_commit(&mut self) -> Result<(), Error> {
+    fn trans_begin(&self) {}
+    fn trans_commit(&self) -> Result<(), Error> {
         Ok(())
     }
-    fn trans_rollback(&mut self) -> Result<(), Error> {
+    fn trans_rollback(&self) -> Result<(), Error> {
         Ok(())
     }
     fn get_kv_for_update(&self, _key: &Vec<u8>) -> Result<Vec<u8>, Error> {
