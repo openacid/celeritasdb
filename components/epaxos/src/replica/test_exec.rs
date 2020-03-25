@@ -1,9 +1,33 @@
 use crate::qpaxos::{Command, Instance, InstanceId};
-use crate::replica::test_replica;
+use crate::replica::ReplicaConf;
 use crate::replica::{ExecuteResult, Replica};
+use crate::snapshot::MemEngine;
+use std::sync::{Arc, Mutex};
+
+/// Create a stupid replica with some instances stored.
+fn new_foo_replica(replica_id: i64, insts: &[((i64, i64), &Instance)]) -> Replica {
+    let mut r = Replica {
+        replica_id,
+        group_replica_ids: vec![0, 1, 2],
+        peers: vec![],
+        conf: ReplicaConf {
+            ..Default::default()
+        },
+        inst_idx: 0,
+        latest_cp: (1, 1).into(),
+        storage: Arc::new(MemEngine::new().unwrap()),
+        problem_inst_ids: vec![],
+    };
+
+    for (iid, inst) in insts.iter() {
+        r.storage.set_obj((*iid).into(), inst).unwrap();
+    }
+
+    r
+}
 
 fn new_replica() -> Replica {
-    test_replica::new_foo_replica(1, &vec![])
+    new_foo_replica(1, &vec![])
 }
 
 #[allow(unused_macros)]

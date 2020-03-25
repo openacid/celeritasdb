@@ -3,6 +3,8 @@ use crate::replica::AcceptStatus;
 use crate::replica::*;
 use crate::snapshot::Error as SnapError;
 use crate::snapshot::MemEngine;
+use crate::snapshot::Storage;
+use std::sync::Arc;
 
 /// Create an instance with command "set x=y".
 /// Use this when only deps are concerned.
@@ -81,8 +83,16 @@ fn new_foo_inst(leader_id: i64) -> Instance {
     ii
 }
 
+fn new_mem_sto() -> Storage {
+    Arc::new(MemEngine::new().unwrap())
+}
+
 /// Create a stupid replica with some instances stored.
-pub fn new_foo_replica(replica_id: i64, insts: &[((i64, i64), &Instance)]) -> Replica {
+fn new_foo_replica(
+    replica_id: i64,
+    storage: Storage,
+    insts: &[((i64, i64), &Instance)],
+) -> Replica {
     let mut r = Replica {
         replica_id,
         group_replica_ids: vec![0, 1, 2],
@@ -92,7 +102,7 @@ pub fn new_foo_replica(replica_id: i64, insts: &[((i64, i64), &Instance)]) -> Re
         },
         inst_idx: 0,
         latest_cp: (1, 1).into(),
-        storage: Box::new(MemEngine::new().unwrap()),
+        storage,
         problem_inst_ids: vec![],
     };
 
@@ -124,9 +134,37 @@ macro_rules! test_invalid_req {
 }
 
 #[test]
+fn test_new_instance() {
+    let rid1 = 1;
+    let rid2 = 2;
+    let rid3 = 3;
+
+    let cmds = cmds![("Set", "x", "1")];
+    let sto = new_mem_sto();
+
+    let mut r1 = new_foo_replica(rid1, sto.clone(), &[]);
+    let mut r2 = new_foo_replica(rid2, sto.clone(), &[]);
+    let mut r3 = new_foo_replica(rid3, sto, &[]);
+
+    // (1, 0) -> []
+    let i10 = r1.new_instance(cmds.clone()).unwrap();
+    assert_eq!(i10, init_inst!((rid1, 0), [("Set", "x", "1")], []));
+
+    // (2, 0) -> [(1, 0)]
+    let i20 = r2.new_instance(cmds.clone()).unwrap();
+    assert_eq!(i20, init_inst!((rid2, 0), [("Set", "x", "1")], [(rid1, 0)]));
+
+    // (2, 1) -> [(1, 0), (2, 0)]
+    assert_eq!(
+        r2.new_instance(cmds.clone()).unwrap(),
+        init_inst!((rid2, 1), [("Set", "x", "1")], [(rid1, 0), (rid2, 0)])
+    );
+}
+
+#[test]
 fn test_handle_xxx_request_invalid() {
     let replica_id = 2;
-    let mut replica = new_foo_replica(replica_id, &vec![]);
+    let mut replica = new_foo_replica(replica_id, new_mem_sto(), &vec![]);
 
     let cases: Vec<(Option<RequestCommon>, (&str, &str, &str))> = vec![
         (None, ("cmn", "LackOf", "")),
@@ -179,7 +217,7 @@ fn test_handle_fast_accept_request_panic_local_instance_id_none() {
 }
 
 fn _handle_fast_accept_request(iid: (i64, i64), inst: Instance, req_inst: Instance) {
-    let mut replica = new_foo_replica(1, &[(iid, &inst)]);
+    let mut replica = new_foo_replica(1, new_mem_sto(), &[(iid, &inst)]);
 
     let req = MakeRequest::fast_accept(1, &req_inst, &vec![false]);
     replica.handle_fast_accept(&req);
@@ -188,7 +226,7 @@ fn _handle_fast_accept_request(iid: (i64, i64), inst: Instance, req_inst: Instan
 #[test]
 fn test_handle_fast_accept_request() {
     let replica_id = 1;
-    let mut replica = new_foo_replica(replica_id, &vec![]);
+    let mut replica = new_foo_replica(replica_id, new_mem_sto(), &vec![]);
 
     {
         let mut inst = new_foo_inst(replica_id);
@@ -255,6 +293,7 @@ fn test_handle_fast_accept_request() {
 
         let mut replica = new_foo_replica(
             replica_id,
+            new_mem_sto(),
             &vec![
                 ((0, 0), &instx),
                 ((0, 2), &instd),
@@ -299,7 +338,7 @@ fn test_handle_accept_request() {
     let blt = inst.ballot;
     let fdeps = inst.final_deps.clone();
 
-    let mut replica = new_foo_replica(replica_id, &vec![]);
+    let mut replica = new_foo_replica(replica_id, new_mem_sto(), &vec![]);
     let none = replica.storage.get_instance(iid).unwrap();
     assert_eq!(None, none);
 
@@ -386,7 +425,7 @@ fn test_handle_commit_request() {
     let cmds = inst.cmds.clone();
     let fdeps = inst.final_deps.clone();
 
-    let mut replica = new_foo_replica(replica_id, &vec![]);
+    let mut replica = new_foo_replica(replica_id, new_mem_sto(), &vec![]);
     let none = replica.storage.get_instance(iid).unwrap();
     assert_eq!(None, none);
 
@@ -435,7 +474,7 @@ fn test_handle_commit_request() {
 #[test]
 fn test_handle_accept_reply() {
     let replica_id = 2;
-    let mut rp = new_foo_replica(replica_id, &vec![]);
+    let mut rp = new_foo_replica(replica_id, new_mem_sto(), &[]);
     let mut foo_inst = new_foo_inst(replica_id);
     let iid = foo_inst.instance_id.unwrap();
     foo_inst.committed = false;

@@ -4,7 +4,7 @@ use std::time::SystemTime;
 
 use super::super::conf::ClusterInfo;
 use super::super::qpaxos::*;
-use super::super::snapshot::{Error, InstanceEngine};
+use super::super::snapshot::{Error, Storage};
 use crate::replica::AcceptStatus;
 use crate::replica::InstanceStatus;
 
@@ -56,7 +56,7 @@ pub struct Replica {
     pub latest_cp: InstanceId, // record the instance id in the lastest communication
 
     // storage
-    pub storage: Box<dyn InstanceEngine<ColumnId = ReplicaID, ObjId = InstanceId, Obj = Instance>>,
+    pub storage: Storage,
 
     // to recover uncommitted instance
     pub problem_inst_ids: Vec<(InstanceId, SystemTime)>,
@@ -94,6 +94,45 @@ impl Replica {
 
     /// start exec thread
     fn start_exec_thread(&mut self) {}
+
+    pub fn new_instance(&mut self, cmds: Vec<Command>) -> Result<Instance, Error> {
+        // TODO locking
+        // TODO do not need to store max instance id, store it in replica and when starting, scan
+        // backward to find the max
+        // TODO test storage error
+
+        let n = self.group_replica_ids.len();
+        let mut deps = Vec::with_capacity(n);
+        // TODO ensure replica_ids are sorted
+        for rid in self.group_replica_ids.iter() {
+            let max = self.storage.get_ref("max", *rid);
+            match max {
+                Ok(v) => deps.push(v),
+                Err(e) => match e {
+                    Error::NotFound => {}
+                    _ => {
+                        return Err(e);
+                    }
+                },
+            }
+        }
+
+        let iid = self.storage.next_instance_id(self.replica_id)?;
+        let inst = Instance {
+            last_ballot: None,
+            // TODO need to use time stamp as epoch?
+            ballot: Some((0, 0, self.replica_id).into()),
+            instance_id: Some(iid),
+            cmds: cmds,
+            initial_deps: Some(deps.clone().into()),
+            deps: Some(deps.into()),
+            final_deps: None,
+            committed: false,
+            executed: false,
+        };
+
+        Ok(inst)
+    }
 
     // FIXME(lsl): these methods predestined to run in multi-thread and change self,
     //             so is it good to implement as a method or a function to take Replica as arg?
