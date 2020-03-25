@@ -30,6 +30,30 @@ macro_rules! ballot {
     };
 }
 
+/// Create a just initialized instance.
+/// supported pattern:
+/// init_inst!(inst_id, cmds, initial_deps)
+///
+/// Example:
+/// ```
+/// init_inst!((0, 1),
+///            [("Set", "x", "1"), ("Set", "y", "2")],
+///            [(1, 0), (2, 0), (3, 0)]);
+/// ```
+#[allow(unused_macros)]
+macro_rules! init_inst {
+    ($id:expr,
+     [$( ($op:expr, $key:expr, $val:expr)),*],
+     [$(($dep_rid:expr, $dep_idx:expr)),* $(,)*]
+    ) => {
+        inst!($id, (0, 0, _),
+              [$( ($op, $key, $val)),*],
+              [$(($dep_rid, $dep_idx)),*],
+              "withdeps"
+        )
+    };
+}
+
 /// Create an instance with:
 /// instance_id: (replica_id, idx),
 /// ballot: (epoch, num, _). the `_` is a place holder indicating to use replica_is from instance_id.

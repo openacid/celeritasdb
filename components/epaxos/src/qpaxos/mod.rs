@@ -27,6 +27,9 @@ pub use macros::*;
 mod t;
 
 #[cfg(test)]
+mod test_macros;
+
+#[cfg(test)]
 mod test_command;
 
 #[cfg(test)]
