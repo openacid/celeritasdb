@@ -1,8 +1,13 @@
+use std::cell::RefCell;
 use std::time::SystemTime;
 
 use crate::qpaxos::{Instance, InstanceId, InstanceIdVec, OpCode};
 use crate::replica::{errors::Error, Replica};
 use crate::snapshot::Error as SnapError;
+
+thread_local! {
+    static PROBLEM_INSTS: RefCell<Vec<(InstanceId, SystemTime)>> = RefCell::new(vec![]);
+}
 
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ExecuteResult {
@@ -103,7 +108,7 @@ impl Replica {
     /// S = {x | x ∈ S and (∃y: y → x)}
     /// so S = {b, d}
     /// sort S by instance_id and execute
-    pub fn execute_instances(&mut self, insts: &Vec<Instance>) -> Result<Vec<InstanceId>, Error> {
+    pub fn execute_instances(&self, insts: &Vec<Instance>) -> Result<Vec<InstanceId>, Error> {
         let mut early = vec![false; insts.len()];
         let mut late = vec![false; insts.len()];
         let mut can_exec = Vec::with_capacity(insts.len());
@@ -157,32 +162,33 @@ impl Replica {
     // only save one smallest problem instance of every replica with problem_inst_ids.
     // when find a new problem instance just replace it if instance of this replica
     // already in problem_inst_ids.
-    pub fn timeout_to_committed(&mut self, iid: InstanceId) -> bool {
+    pub fn timeout_to_committed(&self, iid: InstanceId) -> bool {
         let now = SystemTime::now();
-        if let Some(p) = self.problem_inst_ids.iter().find(|x| x.0 == iid) {
-            let dt = now.duration_since(p.1).unwrap();
-            if dt.as_millis() as i32 >= self.conf.inst_committed_timeout {
-                return true;
-            }
-        } else {
-            match self
-                .problem_inst_ids
-                .iter_mut()
-                .find(|x| x.0.replica_id == iid.replica_id)
-            {
-                Some(p) => {
-                    p.0 = iid;
-                    p.1 = now;
-                }
-                None => self.problem_inst_ids.push((iid, now)),
-            }
-        }
+        let mut rst = false;
+        PROBLEM_INSTS.with(|p| {
+            let mut p = p.borrow_mut();
 
-        false
+            if let Some(p) = p.iter().find(|x| x.0 == iid) {
+                let dt = now.duration_since(p.1).unwrap();
+                if dt.as_millis() as i32 >= self.conf.inst_committed_timeout {
+                    rst = true;
+                }
+            } else {
+                match p.iter_mut().find(|x| x.0.replica_id == iid.replica_id) {
+                    Some(p) => {
+                        p.0 = iid;
+                        p.1 = now;
+                    }
+                    None => p.push((iid, now)),
+                }
+            }
+        });
+
+        rst
     }
 
     pub fn get_insts_if_committed(
-        &mut self,
+        &self,
         inst_ids: &Vec<InstanceId>,
     ) -> Result<Vec<Instance>, Error> {
         let mut rst = Vec::new();
@@ -210,7 +216,7 @@ impl Replica {
         Ok(rst)
     }
 
-    pub fn execute(&mut self) -> Result<Vec<InstanceId>, Error> {
+    pub fn execute(&self) -> Result<Vec<InstanceId>, Error> {
         let mut exec_up_to = InstanceIdVec::from([0; 0]);
         let mut smallest_inst_ids = InstanceIdVec::from([0; 0]);
         for rid in self.group_replica_ids.iter() {

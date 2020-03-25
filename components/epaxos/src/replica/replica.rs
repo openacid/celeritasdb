@@ -1,6 +1,5 @@
 use std::i64;
-use std::net::{SocketAddr, TcpStream};
-use std::time::SystemTime;
+use std::net::SocketAddr;
 
 use super::super::conf::ClusterInfo;
 use super::super::qpaxos::*;
@@ -32,34 +31,23 @@ macro_rules! ref_or_bug {
 pub struct ReplicaPeer {
     pub replica_id: ReplicaID,
     pub addr: SocketAddr, // ip: port pairs of each replica
-    pub conn: TcpStream,  // tcp connection cache
     pub alive: bool,      // if peer is alive or not
 }
 
 /// misc configuration info
 #[derive(Default)]
 pub struct ReplicaConf {
-    pub thrifty: bool,               // send msg only to a quorum or the full set
     pub dreply: bool, // delay replying to client after command has been executed or not
-    pub beacon: bool, // periodicity detect the speed of each known replica or not
     pub inst_committed_timeout: i32, // instance committed timeout
 }
 
 /// structure to represent a replica
 pub struct Replica {
-    pub replica_id: ReplicaID,             // replica id
-    pub group_replica_ids: Vec<ReplicaID>, // all replica ids in this group
-    pub peers: Vec<ReplicaPeer>, // peers in communication, if need access from multi-thread, wrap it by Arc<>
-    pub conf: ReplicaConf,       // misc conf
-
-    pub inst_idx: InstanceIdx,
-    pub latest_cp: InstanceId, // record the instance id in the lastest communication
-
-    // storage
+    pub replica_id: ReplicaID,
+    pub group_replica_ids: Vec<ReplicaID>,
+    pub peers: Vec<ReplicaPeer>,
+    pub conf: ReplicaConf,
     pub storage: Storage,
-
-    // to recover uncommitted instance
-    pub problem_inst_ids: Vec<(InstanceId, SystemTime)>,
 }
 
 impl Replica {
@@ -71,7 +59,6 @@ impl Replica {
         cluster: &ClusterInfo,
         thrifty: bool,
         exec: bool,
-        beacon: bool,
     ) -> Result<Replica, String> {
         Err("not implemented".to_string())
     }

@@ -1,6 +1,5 @@
 use tempfile::Builder;
 
-use super::super::traits::*;
 use super::super::RocksDBEngine;
 use crate::snapshot::test_engine::*;
 

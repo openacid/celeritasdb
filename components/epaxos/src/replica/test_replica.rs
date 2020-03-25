@@ -100,10 +100,7 @@ fn new_foo_replica(
         conf: ReplicaConf {
             ..Default::default()
         },
-        inst_idx: 0,
-        latest_cp: (1, 1).into(),
         storage,
-        problem_inst_ids: vec![],
     };
 
     for (iid, inst) in insts.iter() {
