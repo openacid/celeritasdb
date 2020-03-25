@@ -1,6 +1,6 @@
 use crate::qpaxos::{Instance, InstanceId, ReplicaID};
 use crate::tokey::ToKey;
-use std::sync::{Arc, Mutex};
+use std::sync::Arc;
 
 // required by encode/decode
 use prost::Message;

@@ -55,10 +55,10 @@ impl Replica {
     /// do all the initialization and start all necessary threads here,
     /// so after this call, replica is fully functional.
     pub fn new(
-        replica_id: ReplicaID,
-        cluster: &ClusterInfo,
-        thrifty: bool,
-        exec: bool,
+        _replica_id: ReplicaID,
+        _cluster: &ClusterInfo,
+        _thrifty: bool,
+        _exec: bool,
     ) -> Result<Replica, String> {
         Err("not implemented".to_string())
     }
@@ -110,7 +110,7 @@ impl Replica {
             // TODO need to use time stamp as epoch?
             ballot: Some((0, 0, self.replica_id).into()),
             instance_id: Some(iid),
-            cmds: cmds,
+            cmds,
             initial_deps: Some(deps.clone().into()),
             deps: Some(deps.into()),
             final_deps: None,

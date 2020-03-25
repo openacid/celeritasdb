@@ -170,7 +170,7 @@ mod tests {
 
     #[test]
     fn test_transaction() {
-        let mut engine = MemEngine::new().unwrap();
+        let engine = MemEngine::new().unwrap();
         let k = "foo".as_bytes().to_vec();
         let v = "bar".as_bytes().to_vec();
         engine.trans_begin();

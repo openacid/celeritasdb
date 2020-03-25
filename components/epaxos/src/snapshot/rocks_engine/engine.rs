@@ -198,7 +198,7 @@ fn test_rocks_engine() {
     let tmp_root = Builder::new().tempdir().unwrap();
     let db_path = format!("{}/test", tmp_root.path().display());
 
-    let mut eng = RocksDBEngine::new(&db_path).unwrap();
+    let eng = RocksDBEngine::new(&db_path).unwrap();
 
     let k0 = "key0";
     let v0 = "value0";

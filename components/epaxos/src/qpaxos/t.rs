@@ -105,7 +105,7 @@ fn test_instance_id_to_key() {
 }
 
 #[test]
-fn test_InstanceId_from_key() {
+fn test_instance_id_from_key() {
     assert_eq!(
         InstanceId::from_key("/instance/0000000000000001/000000000000000a").unwrap(),
         (1, 10).into()

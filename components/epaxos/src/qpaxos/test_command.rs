@@ -1,4 +1,3 @@
-#[macro_use]
 use crate::qpaxos::*;
 use prost::Message;
 

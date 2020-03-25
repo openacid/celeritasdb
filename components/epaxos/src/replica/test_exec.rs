@@ -152,7 +152,7 @@ fn test_find_missing_instances() {
 
 #[test]
 fn test_execute_commands() {
-    let mut rp = new_replica();
+    let rp = new_replica();
     rp.storage
         .set_kv("x".as_bytes().to_vec(), vec![11])
         .unwrap();

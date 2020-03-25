@@ -1,4 +1,5 @@
 /// used to define an enum with an `as_str` function to return it's value.
+#[allow(unused_macros)]
 macro_rules! enum_str {
     ($name:ident {
         $($key:ident($value:expr))*

@@ -93,7 +93,7 @@ fn new_foo_replica(
     storage: Storage,
     insts: &[((i64, i64), &Instance)],
 ) -> Replica {
-    let mut r = Replica {
+    let r = Replica {
         replica_id,
         group_replica_ids: vec![0, 1, 2],
         peers: vec![],
@@ -134,14 +134,12 @@ macro_rules! test_invalid_req {
 fn test_new_instance() {
     let rid1 = 1;
     let rid2 = 2;
-    let rid3 = 3;
 
     let cmds = cmds![("Set", "x", "1")];
     let sto = new_mem_sto();
 
     let mut r1 = new_foo_replica(rid1, sto.clone(), &[]);
     let mut r2 = new_foo_replica(rid2, sto.clone(), &[]);
-    let mut r3 = new_foo_replica(rid3, sto, &[]);
 
     // (1, 0) -> []
     let i10 = r1.new_instance(cmds.clone()).unwrap();

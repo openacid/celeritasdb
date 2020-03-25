@@ -17,7 +17,7 @@ pub enum ExecuteResult {
 }
 
 impl Replica {
-    fn recover_instances(&self, inst_ids: &InstanceIdVec) {}
+    fn recover_instances(&self, _inst_ids: &InstanceIdVec) {}
     // R1          R2
     // -------------
     // |           |

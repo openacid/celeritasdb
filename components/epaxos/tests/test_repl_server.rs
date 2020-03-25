@@ -1,7 +1,6 @@
 use tokio;
 use tonic;
 use tonic::transport::Server;
-use tonic::Request;
 
 use tokio::time::delay_for;
 

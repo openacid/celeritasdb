@@ -7,14 +7,13 @@ use redis;
 
 use std::env;
 use std::fs;
-use std::io;
 use std::process;
 use std::thread::sleep;
 use std::time::Duration;
 
 use std::path::PathBuf;
 
-use redis::{RedisResult, Value};
+use redis::RedisResult;
 
 #[derive(PartialEq)]
 enum ServerType {

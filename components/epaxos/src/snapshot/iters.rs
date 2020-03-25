@@ -70,7 +70,7 @@ mod tests {
     #[test]
     fn test_instance_iter() {
         let mut ints = Vec::<Instance>::new();
-        let mut engine = MemEngine::new().unwrap();
+        let engine = MemEngine::new().unwrap();
 
         for rid in 0..3 {
             for idx in 0..10 {
