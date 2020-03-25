@@ -14,6 +14,7 @@ edition = "2018"
 
 [dev-dependencies]
 net2 = "0.2"
+pretty_assertions = { version = "0.6.1" }
 
 [dependencies]
 quick-error = { version = "1.2.2" }
