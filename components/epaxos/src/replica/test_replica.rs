@@ -4,6 +4,7 @@ use crate::replica::*;
 use crate::snapshot::Error as SnapError;
 use crate::snapshot::MemEngine;
 use crate::snapshot::Storage;
+use pretty_assertions::assert_eq;
 use std::sync::Arc;
 
 /// Create an instance with command "set x=y".
@@ -154,6 +155,34 @@ fn test_new_instance() {
         r2.new_instance(cmds.clone()).unwrap(),
         init_inst!((rid2, 1), [("Set", "x", "1")], [(rid1, 0), (rid2, 0)])
     );
+}
+
+#[test]
+fn test_quorums() {
+    let cases: Vec<(i32, i32, i32)> = vec![
+        (0, 1, 0),
+        (1, 1, 0),
+        (2, 2, 1),
+        (3, 2, 2),
+        (4, 3, 2),
+        (5, 3, 3),
+        (6, 4, 4),
+        (7, 4, 5),
+        (8, 5, 5),
+        (9, 5, 6),
+    ];
+
+    for (n_replicas, q, fastq) in cases {
+        let mut r = new_foo_replica(1, new_mem_sto(), &[]);
+        r.group_replica_ids = vec![];
+
+        for i in 0..n_replicas {
+            r.group_replica_ids.push(i as ReplicaID);
+        }
+
+        assert_eq!(q, r.quorum(), "quorum n={}", n_replicas);
+        assert_eq!(fastq, r.fast_quorum(), "fast-quorum n={}", n_replicas);
+    }
 }
 
 #[test]
