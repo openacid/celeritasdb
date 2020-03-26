@@ -18,6 +18,7 @@ macro_rules! enum_str {
                 }
             }
 
+            #[allow(dead_code)]
             fn from_str<'a> (val: &str) -> Result<&'a Self, String> {
                 match val
                  {
@@ -47,6 +48,7 @@ macro_rules! enum_str {
                 }
             }
 
+            #[allow(dead_code)]
             fn from_str<'a>(val: &str) -> Result<&'a Self, String> {
                 match val
                  {

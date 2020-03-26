@@ -36,7 +36,7 @@ impl ServerType {
         {
             Some("tcp") => ServerType::Tcp,
             Some("unix") => ServerType::Unix,
-            val => {
+            _ => {
                 ServerType::Tcp
                 // panic!("Unknown server type {:?}", val);
             }

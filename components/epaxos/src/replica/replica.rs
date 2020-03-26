@@ -63,26 +63,10 @@ impl Replica {
         Err("not implemented".to_string())
     }
 
-    /// handle a client request
-    /// this is the main logic to implement choosing commands in epaxos protocol
-    /// as described in figure 2.
-    pub fn propose(&mut self, cmds: &Vec<Command>) {}
-
-    /// do graceful shutdown of epaxos replica part
-    pub fn shutdown() {}
-
-    /// send a message
-    /// if conn is None, make connection
-    /// TODO(lsl): we really need something like a request context
-    ///            to store conn and anything should be shared in a request or proposing an instance
-    fn send_msg(&mut self, to: ReplicaID, msg: &AcceptRequest) -> Result<AcceptReply, String> {
-        Err("not implemented".to_string())
-    }
-
     /// start exec thread
-    fn start_exec_thread(&mut self) {}
+    fn _start_exec_thread(&self) {}
 
-    pub fn new_instance(&mut self, cmds: Vec<Command>) -> Result<Instance, Error> {
+    pub fn new_instance(&self, cmds: Vec<Command>) -> Result<Instance, Error> {
         // TODO locking
         // TODO do not need to store max instance id, store it in replica and when starting, scan
         // backward to find the max
@@ -121,19 +105,11 @@ impl Replica {
         Ok(inst)
     }
 
-    // FIXME(lsl): these methods predestined to run in multi-thread and change self,
-    //             so is it good to implement as a method or a function to take Replica as arg?
-    //             but for now, it doesn't matter since we just want the interface.
-
-    // ASK(lsl->xp): is it ok to return a result and ask http-framework to judge type and send
-    // reply to requester?
-    // I think that would be a great place to do statistics and measurement.
-    // and by making Replica independent,it's easier to do test.
-    fn handle_prepare(&mut self, req: &PrepareRequest) -> Result<PrepareReply, String> {
+    fn _handle_prepare(&self, _req: &PrepareRequest) -> Result<PrepareReply, String> {
         Err("not implemented".to_string())
     }
 
-    pub fn handle_fast_accept(&mut self, req: &FastAcceptRequest) -> FastAcceptReply {
+    pub fn handle_fast_accept(&self, req: &FastAcceptRequest) -> FastAcceptReply {
         match self._fast_accept(req) {
             Ok((inst, deps_committed)) => MakeReply::fast_accept(&inst, &deps_committed),
             Err(e) => FastAcceptReply {
@@ -143,7 +119,7 @@ impl Replica {
         }
     }
 
-    fn _fast_accept(&mut self, req: &FastAcceptRequest) -> Result<(Instance, Vec<bool>), Error> {
+    fn _fast_accept(&self, req: &FastAcceptRequest) -> Result<(Instance, Vec<bool>), Error> {
         let (ballot, iid) = self._check_req_common(&req.cmn)?;
 
         let mut inst = match self.storage.get_instance(iid)? {
@@ -213,7 +189,7 @@ impl Replica {
         Ok((inst, deps_committed))
     }
 
-    pub fn handle_accept(&mut self, req: &AcceptRequest) -> AcceptReply {
+    pub fn handle_accept(&self, req: &AcceptRequest) -> AcceptReply {
         let inst = self._accept(req);
         match inst {
             Ok(inst) => MakeReply::accept(&inst),
@@ -224,7 +200,7 @@ impl Replica {
         }
     }
 
-    fn _accept(&mut self, req: &AcceptRequest) -> Result<Instance, Error> {
+    fn _accept(&self, req: &AcceptRequest) -> Result<Instance, Error> {
         // TODO locking
         let (ballot, iid) = self._check_req_common(&req.cmn)?;
 
@@ -244,7 +220,7 @@ impl Replica {
         Ok(inst)
     }
 
-    pub fn handle_commit(&mut self, req: &CommitRequest) -> CommitReply {
+    pub fn handle_commit(&self, req: &CommitRequest) -> CommitReply {
         // TODO protocol wrapping may be better to be in server impl instead of being here
 
         match self._commit(req) {
@@ -256,7 +232,7 @@ impl Replica {
         }
     }
 
-    fn _commit(&mut self, req: &CommitRequest) -> Result<Instance, Error> {
+    fn _commit(&self, req: &CommitRequest) -> Result<Instance, Error> {
         let (ballot, iid) = self._check_req_common(&req.cmn)?;
 
         // TODO locking
@@ -277,7 +253,7 @@ impl Replica {
     }
 
     fn _check_req_common(
-        &mut self,
+        &self,
         cm: &Option<RequestCommon>,
     ) -> Result<(BallotNum, InstanceId), Error> {
         let cm = cm.as_ref().ok_or(Error::LackOf("cmn".into()))?;
@@ -300,7 +276,7 @@ impl Replica {
     }
 
     fn _check_repl_common(
-        &mut self,
+        &self,
         cm: &Option<ReplyCommon>,
     ) -> Result<(BallotNum, InstanceId), Error> {
         let cm = cm.as_ref().ok_or(Error::LackOf("cmn".into()))?;
@@ -314,7 +290,7 @@ impl Replica {
         Ok((ballot, iid))
     }
 
-    fn _get_instance(&mut self, iid: InstanceId) -> Result<Instance, Error> {
+    fn _get_instance(&self, iid: InstanceId) -> Result<Instance, Error> {
         let inst = self.storage.get_instance(iid)?;
 
         let inst = match inst {
@@ -333,11 +309,11 @@ impl Replica {
         }
     }
 
-    fn _bcast_fast_accept(&mut self, req: &FastAcceptRequest) {}
+    fn _bcast_fast_accept(&self, _req: &FastAcceptRequest) {}
 
-    fn _bcast_accept(&mut self, req: &AcceptRequest) {}
+    fn _bcast_accept(&self, _req: &AcceptRequest) {}
 
-    fn _bcast_commit(&mut self, inst: &Instance) {}
+    fn _bcast_commit(&self, _inst: &Instance) {}
 
     pub fn quorum(&self) -> i32 {
         let n = self.group_replica_ids.len() as i32;
@@ -353,7 +329,7 @@ impl Replica {
 }
 
 pub fn handle_accept_reply(
-    ra: &mut Replica,
+    ra: &Replica,
     repl: &AcceptReply,
     st: &mut AcceptStatus,
 ) -> Result<(), Error> {

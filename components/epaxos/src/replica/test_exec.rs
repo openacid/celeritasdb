@@ -202,7 +202,7 @@ fn test_execute_commands() {
 
 #[test]
 fn test_execute_instances() {
-    let mut rp = new_replica();
+    let rp = new_replica();
 
     // (3, 1)→(2, 1)→(1, 1)
     let min_insts = vec![
@@ -248,7 +248,7 @@ fn test_execute_instances() {
 
 #[test]
 fn test_replica_execute() {
-    let mut rp = new_replica();
+    let rp = new_replica();
 
     let cases = vec![
         // (1, 1)

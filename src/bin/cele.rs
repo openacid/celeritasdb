@@ -19,13 +19,13 @@ use epaxos::qpaxos::*;
 use parse::Response;
 
 pub struct Server {
-    join_handles: Vec<JoinHandle<()>>,
+    _join_handles: Vec<JoinHandle<()>>,
 }
 
 impl Server {
     pub fn new() -> Server {
         return Server {
-            join_handles: Vec::new(),
+            _join_handles: Vec::new(),
         };
     }
 
@@ -77,8 +77,8 @@ impl Server {
 
         println!("serving: {}", addr);
 
-        j1.await;
-        j2.await;
+        j1.await.unwrap();
+        j2.await.unwrap();
 
         Ok(())
     }
