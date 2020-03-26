@@ -1,7 +1,7 @@
 use crate::qpaxos::*;
 use crate::replica::AcceptStatus;
+use crate::replica::Error;
 use crate::replica::*;
-use crate::snapshot::Error as SnapError;
 use crate::snapshot::MemEngine;
 use crate::snapshot::Storage;
 use pretty_assertions::assert_eq;
@@ -530,7 +530,7 @@ fn test_handle_accept_reply() {
         // with reply err
         let mut st = AcceptStatus::new(rp.quorum());
         let mut repl = MakeReply::accept(&foo_inst);
-        repl.err = Some(SnapError::LackOf("test".to_string()).to_qerr());
+        repl.err = Some(Error::LackOf("test".to_string()).to_qerr());
         assert!(handle_accept_reply(&mut rp, &repl, &mut st).is_ok());
 
         _test_get_inst(

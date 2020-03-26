@@ -136,9 +136,7 @@ pub trait ObjectEngine: Base {
     fn decode_obj(&self, bs: &Vec<u8>) -> Result<Self::Obj, Error> {
         match Self::Obj::decode(bs.as_slice()) {
             Ok(v) => Ok(v),
-            Err(_) => Err(Error::DBError {
-                msg: "parse instance id error".to_string(),
-            }),
+            Err(_) => Err("parse instance id error".to_string().into()),
         }
     }
 }
@@ -174,9 +172,7 @@ pub trait ColumnedEngine: ObjectEngine {
 
         match Self::ObjId::decode(val_bytes.as_slice()) {
             Ok(v) => Ok(v),
-            Err(_) => Err(Error::DBError {
-                msg: "parse instance id error".to_string(),
-            }),
+            Err(_) => Err("parse instance id error".to_string().into()),
         }
     }
 

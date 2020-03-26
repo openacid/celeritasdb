@@ -3,8 +3,9 @@ use std::net::SocketAddr;
 
 use super::super::conf::ClusterInfo;
 use super::super::qpaxos::*;
-use super::super::snapshot::{Error, Storage};
+use super::super::snapshot::{Error as SnapError, Storage};
 use crate::replica::AcceptStatus;
+use crate::replica::Error;
 use crate::replica::InstanceStatus;
 
 /// ref_or_bug extracts a immutable ref from an Option.
@@ -80,9 +81,9 @@ impl Replica {
             match max {
                 Ok(v) => deps.push(v),
                 Err(e) => match e {
-                    Error::NotFound => {}
+                    SnapError::NotFound => {}
                     _ => {
-                        return Err(e);
+                        return Err(e.into());
                     }
                 },
             }
@@ -260,10 +261,7 @@ impl Replica {
 
         let replica_id = cm.to_replica_id;
         if replica_id != self.replica_id {
-            return Err(Error::NoSuchReplica {
-                replica_id,
-                my_replica_id: self.replica_id,
-            });
+            return Err((replica_id, self.replica_id).into());
         }
 
         let ballot = cm.ballot.ok_or(Error::LackOf("cmn.ballot".into()))?;
