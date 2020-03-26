@@ -20,14 +20,20 @@ pub use q_paxos_client::*;
 pub use q_paxos_server::*;
 
 pub mod conflict;
+pub mod quorums;
+
 pub use conflict::*;
 pub use macros::*;
+pub use quorums::*;
 
 #[cfg(test)]
 mod t;
 
 #[cfg(test)]
 mod test_macros;
+
+#[cfg(test)]
+mod test_quorums;
 
 #[cfg(test)]
 mod test_command;
