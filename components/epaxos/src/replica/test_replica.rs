@@ -139,8 +139,8 @@ fn test_new_instance() {
     let cmds = cmds![("Set", "x", "1")];
     let sto = new_mem_sto();
 
-    let mut r1 = new_foo_replica(rid1, sto.clone(), &[]);
-    let mut r2 = new_foo_replica(rid2, sto.clone(), &[]);
+    let r1 = new_foo_replica(rid1, sto.clone(), &[]);
+    let r2 = new_foo_replica(rid2, sto.clone(), &[]);
 
     // (1, 0) -> []
     let i10 = r1.new_instance(cmds.clone()).unwrap();
@@ -241,7 +241,7 @@ fn test_handle_fast_accept_request_panic_local_instance_id_none() {
 }
 
 fn _handle_fast_accept_request(iid: (i64, i64), inst: Instance, req_inst: Instance) {
-    let mut replica = new_foo_replica(1, new_mem_sto(), &[(iid, &inst)]);
+    let replica = new_foo_replica(1, new_mem_sto(), &[(iid, &inst)]);
 
     let req = MakeRequest::fast_accept(1, &req_inst, &vec![false]);
     replica.handle_fast_accept(&req);
@@ -250,7 +250,7 @@ fn _handle_fast_accept_request(iid: (i64, i64), inst: Instance, req_inst: Instan
 #[test]
 fn test_handle_fast_accept_request() {
     let replica_id = 1;
-    let mut replica = new_foo_replica(replica_id, new_mem_sto(), &vec![]);
+    let replica = new_foo_replica(replica_id, new_mem_sto(), &vec![]);
 
     {
         let mut inst = new_foo_inst(replica_id);
@@ -315,7 +315,7 @@ fn test_handle_fast_accept_request() {
         let c_iid = instid!(2, 3);
         let instc = foo_inst!(c_iid, "key_z", [(0, 2), (1, 1), (2, 0)]);
 
-        let mut replica = new_foo_replica(
+        let replica = new_foo_replica(
             replica_id,
             new_mem_sto(),
             &vec![
@@ -362,7 +362,7 @@ fn test_handle_accept_request() {
     let blt = inst.ballot;
     let fdeps = inst.final_deps.clone();
 
-    let mut replica = new_foo_replica(replica_id, new_mem_sto(), &vec![]);
+    let replica = new_foo_replica(replica_id, new_mem_sto(), &vec![]);
     let none = replica.storage.get_instance(iid).unwrap();
     assert_eq!(None, none);
 
@@ -449,7 +449,7 @@ fn test_handle_commit_request() {
     let cmds = inst.cmds.clone();
     let fdeps = inst.final_deps.clone();
 
-    let mut replica = new_foo_replica(replica_id, new_mem_sto(), &vec![]);
+    let replica = new_foo_replica(replica_id, new_mem_sto(), &vec![]);
     let none = replica.storage.get_instance(iid).unwrap();
     assert_eq!(None, none);
 

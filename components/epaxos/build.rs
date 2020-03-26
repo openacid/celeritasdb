@@ -3,7 +3,7 @@ extern crate tonic_build;
 fn main() {
     // tonic_build::compile_protos("../proto/helloworld.proto").unwrap();
 
-    tonic_build::configure()
+    tonic_build::prost::configure()
         .build_client(true)
         .build_server(true)
         .type_attribute("OpCode", "#[derive(enum_utils::FromStr)]")

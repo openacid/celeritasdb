@@ -32,4 +32,4 @@ serde_yaml = { version = "0.8" }
 enum-utils = "0.1.2"
 
 [build-dependencies]
-tonic-build = "0.1.0"
+tonic-build = { git = "https://github.com/hyperium/tonic.git", branch = "master" }
