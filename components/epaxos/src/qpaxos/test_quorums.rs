@@ -17,6 +17,11 @@ fn test_quorums() {
 
     for (n_replicas, q, fastq) in cases {
         assert_eq!(q, quorum(n_replicas), "quorum n={}", n_replicas);
-        assert_eq!(fastq, fast_quorum(n_replicas), "fast-quorum n={}", n_replicas);
+        assert_eq!(
+            fastq,
+            fast_quorum(n_replicas),
+            "fast-quorum n={}",
+            n_replicas
+        );
     }
 }
