@@ -32,4 +32,6 @@ serde_yaml = { version = "0.8" }
 enum-utils = "0.1.2"
 
 [build-dependencies]
-tonic-build = { git = "https://github.com/hyperium/tonic.git", branch = "master" }
+# this rev is master committed on 2020 Mar 20
+# tonic-build = { git = "https://github.com/hyperium/tonic.git", branch = "master" }
+tonic-build = { git = "https://github.com/hyperium/tonic.git", rev = "224280dfff8944e9e553337416d23d6e5a050945" }
