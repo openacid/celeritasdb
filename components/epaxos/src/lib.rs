@@ -1,3 +1,5 @@
+#![feature(is_sorted)]
+
 #[macro_use]
 extern crate quick_error;
 
