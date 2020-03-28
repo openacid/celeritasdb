@@ -1,5 +1,5 @@
 use std::i64;
-use std::net::SocketAddr;
+use tonic::Response;
 
 use crate::conf::ClusterInfo;
 use crate::qpaxos::*;
@@ -31,8 +31,30 @@ macro_rules! ref_or_bug {
 /// information of communication peer
 pub struct ReplicaPeer {
     pub replica_id: ReplicaID,
-    pub addr: SocketAddr, // ip: port pairs of each replica
-    pub alive: bool,      // if peer is alive or not
+    pub addr: String, // ip: port pairs of each replica
+    pub alive: bool,  // if peer is alive or not
+}
+
+impl ReplicaPeer {
+    pub fn new(rid: ReplicaID, addr: String, alive: bool) -> Self {
+        Self {
+            replica_id: rid,
+            addr,
+            alive,
+        }
+    }
+}
+
+impl From<(ReplicaID, &str, bool)> for ReplicaPeer {
+    fn from(t: (ReplicaID, &str, bool)) -> ReplicaPeer {
+        ReplicaPeer::new(t.0, t.1.to_string(), t.2)
+    }
+}
+
+impl From<(ReplicaID, String, bool)> for ReplicaPeer {
+    fn from(t: (ReplicaID, String, bool)) -> ReplicaPeer {
+        ReplicaPeer::new(t.0, t.1, t.2)
+    }
 }
 
 /// misc configuration info
@@ -308,25 +330,9 @@ impl Replica {
             ..Default::default()
         }
     }
-
-    fn _bcast_fast_accept(&self, _req: &FastAcceptRequest) {}
-
-    fn _bcast_accept(&self, _req: &AcceptRequest) {}
-
-    fn _bcast_commit(&self, _inst: &Instance) {}
-
-    // TODO remove these two function
-
-    pub fn quorum(&self) -> i32 {
-        quorum(self.group_replica_ids.len() as i32)
-    }
-
-    pub fn fast_quorum(&self) -> i32 {
-        fast_quorum(self.group_replica_ids.len() as i32)
-    }
 }
 
-pub fn handle_accept_reply(
+pub async fn handle_accept_reply(
     ra: &Replica,
     repl: &AcceptReply,
     st: &mut AcceptStatus,
@@ -350,8 +356,75 @@ pub fn handle_accept_reply(
     if st.finish() {
         inst.committed = true;
         ra.storage.set_instance(&inst)?;
-        ra._bcast_commit(&inst);
+        bcast_commit(&ra.peers, &inst).await;
     }
 
     Ok(())
+}
+
+macro_rules! bcast_msg {
+    ($peers:expr, $make_req:expr, $func:ident) => {{
+        let mut rst = Vec::with_capacity($peers.len());
+        for p in $peers.iter() {
+            let mut client = match QPaxosClient::connect(p.addr.clone()).await {
+                Ok(c) => c,
+                // TODO just ignore the err
+                Err(e) => {
+                    println!("{:?} while connect to {:?}", e, &p.addr);
+                    continue;
+                }
+            };
+
+            let req = $make_req(p.replica_id);
+            let repl = match client.$func(req).await {
+                Ok(r) => r,
+                // TODO just ignore the err
+                Err(e) => {
+                    println!("{:?} while request to {:?}", e, &p.addr);
+                    continue;
+                }
+            };
+
+            rst.push(repl);
+        }
+
+        if rst.len() > 0 {
+            return Some(rst);
+        }
+
+        return None;
+    }};
+}
+
+pub async fn bcast_fast_accept(
+    peers: &Vec<ReplicaPeer>,
+    inst: &Instance,
+    deps_committed: &[bool],
+) -> Option<Vec<Response<FastAcceptReply>>> {
+    bcast_msg!(
+        peers,
+        |rid| MakeRequest::fast_accept(rid, inst, deps_committed),
+        fast_accept
+    );
+}
+
+pub async fn bcast_accept(
+    peers: &Vec<ReplicaPeer>,
+    inst: &Instance,
+) -> Option<Vec<Response<AcceptReply>>> {
+    bcast_msg!(peers, |rid| MakeRequest::accept(rid, inst), accept);
+}
+
+pub async fn bcast_commit(
+    peers: &Vec<ReplicaPeer>,
+    inst: &Instance,
+) -> Option<Vec<Response<CommitReply>>> {
+    bcast_msg!(peers, |rid| MakeRequest::commit(rid, inst), commit);
+}
+
+pub async fn bcast_prepare(
+    peers: &Vec<ReplicaPeer>,
+    inst: &Instance,
+) -> Option<Vec<Response<PrepareReply>>> {
+    bcast_msg!(peers, |rid| MakeRequest::prepare(rid, inst), prepare);
 }

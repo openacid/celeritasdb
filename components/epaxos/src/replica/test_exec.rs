@@ -1,20 +1,8 @@
-use crate::qpaxos::{Command, Instance, InstanceId};
-use crate::replica::ReplicaConf;
-use crate::replica::{ExecuteResult, Replica};
-use crate::snapshot::MemEngine;
 use std::sync::Arc;
 
-fn new_replica() -> Replica {
-    Replica {
-        replica_id: 0,
-        group_replica_ids: vec![1, 2, 3],
-        peers: vec![],
-        conf: ReplicaConf {
-            ..Default::default()
-        },
-        storage: Arc::new(MemEngine::new().unwrap()),
-    }
-}
+use crate::qpaxos::{Command, Instance, InstanceId};
+use crate::replica::*;
+use crate::snapshot::MemEngine;
 
 #[allow(unused_macros)]
 macro_rules! test_inst {
@@ -71,6 +59,15 @@ macro_rules! test_inst {
             ..Default::default()
         }
     };
+}
+
+fn new_replica() -> Replica {
+    test_util::new_replica(
+        1,
+        vec![1, 2, 3],
+        vec![],
+        Arc::new(MemEngine::new().unwrap()),
+    )
 }
 
 #[test]

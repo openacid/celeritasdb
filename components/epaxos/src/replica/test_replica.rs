@@ -1,10 +1,12 @@
+use std::sync::Arc;
+
 use crate::qpaxos::*;
 use crate::replica::AcceptStatus;
 use crate::replica::*;
 use crate::snapshot::MemEngine;
 use crate::snapshot::Storage;
+
 use pretty_assertions::assert_eq;
-use std::sync::Arc;
 
 /// Create an instance with command "set x=y".
 /// Use this when only deps are concerned.
@@ -179,8 +181,13 @@ fn test_quorums() {
             r.group_replica_ids.push(i as ReplicaID);
         }
 
-        assert_eq!(q, r.quorum(), "quorum n={}", n_replicas);
-        assert_eq!(fastq, r.fast_quorum(), "fast-quorum n={}", n_replicas);
+        assert_eq!(q, quorum(n_replicas), "quorum n={}", n_replicas);
+        assert_eq!(
+            fastq,
+            fast_quorum(n_replicas),
+            "fast-quorum n={}",
+            n_replicas
+        );
     }
 }
 
@@ -494,21 +501,32 @@ fn test_handle_commit_request() {
 
     // TODO test storage error
 }
+
+#[tokio::main]
+async fn _handle_accept_reply(
+    ra: &Replica,
+    repl: &AcceptReply,
+    st: &mut AcceptStatus,
+) -> Result<(), Error> {
+    handle_accept_reply(ra, repl, st).await
+}
+
 #[test]
 fn test_handle_accept_reply() {
     let replica_id = 2;
-    let mut rp = new_foo_replica(replica_id, new_mem_sto(), &[]);
+    let rp = new_foo_replica(replica_id, new_mem_sto(), &[]);
     let mut foo_inst = new_foo_inst(replica_id);
     let iid = foo_inst.instance_id.unwrap();
     foo_inst.committed = false;
     foo_inst.executed = false;
     rp.storage.set_instance(&foo_inst).unwrap();
+    let n = rp.group_replica_ids.len() as i32;
 
     {
         // success
-        let mut st = AcceptStatus::new(rp.quorum());
+        let mut st = AcceptStatus::new(quorum(n));
         let repl = MakeReply::accept(&foo_inst);
-        assert!(handle_accept_reply(&mut rp, &repl, &mut st).is_ok());
+        assert!(_handle_accept_reply(&rp, &repl, &mut st).is_ok());
 
         _test_get_inst(
             &rp,
@@ -527,10 +545,10 @@ fn test_handle_accept_reply() {
     rp.storage.set_instance(&foo_inst).unwrap();
     {
         // with reply err
-        let mut st = AcceptStatus::new(rp.quorum());
+        let mut st = AcceptStatus::new(quorum(n));
         let mut repl = MakeReply::accept(&foo_inst);
         repl.err = Some(ProtocolError::LackOf("test".to_string()).into());
-        assert!(handle_accept_reply(&mut rp, &repl, &mut st).is_ok());
+        assert!(_handle_accept_reply(&rp, &repl, &mut st).is_ok());
 
         _test_get_inst(
             &rp,
@@ -549,10 +567,10 @@ fn test_handle_accept_reply() {
     rp.storage.set_instance(&foo_inst).unwrap();
     {
         // with high ballot num
-        let mut st = AcceptStatus::new(rp.quorum());
+        let mut st = AcceptStatus::new(quorum(n));
         let mut repl = MakeReply::accept(&foo_inst);
         repl.cmn.as_mut().unwrap().last_ballot = Some((10, 2, replica_id).into());
-        assert!(handle_accept_reply(&mut rp, &repl, &mut st).is_ok());
+        assert!(_handle_accept_reply(&rp, &repl, &mut st).is_ok());
 
         _test_get_inst(
             &rp,
@@ -565,6 +583,76 @@ fn test_handle_accept_reply() {
             false,
         )
     }
+}
+
+#[tokio::main]
+async fn _bcast_fast_accept() {
+    let mut tc = test_util::TestCluster::new(3);
+    tc.start().await;
+    let inst = foo_inst!((0, 1), "key_x", [(0, 0), (1, 0), (2, 0)]);
+    let r = bcast_fast_accept(&tc.replicas[0].peers, &inst, &[true, true, true])
+        .await
+        .unwrap();
+
+    println!("receive fast accept replys: {:?}", r);
+    // not contain self
+    assert_eq!(2, r.len());
+}
+
+#[test]
+fn test_bcast_fast_accept() {
+    _bcast_fast_accept();
+}
+
+#[tokio::main]
+async fn _bcast_accept() {
+    let mut tc = test_util::TestCluster::new(3);
+    tc.start().await;
+    let inst = foo_inst!((0, 1), "key_x", [(0, 0), (1, 0), (2, 0)]);
+    let r = bcast_accept(&tc.replicas[0].peers, &inst).await.unwrap();
+
+    println!("receive accept replys: {:?}", r);
+    // not contain self
+    assert_eq!(2, r.len());
+}
+
+#[test]
+fn test_bcast_accept() {
+    _bcast_accept();
+}
+
+#[tokio::main]
+async fn _bcast_commit() {
+    let mut tc = test_util::TestCluster::new(3);
+    tc.start().await;
+    let inst = foo_inst!((0, 1), "key_x", [(0, 0), (1, 0), (2, 0)]);
+    let r = bcast_commit(&tc.replicas[0].peers, &inst).await.unwrap();
+
+    println!("receive commit replys: {:?}", r);
+    // not contain self
+    assert_eq!(2, r.len());
+}
+
+#[test]
+fn test_bcast_commit() {
+    _bcast_commit();
+}
+
+#[tokio::main]
+async fn _bcast_prepare() {
+    let mut tc = test_util::TestCluster::new(3);
+    tc.start().await;
+    let inst = foo_inst!((0, 1), "key_x", [(0, 0), (1, 0), (2, 0)]);
+    let r = bcast_prepare(&tc.replicas[0].peers, &inst).await.unwrap();
+
+    println!("receive prepare replys: {:?}", r);
+    // not contain self
+    assert_eq!(2, r.len());
+}
+
+#[test]
+fn test_bcast_prepare() {
+    _bcast_prepare();
 }
 
 fn _test_repl_cmn_ok(cmn: &ReplyCommon, iid: InstanceId, last: Option<BallotNum>) {
