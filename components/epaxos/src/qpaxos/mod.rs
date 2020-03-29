@@ -20,9 +20,11 @@ pub use q_paxos_client::*;
 pub use q_paxos_server::*;
 
 pub mod conflict;
+pub mod errors;
 pub mod quorums;
 
 pub use conflict::*;
+pub use errors::*;
 pub use macros::*;
 pub use quorums::*;
 
@@ -37,6 +39,9 @@ mod test_quorums;
 
 #[cfg(test)]
 mod test_command;
+
+#[cfg(test)]
+mod test_errors;
 
 #[cfg(test)]
 mod test_instance;
