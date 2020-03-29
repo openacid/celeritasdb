@@ -530,7 +530,7 @@ fn test_handle_accept_reply() {
         // with reply err
         let mut st = AcceptStatus::new(rp.quorum());
         let mut repl = MakeReply::accept(&foo_inst);
-        repl.err = Some(Error::LackOf("test".to_string()).to_qerr());
+        repl.err = Some(ProtocolError::LackOf("test".to_string()).into());
         assert!(handle_accept_reply(&mut rp, &repl, &mut st).is_ok());
 
         _test_get_inst(
