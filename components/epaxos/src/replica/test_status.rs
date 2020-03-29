@@ -1,6 +1,6 @@
 use crate::qpaxos::*;
-use crate::replica::get_fast_commit_dep;
 use crate::replica::get_accept_dep;
+use crate::replica::get_fast_commit_dep;
 use std::collections::HashMap;
 
 #[cfg(test)]
@@ -81,15 +81,11 @@ fn test_get_accept_dep() {
          };
     );
 
-    let mut cases: Vec<(
-        i32,
-        Vec<InstanceId>,
-        Option<InstanceId>,
-    )> = vec![
-        case!(2, [2],          None),
-        case!(2, [2, 2],       Some(instid!(1, 2))),
-        case!(2, [2, 3],       Some(instid!(1, 3))),
-        case!(2, [2, 2, 3],    Some(instid!(1, 2))),
+    let mut cases: Vec<(i32, Vec<InstanceId>, Option<InstanceId>)> = vec![
+        case!(2, [2], None),
+        case!(2, [2, 2], Some(instid!(1, 2))),
+        case!(2, [2, 3], Some(instid!(1, 3))),
+        case!(2, [2, 2, 3], Some(instid!(1, 2))),
         case!(2, [2, 2, 3, 3], Some(instid!(1, 2))),
         case!(3, [2, 2], None),
         case!(3, [2, 2, 2, 3], Some(instid!(1, 2))),
@@ -99,10 +95,6 @@ fn test_get_accept_dep() {
 
     for (quorum, deps, want) in cases.iter_mut() {
         let adep = get_accept_dep(deps, *quorum);
-        assert_eq!(
-            *want, adep,
-            "deps:{:?}, f:{}",
-            deps, quorum
-        );
+        assert_eq!(*want, adep, "deps:{:?}, f:{}", deps, quorum);
     }
 }
