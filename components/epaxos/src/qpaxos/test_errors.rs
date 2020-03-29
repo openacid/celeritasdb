@@ -42,4 +42,21 @@ fn test_protocol_error() {
             ..Default::default()
         }
     );
+
+    // Incomplete
+    let e = ProtocolError::Incomplete("foo".into(), 5, 4);
+    assert_eq!("incomplete field:foo, need:5, but:4", format!("{}", e));
+
+    let q: QError = e.into();
+    assert_eq!(
+        q,
+        QError {
+            req: Some(InvalidRequest {
+                field: "foo".into(),
+                problem: "Incomplete".into(),
+                ctx: "incomplete field:foo, need:5, but:4".into(),
+            }),
+            ..Default::default()
+        }
+    );
 }
