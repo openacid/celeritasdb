@@ -1,12 +1,12 @@
 use std::i64;
 use std::net::SocketAddr;
 
-use super::super::conf::ClusterInfo;
-use super::super::qpaxos::*;
-use super::super::snapshot::{Error as SnapError, Storage};
+use crate::conf::ClusterInfo;
+use crate::qpaxos::*;
 use crate::replica::AcceptStatus;
-use crate::replica::Error;
+use crate::replica::Error as ReplicaError;
 use crate::replica::InstanceStatus;
+use crate::snapshot::{Error as SnapError, Storage};
 
 /// ref_or_bug extracts a immutable ref from an Option.
 /// If the Option is None a bug handler is triggered.
@@ -67,7 +67,7 @@ impl Replica {
     /// start exec thread
     fn _start_exec_thread(&self) {}
 
-    pub fn new_instance(&self, cmds: Vec<Command>) -> Result<Instance, Error> {
+    pub fn new_instance(&self, cmds: Vec<Command>) -> Result<Instance, ReplicaError> {
         // TODO locking
         // TODO do not need to store max instance id, store it in replica and when starting, scan
         // backward to find the max
@@ -114,19 +114,19 @@ impl Replica {
         match self._fast_accept(req) {
             Ok((inst, deps_committed)) => MakeReply::fast_accept(&inst, &deps_committed),
             Err(e) => FastAcceptReply {
-                err: Some(e.to_qerr()),
+                err: Some(e.into()),
                 ..Default::default()
             },
         }
     }
 
-    fn _fast_accept(&self, req: &FastAcceptRequest) -> Result<(Instance, Vec<bool>), Error> {
+    fn _fast_accept(&self, req: &FastAcceptRequest) -> Result<(Instance, Vec<bool>), ReplicaError> {
         let (ballot, iid) = self._check_req_common(&req.cmn)?;
 
         let mut inst = match self.storage.get_instance(iid)? {
             Some(v) => {
                 if v.ballot.is_none() || v.ballot.unwrap().num != 0 {
-                    return Err(Error::Existed {});
+                    return Err(ReplicaError::Existed {});
                 }
                 v
             }
@@ -195,13 +195,13 @@ impl Replica {
         match inst {
             Ok(inst) => MakeReply::accept(&inst),
             Err(e) => AcceptReply {
-                err: Some(e.to_qerr()),
+                err: Some(e.into()),
                 ..Default::default()
             },
         }
     }
 
-    fn _accept(&self, req: &AcceptRequest) -> Result<Instance, Error> {
+    fn _accept(&self, req: &AcceptRequest) -> Result<Instance, ReplicaError> {
         // TODO locking
         let (ballot, iid) = self._check_req_common(&req.cmn)?;
 
@@ -227,13 +227,13 @@ impl Replica {
         match self._commit(req) {
             Ok(inst) => MakeReply::commit(&inst),
             Err(e) => CommitReply {
-                err: Some(e.to_qerr()),
+                err: Some(e.into()),
                 ..Default::default()
             },
         }
     }
 
-    fn _commit(&self, req: &CommitRequest) -> Result<Instance, Error> {
+    fn _commit(&self, req: &CommitRequest) -> Result<Instance, ReplicaError> {
         let (ballot, iid) = self._check_req_common(&req.cmn)?;
 
         // TODO locking
@@ -256,19 +256,21 @@ impl Replica {
     fn _check_req_common(
         &self,
         cm: &Option<RequestCommon>,
-    ) -> Result<(BallotNum, InstanceId), Error> {
-        let cm = cm.as_ref().ok_or(Error::LackOf("cmn".into()))?;
+    ) -> Result<(BallotNum, InstanceId), ProtocolError> {
+        let cm = cm.as_ref().ok_or(ProtocolError::LackOf("cmn".into()))?;
 
         let replica_id = cm.to_replica_id;
         if replica_id != self.replica_id {
             return Err((replica_id, self.replica_id).into());
         }
 
-        let ballot = cm.ballot.ok_or(Error::LackOf("cmn.ballot".into()))?;
+        let ballot = cm
+            .ballot
+            .ok_or(ProtocolError::LackOf("cmn.ballot".into()))?;
 
         let iid = cm
             .instance_id
-            .ok_or(Error::LackOf("cmn.instance_id".into()))?;
+            .ok_or(ProtocolError::LackOf("cmn.instance_id".into()))?;
 
         Ok((ballot, iid))
     }
@@ -276,19 +278,19 @@ impl Replica {
     fn _check_repl_common(
         &self,
         cm: &Option<ReplyCommon>,
-    ) -> Result<(BallotNum, InstanceId), Error> {
-        let cm = cm.as_ref().ok_or(Error::LackOf("cmn".into()))?;
+    ) -> Result<(BallotNum, InstanceId), ProtocolError> {
+        let cm = cm.as_ref().ok_or(ProtocolError::LackOf("cmn".into()))?;
         let ballot = cm
             .last_ballot
-            .ok_or(Error::LackOf("cmn.last_ballot".into()))?;
+            .ok_or(ProtocolError::LackOf("cmn.last_ballot".into()))?;
         let iid = cm
             .instance_id
-            .ok_or(Error::LackOf("cmn.instance_id".into()))?;
+            .ok_or(ProtocolError::LackOf("cmn.instance_id".into()))?;
 
         Ok((ballot, iid))
     }
 
-    fn _get_instance(&self, iid: InstanceId) -> Result<Instance, Error> {
+    fn _get_instance(&self, iid: InstanceId) -> Result<Instance, ReplicaError> {
         let inst = self.storage.get_instance(iid)?;
 
         let inst = match inst {
@@ -328,7 +330,7 @@ pub fn handle_accept_reply(
     ra: &Replica,
     repl: &AcceptReply,
     st: &mut AcceptStatus,
-) -> Result<(), Error> {
+) -> Result<(), ReplicaError> {
     if let Some(_) = repl.err {
         return Ok(());
     }

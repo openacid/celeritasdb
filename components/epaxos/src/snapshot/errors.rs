@@ -1,3 +1,6 @@
+use crate::qpaxos::QError;
+use crate::qpaxos::StorageFailure;
+
 quick_error! {
     /// Errors occur when set/get with snapshot
     #[derive(Debug, PartialEq)]
@@ -8,5 +11,21 @@ quick_error! {
         }
 
         NotFound{}
+    }
+}
+
+impl Into<QError> for Error {
+    fn into(self) -> QError {
+        match self {
+            Self::DBError(_) => QError {
+                sto: Some(StorageFailure {}),
+                ..Default::default()
+            },
+
+            Self::NotFound {} => QError {
+                sto: Some(StorageFailure {}),
+                ..Default::default()
+            },
+        }
     }
 }

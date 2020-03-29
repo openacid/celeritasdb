@@ -1,5 +1,5 @@
-use crate::qpaxos::ReplicaID;
-use crate::qpaxos::{InvalidRequest, QError, StorageFailure};
+use crate::qpaxos::ProtocolError;
+use crate::qpaxos::{QError, StorageFailure};
 use crate::snapshot::Error as SnapError;
 
 quick_error! {
@@ -17,19 +17,14 @@ quick_error! {
 
         Existed{}
 
-        NoSuchReplica(rid: ReplicaID, my_rid: ReplicaID) {
-            from(ids: (ReplicaID, ReplicaID)) -> (ids.0, ids.1)
-            display("no such replica:{}, my replica_id:{}", rid, my_rid)
-        }
-
-        LackOf(field: String) {
-            display("lack of required field:{}", field)
+        Protocol(e: ProtocolError) {
+            from(e: ProtocolError) -> (e)
         }
     }
 }
 
-impl Error {
-    pub fn to_qerr(&self) -> QError {
+impl Into<QError> for Error {
+    fn into(self) -> QError {
         match self {
             Self::EngineError(_) => QError {
                 sto: Some(StorageFailure {}),
@@ -41,27 +36,19 @@ impl Error {
                 ..Default::default()
             },
 
-            Self::NoSuchReplica(rid, my_rid) => QError {
-                req: Some(InvalidRequest {
-                    field: "cmn.to_replica_id".into(),
-                    problem: "NotFound".into(),
-                    ctx: format!("{}; my replica_id: {}", rid, my_rid).into(),
-                }),
+            // TODO impl
+            Self::CmdNotSupport(_) => QError {
+                sto: Some(StorageFailure {}),
                 ..Default::default()
             },
 
-            Self::LackOf(f) => QError {
-                req: Some(InvalidRequest {
-                    field: f.clone(),
-                    problem: "LackOf".into(),
-                    ctx: "".into(),
-                }),
+            // TODO impl
+            Self::SystemError(_) => QError {
+                sto: Some(StorageFailure {}),
                 ..Default::default()
             },
 
-            _ => QError {
-                ..Default::default()
-            },
+            Self::Protocol(e) => e.into(),
         }
     }
 }
