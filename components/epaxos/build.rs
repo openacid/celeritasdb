@@ -3,7 +3,12 @@ extern crate tonic_build;
 fn main() {
     // tonic_build::compile_protos("../proto/helloworld.proto").unwrap();
 
+    // On travis `rustup component add rustfmt` report an error that can not find rustfmt on a
+    // nightly channel.
+    // Thus we disable formatting generated code on travis.
+    let fmt = option_env!("TRAVIS_RUST_VERSION").is_none();
     tonic_build::prost::configure()
+        .format(fmt)
         .build_client(true)
         .build_server(true)
         .type_attribute("OpCode", "#[derive(enum_utils::FromStr)]")
