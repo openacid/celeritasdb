@@ -1,12 +1,13 @@
 use crate::qpaxos::*;
 use crate::replica::get_fast_commit_dep;
+use crate::replica::get_accept_dep;
 use std::collections::HashMap;
 
 #[cfg(test)]
 use pretty_assertions::assert_eq;
 
 #[test]
-fn test_get_safe_dep() {
+fn test_get_fast_commit_dep() {
     macro_rules! case(
         (
             $qf:expr,
@@ -60,6 +61,48 @@ fn test_get_safe_dep() {
             *want, fdep,
             "deps:{:?}, committed:{:?}, qf:{}",
             deps, committed, fast_quorum
+        );
+    }
+}
+
+#[test]
+fn test_get_accept_dep() {
+    macro_rules! case(
+        (
+            $qf:expr,
+            [$($didx:expr),*],
+            $want:expr
+            ) => {
+            (
+                $qf,
+                instids![$((1, $didx)),*],
+                $want
+            )
+         };
+    );
+
+    let mut cases: Vec<(
+        i32,
+        Vec<InstanceId>,
+        Option<InstanceId>,
+    )> = vec![
+        case!(2, [2],          None),
+        case!(2, [2, 2],       Some(instid!(1, 2))),
+        case!(2, [2, 3],       Some(instid!(1, 3))),
+        case!(2, [2, 2, 3],    Some(instid!(1, 2))),
+        case!(2, [2, 2, 3, 3], Some(instid!(1, 2))),
+        case!(3, [2, 2], None),
+        case!(3, [2, 2, 2, 3], Some(instid!(1, 2))),
+        case!(3, [2, 2, 3, 3], Some(instid!(1, 3))),
+        case!(3, [2, 2, 3, 4], Some(instid!(1, 3))),
+    ];
+
+    for (quorum, deps, want) in cases.iter_mut() {
+        let adep = get_accept_dep(deps, *quorum);
+        assert_eq!(
+            *want, adep,
+            "deps:{:?}, f:{}",
+            deps, quorum
         );
     }
 }

@@ -99,3 +99,25 @@ pub fn get_fast_commit_dep(
 
     return None;
 }
+
+/// get_accept_dep returns the dep for accept-request if a quorum of replies received.
+/// Otherwise it returns None.
+/// It always choose an as low instance as possible to reduce conflict.
+/// It contains the initial dep at the 0-th slot, and updated deps from 1-th slot.
+/// `deps` in Accept Request is the union of `deps` replied in fast-accept phase.
+///
+/// `deps` must be sorted.
+pub fn get_accept_dep(deps: &Vec<InstanceId>, quorum: i32) -> Option<InstanceId> {
+    // TODO what if deps.len() is 0
+    // the first elt in deps is the initial dep.
+
+    let n = deps.len() as i32;
+    assert!(n > 0);
+    assert!(deps.is_sorted());
+
+    if n < quorum {
+        return None;
+    }
+
+    return Some(deps[(quorum - 1) as usize]);
+}
