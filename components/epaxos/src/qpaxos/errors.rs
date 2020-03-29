@@ -11,11 +11,16 @@ quick_error! {
         LackOf(field: String) {
             display("lack of required field:{}", field)
         }
+
+        Incomplete(field: String, want: i32, actual: i32) {
+            display("incomplete field:{}, need:{}, but:{}", field, want, actual)
+        }
     }
 }
 
 impl Into<QError> for ProtocolError {
     fn into(self) -> QError {
+        let ctx = format!("{}", self);
         match self {
             Self::NoSuchReplica(rid, my_rid) => QError {
                 req: Some(InvalidRequest {
@@ -31,6 +36,17 @@ impl Into<QError> for ProtocolError {
                     field: f.clone(),
                     problem: "LackOf".into(),
                     ctx: "".into(),
+                }),
+                ..Default::default()
+            },
+
+            // TODO rename InvalidRequest to InvalidMessage in order to use it with request and
+            // reply.
+            Self::Incomplete(f, ..) => QError {
+                req: Some(InvalidRequest {
+                    field: f.clone(),
+                    problem: "Incomplete".into(),
+                    ctx: ctx,
                 }),
                 ..Default::default()
             },
