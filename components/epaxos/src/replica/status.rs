@@ -32,28 +32,54 @@ impl Instance {
     }
 }
 
-pub struct Status {
+/// Status tracks replication status during fast-accept, accept and commit phase.
+pub struct Status<'a> {
+    // TODO: to work with cluster membership updating, a single number quorum is not enough in future.
+    pub fast_quorum: i32,
     pub quorum: i32,
-    pub ok_count: i32,
+
+    // With a cached instance it is possible to reduce storage access during replication.
+    pub instance: &'a Instance,
+
+    /// fast_replied tracks what replica has sent back FastAcceptReply.
+    /// It is used to de-dup duplicated messages.
+    pub fast_replied: HashMap<ReplicaID, bool>,
+
+    /// fast_deps collects `deps` received in fast-accept phase.
+    /// They are stored by dependency instance leader.
+    pub fast_deps: HashMap<ReplicaID, Vec<InstanceId>>,
+
+    /// fast_committed tracks what updated dep instance is committed.
+    pub fast_committed: HashMap<InstanceId, bool>,
+
+    /// accept_replie tracks what replica has sent back AcceptReply.
+    /// It does include the leader itself, although the leader update instance status
+    /// to "accept" locally.
+    pub accept_replied: HashMap<ReplicaID, bool>,
+
+    pub accept_ok: i32,
 }
 
-impl Status {
-    pub fn new(quorum: i32) -> Self {
+impl<'a> Status<'a> {
+    pub fn new(n_replica: i32, instance: &'a Instance) -> Self {
         Self {
-            quorum,
-            ok_count: 1,
+            quorum: quorum(n_replica),
+            fast_quorum: fast_quorum(n_replica),
+            instance,
+            fast_replied: HashMap::new(),
+            fast_deps: HashMap::new(),
+            fast_committed: HashMap::new(),
+            accept_replied: HashMap::new(),
+            accept_ok: 1,
         }
     }
 
     pub fn finish(&mut self) -> bool {
-        self.ok_count += 1;
-        self.ok_count >= self.quorum
+        self.accept_ok += 1;
+        self.accept_ok >= self.quorum
     }
 }
 
-pub type FastAcceptStatus = Status;
-pub type AcceptStatus = Status;
-pub type PrepareStatus = Status;
 
 /// `get_fast_commit_dep` finds out the safe dependency by a leader for fast commit.
 ///

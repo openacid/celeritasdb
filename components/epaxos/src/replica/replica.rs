@@ -3,9 +3,9 @@ use tonic::Response;
 
 use crate::conf::ClusterInfo;
 use crate::qpaxos::*;
-use crate::replica::AcceptStatus;
 use crate::replica::Error as ReplicaError;
 use crate::replica::InstanceStatus;
+use crate::replica::Status;
 use crate::snapshot::{Error as SnapError, Storage};
 
 /// ref_or_bug extracts a immutable ref from an Option.
@@ -329,10 +329,10 @@ fn check_repl_common(cm: &Option<ReplyCommon>) -> Result<(BallotNum, InstanceId)
     Ok((ballot, iid))
 }
 
-pub async fn handle_accept_reply(
+pub async fn handle_accept_reply<'a>(
     ra: &Replica,
     repl: &AcceptReply,
-    st: &mut AcceptStatus,
+    st: &mut Status<'a>,
 ) -> Result<(), ReplicaError> {
     if let Some(_) = repl.err {
         return Ok(());
@@ -346,7 +346,16 @@ pub async fn handle_accept_reply(
         return Ok(());
     }
 
-    if inst.ballot.unwrap() < last_ballot {
+    // TODO test duplicated message
+
+    // A duplicated message is received. Just ignore.
+    if st.accept_replied.contains_key(&iid.replica_id) {
+        return Ok(());
+    }
+
+    st.accept_replied.insert(iid.replica_id, true);
+
+    if inst.ballot < Some(last_ballot) {
         return Ok(());
     }
 

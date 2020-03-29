@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::qpaxos::*;
-use crate::replica::AcceptStatus;
+use crate::replica::Status;
 use crate::replica::*;
 use crate::snapshot::MemEngine;
 use crate::snapshot::Storage;
@@ -506,7 +506,7 @@ fn test_handle_commit_request() {
 async fn _handle_accept_reply(
     ra: &Replica,
     repl: &AcceptReply,
-    st: &mut AcceptStatus,
+    st: &mut Status,
 ) -> Result<(), Error> {
     handle_accept_reply(ra, repl, st).await
 }
@@ -524,7 +524,7 @@ fn test_handle_accept_reply() {
 
     {
         // success
-        let mut st = AcceptStatus::new(quorum(n));
+        let mut st = Status::new(rp.group_replica_ids.len() as i32, &foo_inst);
         let repl = MakeReply::accept(&foo_inst);
         assert!(_handle_accept_reply(&rp, &repl, &mut st).is_ok());
 
@@ -545,7 +545,7 @@ fn test_handle_accept_reply() {
     rp.storage.set_instance(&foo_inst).unwrap();
     {
         // with reply err
-        let mut st = AcceptStatus::new(quorum(n));
+        let mut st = Status::new(rp.group_replica_ids.len() as i32, &foo_inst);
         let mut repl = MakeReply::accept(&foo_inst);
         repl.err = Some(ProtocolError::LackOf("test".to_string()).into());
         assert!(_handle_accept_reply(&rp, &repl, &mut st).is_ok());
@@ -567,7 +567,7 @@ fn test_handle_accept_reply() {
     rp.storage.set_instance(&foo_inst).unwrap();
     {
         // with high ballot num
-        let mut st = AcceptStatus::new(quorum(n));
+        let mut st = Status::new(rp.group_replica_ids.len() as i32, &foo_inst);
         let mut repl = MakeReply::accept(&foo_inst);
         repl.cmn.as_mut().unwrap().last_ballot = Some((10, 2, replica_id).into());
         assert!(_handle_accept_reply(&rp, &repl, &mut st).is_ok());
