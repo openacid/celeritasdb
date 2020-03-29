@@ -1,6 +1,5 @@
 use crate::qpaxos::*;
 use crate::replica::AcceptStatus;
-use crate::replica::Error;
 use crate::replica::*;
 use crate::snapshot::MemEngine;
 use crate::snapshot::Storage;
