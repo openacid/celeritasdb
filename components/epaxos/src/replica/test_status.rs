@@ -7,6 +7,7 @@ use std::collections::HashMap;
 use pretty_assertions::assert_eq;
 
 #[test]
+#[allow(unused_mut)]
 fn test_get_fast_commit_dep() {
     macro_rules! case(
         (
