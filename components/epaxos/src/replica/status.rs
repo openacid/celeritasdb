@@ -80,7 +80,6 @@ impl<'a> Status<'a> {
     }
 }
 
-
 /// `get_fast_commit_dep` finds out the safe dependency by a leader for fast commit.
 ///
 /// `deps` are instance-ids with the same `replica_id`. It contains the initial dep at the 0-th
