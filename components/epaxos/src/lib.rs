@@ -11,6 +11,7 @@ pub mod conf;
 #[macro_use]
 pub mod qpaxos;
 pub mod replica;
+pub mod replication;
 pub mod snapshot;
 pub mod tokey;
 

@@ -3,7 +3,7 @@ use crate::qpaxos::StorageFailure;
 
 quick_error! {
     /// Errors occur when set/get with snapshot
-    #[derive(Debug, PartialEq)]
+    #[derive(Debug, PartialEq, Eq)]
     pub enum Error {
         DBError(msg: String) {
             from(msg: String) -> (msg)

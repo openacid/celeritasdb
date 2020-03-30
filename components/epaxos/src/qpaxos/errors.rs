@@ -1,7 +1,7 @@
 use crate::qpaxos::{InvalidRequest, QError, ReplicaID};
 
 quick_error! {
-    #[derive(Debug)]
+    #[derive(Debug, Eq, PartialEq)]
     pub enum ProtocolError {
         NoSuchReplica(rid: ReplicaID, my_rid: ReplicaID) {
             from(ids: (ReplicaID, ReplicaID)) -> (ids.0, ids.1)

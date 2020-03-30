@@ -33,6 +33,7 @@ impl Instance {
 }
 
 /// Status tracks replication status during fast-accept, accept and commit phase.
+#[derive(Debug)]
 pub struct Status<'a> {
     // TODO: to work with cluster membership updating, a single number quorum is not enough in future.
     pub fast_quorum: i32,

@@ -3,7 +3,7 @@ use crate::qpaxos::{QError, StorageFailure};
 use crate::snapshot::Error as SnapError;
 
 quick_error! {
-    #[derive(Debug)]
+    #[derive(Debug, Eq, PartialEq)]
     pub enum Error {
         EngineError(s: SnapError) {
             from(err: SnapError) -> (err)

@@ -317,7 +317,9 @@ fn check_req_common(
     Ok((ballot, iid))
 }
 
-fn check_repl_common(cm: &Option<ReplyCommon>) -> Result<(BallotNum, InstanceId), ProtocolError> {
+pub fn check_repl_common(
+    cm: &Option<ReplyCommon>,
+) -> Result<(BallotNum, InstanceId), ProtocolError> {
     let cm = cm.as_ref().ok_or(ProtocolError::LackOf("cmn".into()))?;
     let ballot = cm
         .last_ballot
