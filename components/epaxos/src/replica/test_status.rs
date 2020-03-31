@@ -1,10 +1,50 @@
 use crate::qpaxos::*;
 use crate::replica::get_accept_dep;
 use crate::replica::get_fast_commit_dep;
+use crate::replica::Status;
 use std::collections::HashMap;
 
 #[cfg(test)]
 use pretty_assertions::assert_eq;
+
+macro_rules! get {
+    ($container:expr, $key:expr, None) => {
+        assert_eq!($container.get($key), None);
+    };
+
+    ($container:expr, $key:expr, $want:expr) => {
+        assert_eq!($container.get($key), Some(&$want));
+    };
+}
+
+#[test]
+fn test_status_new() {
+    let inst = inst!(
+        (1, 2),
+        (3, 4, _),
+        [("Set", "x", "1")],
+        [(1, 1), (2, 0)],
+        "withdeps"
+    );
+    let iid = inst.instance_id.unwrap();
+    let replica_id = iid.replica_id;
+
+    let st = Status::new(7, &inst);
+
+    assert_eq!(4, st.quorum);
+    assert_eq!(5, st.fast_quorum);
+    assert_eq!(st.instance, &inst);
+
+    get!(st.fast_replied, &replica_id, true);
+
+    get!(st.fast_deps, &1, vec![instid!(1, 1)]);
+    get!(st.fast_deps, &2, vec![instid!(2, 0)]);
+    get!(st.fast_deps, &3, None);
+
+    get!(st.accept_replied, &1, None);
+    get!(st.accept_replied, &2, None);
+    assert_eq!(st.accept_ok, 0);
+}
 
 #[test]
 #[allow(unused_mut)]

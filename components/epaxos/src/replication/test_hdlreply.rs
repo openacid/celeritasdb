@@ -83,7 +83,6 @@ fn test_handle_fast_accept_reply_err() {
     }
 
     let inst = init_inst!((1, 2), [("Set", "x", "1")], [(1, 1)]);
-    let mut st = Status::new(3, &inst);
 
     let cases: Vec<(FastAcceptReply, HandlerError)> = vec![
         (frepl!(), ProtocolError::LackOf("cmn".into()).into()),
@@ -109,9 +108,10 @@ fn test_handle_fast_accept_reply_err() {
         ),
     ];
 
-    for (from_rid, (repl, want)) in cases.iter().enumerate() {
-        let r = handle_fast_accept_reply(&mut st, from_rid as ReplicaID, repl);
-        assert_eq!(r.err().unwrap(), *want);
+    for (repl, want) in cases.iter() {
+        let mut st = Status::new(3, &inst);
+        let r = handle_fast_accept_reply(&mut st, 3, repl);
+        assert_eq!(r.err().unwrap(), *want, "fast-reply: {:?}", repl);
     }
 }
 
@@ -128,7 +128,7 @@ fn test_handle_fast_accept_reply() {
         };
     }
 
-    let inst = init_inst!((1, 2), [("Set", "x", "1")], [(1, 1)]);
+    let inst = init_inst!((1, 2), [("Set", "x", "1")], []);
     let mut st = Status::new(3, &inst);
 
     {

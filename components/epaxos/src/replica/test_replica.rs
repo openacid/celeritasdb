@@ -525,6 +525,7 @@ fn test_handle_accept_reply() {
     {
         // success
         let mut st = Status::new(n, &foo_inst);
+        st.start_accept();
         let repl = MakeReply::accept(&foo_inst);
         assert!(_handle_accept_reply(&rp, &repl, &mut st).is_ok());
 
@@ -546,6 +547,7 @@ fn test_handle_accept_reply() {
     {
         // with reply err
         let mut st = Status::new(n, &foo_inst);
+        st.start_accept();
         let mut repl = MakeReply::accept(&foo_inst);
         repl.err = Some(ProtocolError::LackOf("test".to_string()).into());
         assert!(_handle_accept_reply(&rp, &repl, &mut st).is_ok());
@@ -568,6 +570,7 @@ fn test_handle_accept_reply() {
     {
         // with high ballot num
         let mut st = Status::new(n, &foo_inst);
+        st.start_accept();
         let mut repl = MakeReply::accept(&foo_inst);
         repl.cmn.as_mut().unwrap().last_ballot = Some((10, 2, replica_id).into());
         assert!(_handle_accept_reply(&rp, &repl, &mut st).is_ok());

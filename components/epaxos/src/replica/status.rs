@@ -62,17 +62,52 @@ pub struct Status<'a> {
 }
 
 impl<'a> Status<'a> {
+    /// new creates a Status with initial deps filled, as if it already fast-accepted from the
+    /// instnace it serves.
     pub fn new(n_replica: i32, instance: &'a Instance) -> Self {
-        Self {
+        let mut st = Self {
             quorum: quorum(n_replica),
             fast_quorum: fast_quorum(n_replica),
             instance,
+
             fast_replied: HashMap::new(),
             fast_deps: HashMap::new(),
             fast_committed: HashMap::new(),
+
             accept_replied: HashMap::new(),
-            accept_ok: 1,
+            accept_ok: 0,
+        };
+
+        st.start_fast_accept();
+
+        st
+    }
+
+    /// start_fast_accept performs a handle-fast-accept-reply for the instance it serves.
+    pub fn start_fast_accept(&mut self) -> &mut Self {
+        let iid = self.instance.instance_id.unwrap();
+        let rid = iid.replica_id;
+
+        self.fast_replied.insert(rid, true);
+
+        let deps = self.instance.deps.as_ref().unwrap();
+        for d in deps.iter() {
+            let rid = d.replica_id;
+            if !self.fast_deps.contains_key(&rid) {
+                self.fast_deps.insert(rid, Vec::new());
+            }
+
+            self.fast_deps.get_mut(&rid).unwrap().push(*d);
         }
+
+        self
+    }
+
+    /// start_accept initiates Status to enter Accept phase.
+    pub fn start_accept(&mut self) -> &mut Self {
+        // local instance accepts it.
+        self.accept_ok = 1;
+        self
     }
 
     pub fn finish(&mut self) -> bool {
