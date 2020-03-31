@@ -172,6 +172,8 @@ async fn api_loop(mut listener: TcpListener) {
     }
 }
 
+fn _xx() {}
+
 fn main() {
     // TODO standalone version file.
     // TODO add test of command line argument.
