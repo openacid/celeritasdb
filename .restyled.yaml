@@ -194,8 +194,14 @@ restylers:
           - "80"
           - "--prose-wrap"
           - preserve
+
     - name: rustfmt
+      image: restyled/restyler-rustfmt:latest
+      command:
+          - rustfmt
       arguments:
           - "--edition"
           - "2018"
-
+      include:
+          - "**/*.rs"
+      interpreters: []
