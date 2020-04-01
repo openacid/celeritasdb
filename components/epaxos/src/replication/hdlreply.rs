@@ -95,12 +95,11 @@ pub async fn handle_accept_reply<'a>(
     // ignore delay reply
     let status = inst.status();
     if status != InstanceStatus::Accepted {
-        return Err(ProtocolError::Incomplete(
-            "InstanceStatus".into(),
-            InstanceStatus::Accepted as i32,
-            status as i32,
-        )
-        .into());
+        return Err(HandlerError::DelayReply(format!(
+            "handle accept reply want instance status: {:?} got: {:?}",
+            InstanceStatus::Accepted,
+            status
+        )));
     }
 
     if inst.ballot < Some(last_ballot) {

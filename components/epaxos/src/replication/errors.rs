@@ -34,5 +34,10 @@ quick_error! {
             from(r: ReplicaError) -> (r)
             from(e: SnapError) -> (e.into())
         }
+
+        /// A delay reply is received
+        DelayReply(msg: String) {
+            display("receive delay msg :{}", &msg)
+        }
     }
 }
