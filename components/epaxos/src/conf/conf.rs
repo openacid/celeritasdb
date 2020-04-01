@@ -1,11 +1,12 @@
 use std::collections::BTreeMap;
 use std::fs;
-use std::net::SocketAddr;
 use std::net::AddrParseError;
-use std::path::PathBuf;
+use std::net::SocketAddr;
 use std::ops::{Deref, DerefMut};
+use std::path::Path;
 
 use super::errors::ConfError;
+use crate::qpaxos::ReplicaID;
 
 use serde::{Deserialize, Serialize};
 
@@ -19,7 +20,7 @@ mod tests;
 pub type NodeID = String;
 
 /// Node is a struct to represent a cluster node, not necessary a replica.
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct Node {
     #[serde(default)]
     pub node_id: NodeID,
@@ -38,6 +39,8 @@ pub struct ClusterInfo {
     // TODO: graceful handling replication addr in `key`: e.g. only when replication is None, or
     // make `replication` an vector.
     pub nodes: BTreeMap<String, Node>,
+
+    pub replicas: BTreeMap<ReplicaID, NodeID>,
 }
 
 // let user to use c.get() just like c.nodes.get()
@@ -57,7 +60,7 @@ impl DerefMut for ClusterInfo {
 
 impl ClusterInfo {
     /// from_file read cluster conf yaml from a local file.
-    pub fn from_file(path: &PathBuf) -> Result<ClusterInfo, ConfError> {
+    pub fn from_file<P: AsRef<Path>>(path: P) -> Result<ClusterInfo, ConfError> {
         let content = fs::read_to_string(path)?;
         let mut cluster: ClusterInfo = serde_yaml::from_str(content.as_str())?;
 
@@ -65,7 +68,15 @@ impl ClusterInfo {
             ClusterInfo::norm_node(nid, node)?;
         }
 
+        cluster.check_replicas()?;
+
         return Ok(cluster);
+    }
+
+    /// get_replica_node returns the Node where the specified replica is.
+    pub fn get_replica_node(&self, rid: ReplicaID) -> Option<&Node> {
+        let nid = self.replicas.get(&rid)?;
+        self.nodes.get(nid)
     }
 
     // TODO test bad node id as replication addr
@@ -73,6 +84,16 @@ impl ClusterInfo {
     pub fn norm_node(nid: &str, node: &mut Node) -> Result<(), AddrParseError> {
         node.node_id = String::from(nid);
         node.replication = nid.parse()?;
+        Ok(())
+    }
+
+    /// check_replicas checks whether there is a replica on a unknown node.
+    pub fn check_replicas(&self) -> Result<(), ConfError> {
+        for (rid, nid) in self.replicas.iter() {
+            if !self.nodes.contains_key(nid) {
+                return Err(ConfError::OrphanReplica(*rid, nid.clone()));
+            }
+        }
         Ok(())
     }
 }
