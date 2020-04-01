@@ -25,7 +25,7 @@ nodes:
         api_addr: 192.168.0.1:3332
         api_uaddr: /var/run/usocket2
         replication: 192.168.0.1:4442
-replicas: {}
+groups: []
 ";
 
     let (_tmpf, ci) = load_conf(cont).unwrap();
@@ -60,8 +60,8 @@ nodes:
     192.168.0.1:4442:
         api_addr: 192.168.0.1:3332
         replication: 192.168.0.1:4442
-replicas:
-    1: 192.168.0.1:4442
+groups:
+-   1: 192.168.0.1:4442
     2: 192.168.0.1:4442
     3: 192.168.0.1:9999
 ";
@@ -83,8 +83,8 @@ nodes:
     192.168.0.1:4442:
         api_addr: 192.168.0.1:3332
         replication: 192.168.0.1:4442
-replicas:
-    1: 192.168.0.1:4442
+groups:
+-   1: 192.168.0.1:4442
     2: 192.168.0.1:4442
 ";
 
@@ -98,5 +98,73 @@ replicas:
             api_uaddr: None,
             replication: "192.168.0.1:4442".parse().unwrap(),
         }
+    );
+}
+
+#[test]
+fn test_conf_dup_replica() {
+    let cont = "
+nodes:
+    127.0.0.1:4441:
+        api_addr: 127.0.0.1:3331
+        replication: 127.0.0.1:5551
+    192.168.0.1:4442:
+        api_addr: 192.168.0.1:3332
+        replication: 192.168.0.1:4442
+groups:
+-   1: 192.168.0.1:4442
+    2: 192.168.0.1:4442
+-   1: 127.0.0.1:4441
+";
+
+    let r = load_conf(cont);
+    assert_eq!(ConfError::DupReplica(1), r.err().unwrap());
+}
+
+#[test]
+fn test_conf_groups() {
+    let cont = "
+nodes:
+    127.0.0.1:4441:
+        api_addr: 127.0.0.1:3331
+        replication: 127.0.0.1:5551
+    192.168.0.1:4442:
+        api_addr: 192.168.0.1:3332
+        replication: 192.168.0.1:4442
+groups:
+-   1: 192.168.0.1:4442
+    2: 192.168.0.1:4442
+-   3: 127.0.0.1:4441
+-   4: 192.168.0.1:4442
+";
+
+    let (_f, ci) = load_conf(cont).unwrap();
+    assert_eq!(
+        ci.get_replica(1),
+        Some(&ReplicaInfo {
+            group: vec![1, 2],
+            node_id: "192.168.0.1:4442".into(),
+        })
+    );
+    assert_eq!(
+        ci.get_replica(2),
+        Some(&ReplicaInfo {
+            group: vec![1, 2],
+            node_id: "192.168.0.1:4442".into(),
+        })
+    );
+    assert_eq!(
+        ci.get_replica(3),
+        Some(&ReplicaInfo {
+            group: vec![3],
+            node_id: "127.0.0.1:4441".into(),
+        })
+    );
+    assert_eq!(
+        ci.get_replica(4),
+        Some(&ReplicaInfo {
+            group: vec![4],
+            node_id: "192.168.0.1:4442".into(),
+        })
     );
 }

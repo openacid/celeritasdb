@@ -30,6 +30,12 @@ pub struct Node {
     // idc: String, // TODO(lsl): need topology information of a node
 }
 
+#[derive(Debug, Eq, PartialEq)]
+pub struct ReplicaInfo {
+    pub group: Vec<ReplicaID>,
+    pub node_id: NodeID,
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ClusterInfo {
     /// The key is NodeID and should be unique globally.
@@ -40,7 +46,13 @@ pub struct ClusterInfo {
     // make `replication` an vector.
     pub nodes: BTreeMap<String, Node>,
 
-    pub replicas: BTreeMap<ReplicaID, NodeID>,
+    /// groups defines the replication-groups in this cluster.
+    /// Every group has about 3 replicas, and every replica is assigned to one node.
+    /// No two groups have the same replica id.
+    pub groups: Vec<BTreeMap<ReplicaID, NodeID>>,
+
+    #[serde(skip)]
+    pub replicas: BTreeMap<ReplicaID, ReplicaInfo>,
 }
 
 // let user to use c.get() just like c.nodes.get()
@@ -68,14 +80,23 @@ impl ClusterInfo {
             ClusterInfo::norm_node(nid, node)?;
         }
 
+        cluster.populate_replicas()?;
+
         cluster.check_replicas()?;
 
         return Ok(cluster);
     }
 
+    /// get_replica returns the ReplicaInfo by specified replica-id.
+    pub fn get_replica(&self, rid: ReplicaID) -> Option<&ReplicaInfo> {
+        let rinfo = self.replicas.get(&rid)?;
+        Some(rinfo)
+    }
+
     /// get_replica_node returns the Node where the specified replica is.
     pub fn get_replica_node(&self, rid: ReplicaID) -> Option<&Node> {
-        let nid = self.replicas.get(&rid)?;
+        let rinfo = self.replicas.get(&rid)?;
+        let nid = &rinfo.node_id;
         self.nodes.get(nid)
     }
 
@@ -87,9 +108,35 @@ impl ClusterInfo {
         Ok(())
     }
 
+    pub fn populate_replicas(&mut self) -> Result<(), ConfError> {
+        self.replicas = BTreeMap::new();
+
+        for g in self.groups.iter() {
+            let mut gvec = vec![];
+            for (rid, nid) in g.iter() {
+                if self.replicas.contains_key(rid) {
+                    return Err(ConfError::DupReplica(*rid));
+                }
+                gvec.push(*rid);
+            }
+            for (rid, nid) in g.iter() {
+                self.replicas.insert(
+                    *rid,
+                    ReplicaInfo {
+                        group: gvec.clone(),
+                        node_id: nid.clone(),
+                    },
+                );
+            }
+        }
+
+        Ok(())
+    }
+
     /// check_replicas checks whether there is a replica on a unknown node.
     pub fn check_replicas(&self) -> Result<(), ConfError> {
-        for (rid, nid) in self.replicas.iter() {
+        for (rid, rinfo) in self.replicas.iter() {
+            let nid = &rinfo.node_id;
             if !self.nodes.contains_key(nid) {
                 return Err(ConfError::OrphanReplica(*rid, nid.clone()));
             }

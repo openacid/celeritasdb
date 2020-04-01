@@ -18,6 +18,8 @@ quick_error! {
         }
 
         OrphanReplica(rid: ReplicaID, nid: NodeID) {}
+
+        DupReplica(rid: ReplicaID) {}
     }
 }
 
@@ -28,6 +30,7 @@ impl PartialEq<ConfError> for ConfError {
             (Self::BadYaml(_), Self::BadYaml(_)) => true,
             (Self::BadReplication(a), Self::BadReplication(b)) => a == b,
             (Self::OrphanReplica(a, b), Self::OrphanReplica(x, y)) => a == x && b == y,
+            (Self::DupReplica(a), Self::DupReplica(b)) => a == b,
             _ => false,
         }
     }
