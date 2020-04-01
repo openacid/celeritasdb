@@ -46,7 +46,7 @@ impl Into<QError> for ProtocolError {
                 req: Some(InvalidRequest {
                     field: f.clone(),
                     problem: "Incomplete".into(),
-                    ctx: ctx,
+                    ctx,
                 }),
                 ..Default::default()
             },

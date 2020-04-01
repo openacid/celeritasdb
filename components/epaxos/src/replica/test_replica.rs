@@ -1,7 +1,6 @@
 use std::sync::Arc;
 
 use crate::qpaxos::*;
-use crate::replica::Status;
 use crate::replica::*;
 use crate::snapshot::MemEngine;
 use crate::snapshot::Storage;
@@ -500,92 +499,6 @@ fn test_handle_commit_request() {
     }
 
     // TODO test storage error
-}
-
-#[tokio::main]
-async fn _handle_accept_reply(
-    ra: &Replica,
-    repl: &AcceptReply,
-    st: &mut Status,
-) -> Result<(), Error> {
-    handle_accept_reply(ra, repl, st).await
-}
-
-#[test]
-fn test_handle_accept_reply() {
-    let replica_id = 2;
-    let rp = new_foo_replica(replica_id, new_mem_sto(), &[]);
-    let mut foo_inst = new_foo_inst(replica_id);
-    let iid = foo_inst.instance_id.unwrap();
-    foo_inst.committed = false;
-    foo_inst.executed = false;
-    rp.storage.set_instance(&foo_inst).unwrap();
-    let n = rp.group_replica_ids.len() as i32;
-
-    {
-        // success
-        let mut st = Status::new(n, &foo_inst);
-        st.start_accept();
-        let repl = MakeReply::accept(&foo_inst);
-        assert!(_handle_accept_reply(&rp, &repl, &mut st).is_ok());
-
-        _test_get_inst(
-            &rp,
-            iid,
-            foo_inst.ballot,
-            foo_inst.last_ballot,
-            foo_inst.cmds.clone(),
-            foo_inst.final_deps.clone(),
-            true,
-            false,
-        )
-    }
-
-    foo_inst.committed = false;
-    foo_inst.executed = false;
-    rp.storage.set_instance(&foo_inst).unwrap();
-    {
-        // with reply err
-        let mut st = Status::new(n, &foo_inst);
-        st.start_accept();
-        let mut repl = MakeReply::accept(&foo_inst);
-        repl.err = Some(ProtocolError::LackOf("test".to_string()).into());
-        assert!(_handle_accept_reply(&rp, &repl, &mut st).is_ok());
-
-        _test_get_inst(
-            &rp,
-            iid,
-            foo_inst.ballot,
-            foo_inst.last_ballot,
-            foo_inst.cmds.clone(),
-            foo_inst.final_deps.clone(),
-            false,
-            false,
-        )
-    }
-
-    foo_inst.committed = false;
-    foo_inst.executed = false;
-    rp.storage.set_instance(&foo_inst).unwrap();
-    {
-        // with high ballot num
-        let mut st = Status::new(n, &foo_inst);
-        st.start_accept();
-        let mut repl = MakeReply::accept(&foo_inst);
-        repl.cmn.as_mut().unwrap().last_ballot = Some((10, 2, replica_id).into());
-        assert!(_handle_accept_reply(&rp, &repl, &mut st).is_ok());
-
-        _test_get_inst(
-            &rp,
-            iid,
-            foo_inst.ballot,
-            foo_inst.last_ballot,
-            foo_inst.cmds.clone(),
-            foo_inst.final_deps.clone(),
-            false,
-            false,
-        )
-    }
 }
 
 #[tokio::main]

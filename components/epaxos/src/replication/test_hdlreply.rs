@@ -1,6 +1,10 @@
+use std::sync::Arc;
+
 use crate::qpaxos::*;
+use crate::replica::test_util;
 use crate::replica::*;
 use crate::replication::*;
+use crate::snapshot::MemEngine;
 
 #[cfg(test)]
 use pretty_assertions::assert_eq;
@@ -195,5 +199,78 @@ fn test_handle_fast_accept_reply() {
         );
         assert_eq!(false, st.fast_deps.contains_key(&3));
         assert_eq!(false, st.fast_committed.contains_key(&instid!(3, 4)));
+    }
+}
+
+#[tokio::main]
+async fn _handle_accept_reply<'a>(
+    st: &mut Status<'a>,
+    from_rid: ReplicaID,
+    ra: &Replica,
+    repl: &AcceptReply,
+) -> Result<bool, HandlerError> {
+    handle_accept_reply(st, from_rid, ra, repl).await
+}
+
+#[test]
+fn test_handle_accept_reply() {
+    let replica_id = 2;
+    let rp = test_util::new_replica(
+        replica_id,
+        vec![0, 1, 2],
+        vec![],
+        Arc::new(MemEngine::new().unwrap()),
+    );
+
+    let mut inst = init_inst!((1, 2), [("Set", "x", "1")], []);
+    inst.final_deps = Some(instids![].into());
+    inst.last_ballot = Some((0, 0, 0).into());
+    rp.storage.set_instance(&inst).unwrap();
+    let n = rp.group_replica_ids.len() as i32;
+
+    macro_rules! assert_commit {
+        ($cmt:expr) => {
+            let got = rp
+                .storage
+                .get_instance(inst.instance_id.unwrap())
+                .unwrap()
+                .unwrap();
+            assert_eq!($cmt, got.committed);
+        };
+    }
+
+    {
+        // with high ballot num
+        let mut st = Status::new(n, &inst);
+        st.start_accept();
+        let mut repl = MakeReply::accept(&inst);
+        repl.cmn.as_mut().unwrap().last_ballot = Some((10, 2, replica_id).into());
+        let r = _handle_accept_reply(&mut st, 0, &rp, &repl);
+        println!("{:?}", r);
+        assert!(r.is_err());
+        assert_commit!(false);
+    }
+
+    {
+        // with reply err
+        let mut st = Status::new(n, &inst);
+        st.start_accept();
+        let mut repl = MakeReply::accept(&inst);
+        repl.err = Some(ProtocolError::LackOf("test".to_string()).into());
+        let r = _handle_accept_reply(&mut st, 0, &rp, &repl);
+        println!("{:?}", r);
+        assert!(r.is_err());
+        assert_commit!(false);
+    }
+
+    {
+        // success
+        let mut st = Status::new(n, &inst);
+        st.start_accept();
+        let repl = MakeReply::accept(&inst);
+        let r = _handle_accept_reply(&mut st, 0, &rp, &repl);
+        println!("{:?}", r);
+        assert!(r.unwrap());
+        assert_commit!(true);
     }
 }

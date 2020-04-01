@@ -2,6 +2,8 @@ use crate::qpaxos::BallotNum;
 use crate::qpaxos::ProtocolError;
 use crate::qpaxos::QError;
 use crate::qpaxos::ReplicaID;
+use crate::replica::Error as ReplicaError;
+use crate::snapshot::Error as SnapError;
 
 quick_error! {
     /// HandlerError is an error encountered when handle-xx-request or handle-xx-reply.
@@ -27,5 +29,10 @@ quick_error! {
             from(p: ProtocolError) -> (p)
         }
 
+        /// A malformed replica error.
+        Replica(r: ReplicaError) {
+            from(r: ReplicaError) -> (r)
+            from(e: SnapError) -> (e.into())
+        }
     }
 }

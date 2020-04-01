@@ -1,7 +1,20 @@
 use crate::qpaxos::*;
-use crate::replica::check_repl_common;
-use crate::replica::Status;
+use crate::replica::*;
 use crate::replication::HandlerError;
+
+pub fn check_repl_common(
+    cm: &Option<ReplyCommon>,
+) -> Result<(BallotNum, InstanceId), ProtocolError> {
+    let cm = cm.as_ref().ok_or(ProtocolError::LackOf("cmn".into()))?;
+    let ballot = cm
+        .last_ballot
+        .ok_or(ProtocolError::LackOf("cmn.last_ballot".into()))?;
+    let iid = cm
+        .instance_id
+        .ok_or(ProtocolError::LackOf("cmn.instance_id".into()))?;
+
+    Ok((ballot, iid))
+}
 
 pub fn handle_fast_accept_reply(
     st: &mut Status,
@@ -20,7 +33,7 @@ pub fn handle_fast_accept_reply(
     }
 
     // TODO check iid matches
-    let (last_ballot, iid) = check_repl_common(&repl.cmn)?;
+    let (last_ballot, _iid) = check_repl_common(&repl.cmn)?;
     let inst = st.instance;
 
     let deps = repl
@@ -57,4 +70,52 @@ pub fn handle_fast_accept_reply(
     }
 
     Ok(())
+}
+
+pub async fn handle_accept_reply<'a>(
+    st: &mut Status<'a>,
+    from_rid: ReplicaID,
+    ra: &Replica,
+    repl: &AcceptReply,
+) -> Result<bool, HandlerError> {
+    // TODO test duplicated message
+    // A duplicated message is received. Just ignore.
+    if st.accept_replied.contains_key(&from_rid) {
+        return Err(HandlerError::Dup(from_rid));
+    }
+    st.accept_replied.insert(from_rid, true);
+
+    if let Some(ref e) = repl.err {
+        return Err(HandlerError::RemoteError(e.clone()));
+    }
+
+    let (last_ballot, iid) = check_repl_common(&repl.cmn)?;
+    let mut inst = ra.get_instance(iid)?;
+
+    // ignore delay reply
+    let status = inst.status();
+    if status != InstanceStatus::Accepted {
+        return Err(ProtocolError::Incomplete(
+            "InstanceStatus".into(),
+            InstanceStatus::Accepted as i32,
+            status as i32,
+        )
+        .into());
+    }
+
+    if inst.ballot < Some(last_ballot) {
+        return Err(HandlerError::StaleBallot(
+            inst.ballot.or(Some((0, 0, 0).into())).unwrap(),
+            last_ballot,
+        ));
+    }
+
+    if st.finish() {
+        inst.committed = true;
+        ra.storage.set_instance(&inst)?;
+        bcast_commit(&ra.peers, &inst).await;
+        return Ok(true);
+    }
+
+    Ok(false)
 }

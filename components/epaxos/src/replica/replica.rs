@@ -4,8 +4,6 @@ use tonic::Response;
 use crate::conf::ClusterInfo;
 use crate::qpaxos::*;
 use crate::replica::Error as ReplicaError;
-use crate::replica::InstanceStatus;
-use crate::replica::Status;
 use crate::snapshot::{Error as SnapError, Storage};
 
 /// ref_or_bug extracts a immutable ref from an Option.
@@ -227,7 +225,7 @@ impl Replica {
         // TODO locking
         let (ballot, iid) = check_req_common(self.replica_id, &req.cmn)?;
 
-        let mut inst = self._get_instance(iid)?;
+        let mut inst = self.get_instance(iid)?;
         // TODO check instance status if committed or executed
 
         inst.last_ballot = inst.ballot;
@@ -259,7 +257,7 @@ impl Replica {
         let (ballot, iid) = check_req_common(self.replica_id, &req.cmn)?;
 
         // TODO locking
-        let mut inst = self._get_instance(iid)?;
+        let mut inst = self.get_instance(iid)?;
 
         // TODO issue: after commit, inst.last_ballot might be >= inst.ballot, which might confuse
         // other procedure.
@@ -275,7 +273,7 @@ impl Replica {
         Ok(inst)
     }
 
-    fn _get_instance(&self, iid: InstanceId) -> Result<Instance, ReplicaError> {
+    pub fn get_instance(&self, iid: InstanceId) -> Result<Instance, ReplicaError> {
         let inst = self.storage.get_instance(iid)?;
 
         let inst = match inst {
@@ -315,59 +313,6 @@ fn check_req_common(
         .ok_or(ProtocolError::LackOf("cmn.instance_id".into()))?;
 
     Ok((ballot, iid))
-}
-
-pub fn check_repl_common(
-    cm: &Option<ReplyCommon>,
-) -> Result<(BallotNum, InstanceId), ProtocolError> {
-    let cm = cm.as_ref().ok_or(ProtocolError::LackOf("cmn".into()))?;
-    let ballot = cm
-        .last_ballot
-        .ok_or(ProtocolError::LackOf("cmn.last_ballot".into()))?;
-    let iid = cm
-        .instance_id
-        .ok_or(ProtocolError::LackOf("cmn.instance_id".into()))?;
-
-    Ok((ballot, iid))
-}
-
-pub async fn handle_accept_reply<'a>(
-    ra: &Replica,
-    repl: &AcceptReply,
-    st: &mut Status<'a>,
-) -> Result<(), ReplicaError> {
-    if let Some(_) = repl.err {
-        return Ok(());
-    }
-
-    let (last_ballot, iid) = check_repl_common(&repl.cmn)?;
-    let mut inst = ra._get_instance(iid)?;
-
-    // ignore delay reply
-    if inst.status() != InstanceStatus::Accepted {
-        return Ok(());
-    }
-
-    // TODO test duplicated message
-
-    // A duplicated message is received. Just ignore.
-    if st.accept_replied.contains_key(&iid.replica_id) {
-        return Ok(());
-    }
-
-    st.accept_replied.insert(iid.replica_id, true);
-
-    if inst.ballot < Some(last_ballot) {
-        return Ok(());
-    }
-
-    if st.finish() {
-        inst.committed = true;
-        ra.storage.set_instance(&inst)?;
-        bcast_commit(&ra.peers, &inst).await;
-    }
-
-    Ok(())
 }
 
 macro_rules! bcast_msg {
