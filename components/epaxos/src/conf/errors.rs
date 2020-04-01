@@ -1,10 +1,18 @@
+use std::net::AddrParseError;
+
 quick_error! {
     #[derive(Debug)]
     pub enum ConfError {
-        Error{s: String} {
-            from(err: std::io::Error) -> {s: format!("IO Error: {}", err)}
-            from(err: serde_yaml::Error) -> {s: format!("Yaml Error: {}", err)}
+        IOError(e: std::io::Error) {
+            from(e: std::io::Error) -> (e)
+        }
+
+        BadYaml(e: serde_yaml::Error) {
+            from(e: serde_yaml::Error) -> (e)
+        }
+
+        BadReplication(e: AddrParseError) {
+            from(e: AddrParseError) -> (e)
         }
     }
 }
-//from(err: std::io::Error) -> (format!("IO Error: {:?}", err))
