@@ -30,7 +30,6 @@ pretty_assertions = { version = "0.6.1" }
 [workspace]
 members = [
   "components/parse",
-  "components/hello",
   "components/epaxos",
   "components/cele_threads",
 ]
