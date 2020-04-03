@@ -20,6 +20,8 @@ quick_error! {
         OrphanReplica(rid: ReplicaID, nid: NodeId) {}
 
         DupReplica(rid: ReplicaID) {}
+
+        GroupOutOfOrder(a: String, b: String) {}
     }
 }
 
@@ -31,6 +33,7 @@ impl PartialEq<ConfError> for ConfError {
             (Self::BadReplication(a), Self::BadReplication(b)) => a == b,
             (Self::OrphanReplica(a, b), Self::OrphanReplica(x, y)) => a == x && b == y,
             (Self::DupReplica(a), Self::DupReplica(b)) => a == b,
+            (Self::GroupOutOfOrder(a, b), Self::GroupOutOfOrder(x, y)) => a == x && b == y,
             _ => false,
         }
     }

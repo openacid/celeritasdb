@@ -36,6 +36,14 @@ pub struct ReplicaInfo {
     pub node_id: NodeId,
 }
 
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+pub struct GroupInfo {
+    /// range defines the starting and ending key this group serves.
+    /// It is a left-close right-open range.
+    pub range: (String, String),
+    pub replicas: BTreeMap<ReplicaID, NodeId>,
+}
+
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ClusterInfo {
     /// The key is NodeId and should be unique globally.
@@ -49,7 +57,7 @@ pub struct ClusterInfo {
     /// groups defines the replication-groups in this cluster.
     /// Every group has about 3 replicas, and every replica is assigned to one node.
     /// No two groups have the same replica id.
-    pub groups: Vec<BTreeMap<ReplicaID, NodeId>>,
+    pub groups: Vec<GroupInfo>,
 
     #[serde(skip)]
     pub replicas: BTreeMap<ReplicaID, ReplicaInfo>,
@@ -80,6 +88,8 @@ impl ClusterInfo {
             ClusterInfo::norm_node(nid, node)?;
         }
 
+        cluster.check_group()?;
+
         cluster.populate_replicas()?;
 
         cluster.check_replicas()?;
@@ -100,6 +110,16 @@ impl ClusterInfo {
         self.nodes.get(nid)
     }
 
+    pub fn get_group_for_key(&self, key: &str) -> Option<&GroupInfo> {
+        for g in self.groups.iter() {
+            if g.range.0.as_str() <= key && g.range.1.as_str() > key {
+                return Some(g);
+            }
+        }
+
+        None
+    }
+
     // TODO test bad node id as replication addr
     // make a node id from key, i.e. mac address
     pub fn norm_node(nid: &str, node: &mut Node) -> Result<(), AddrParseError> {
@@ -108,18 +128,36 @@ impl ClusterInfo {
         Ok(())
     }
 
+    pub fn check_group(&self) -> Result<(), ConfError> {
+        if self.groups.len() == 0 {
+            return Ok(());
+        }
+        for i in 0..self.groups.len() - 1 {
+            let x = &self.groups[i];
+            let y = &self.groups[i + 1];
+
+            let a = &x.range.1;
+            let b = &y.range.0;
+            if a > b {
+                return Err(ConfError::GroupOutOfOrder(a.clone(), b.clone()));
+            }
+        }
+
+        Ok(())
+    }
+
     pub fn populate_replicas(&mut self) -> Result<(), ConfError> {
         self.replicas = BTreeMap::new();
 
         for g in self.groups.iter() {
             let mut gvec = vec![];
-            for (rid, nid) in g.iter() {
+            for (rid, _) in g.replicas.iter() {
                 if self.replicas.contains_key(rid) {
                     return Err(ConfError::DupReplica(*rid));
                 }
                 gvec.push(*rid);
             }
-            for (rid, nid) in g.iter() {
+            for (rid, nid) in g.replicas.iter() {
                 self.replicas.insert(
                     *rid,
                     ReplicaInfo {

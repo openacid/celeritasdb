@@ -61,9 +61,13 @@ nodes:
         api_addr: 192.168.0.1:3332
         replication: 192.168.0.1:4442
 groups:
--   1: 192.168.0.1:4442
-    2: 192.168.0.1:4442
-    3: 192.168.0.1:9999
+-   range:
+    -   a
+    -   b
+    replicas:
+        1: 192.168.0.1:4442
+        2: 192.168.0.1:4442
+        3: 192.168.0.1:9999
 ";
 
     let rst = load_conf(cont);
@@ -84,8 +88,12 @@ nodes:
         api_addr: 192.168.0.1:3332
         replication: 192.168.0.1:4442
 groups:
--   1: 192.168.0.1:4442
-    2: 192.168.0.1:4442
+-   range:
+    -   a
+    -   b
+    replicas:
+        1: 192.168.0.1:4442
+        2: 192.168.0.1:4442
 ";
 
     let (_f, ci) = load_conf(cont).unwrap();
@@ -112,9 +120,17 @@ nodes:
         api_addr: 192.168.0.1:3332
         replication: 192.168.0.1:4442
 groups:
--   1: 192.168.0.1:4442
-    2: 192.168.0.1:4442
--   1: 127.0.0.1:4441
+-   range:
+    -   a
+    -   b
+    replicas:
+        1: 192.168.0.1:4442
+        2: 192.168.0.1:4442
+-   range:
+    -   b
+    -   c
+    replicas:
+        1: 127.0.0.1:4441
 ";
 
     let r = load_conf(cont);
@@ -132,10 +148,22 @@ nodes:
         api_addr: 192.168.0.1:3332
         replication: 192.168.0.1:4442
 groups:
--   1: 192.168.0.1:4442
-    2: 192.168.0.1:4442
--   3: 127.0.0.1:4441
--   4: 192.168.0.1:4442
+-   range:
+    -   a
+    -   b
+    replicas:
+        1: 192.168.0.1:4442
+        2: 192.168.0.1:4442
+-   range:
+    -   b
+    -   c
+    replicas:
+        3: 127.0.0.1:4441
+-   range:
+    -   f
+    -   g
+    replicas:
+        4: 192.168.0.1:4442
 ";
 
     let (_f, ci) = load_conf(cont).unwrap();
@@ -167,4 +195,71 @@ groups:
             node_id: "192.168.0.1:4442".into(),
         })
     );
+}
+
+#[test]
+fn test_conf_groups_out_of_order() {
+    let cont = "
+nodes:
+    127.0.0.1:4441:
+        api_addr: 127.0.0.1:3331
+        replication: 127.0.0.1:5551
+    192.168.0.1:4442:
+        api_addr: 192.168.0.1:3332
+        replication: 192.168.0.1:4442
+groups:
+-   range:
+    -   a
+    -   d
+    replicas:
+        1: 192.168.0.1:4442
+-   range:
+    -   b
+    -   c
+    replicas:
+        2: 127.0.0.1:4441
+";
+
+    let r = load_conf(cont);
+    assert_eq!(
+        ConfError::GroupOutOfOrder("d".into(), "b".into()),
+        r.err().unwrap()
+    );
+}
+
+#[test]
+fn test_conf_groups_get_by_key_range() {
+    let cont = "
+nodes:
+    127.0.0.1:4441:
+        api_addr: 127.0.0.1:3331
+        replication: 127.0.0.1:5551
+    192.168.0.1:4442:
+        api_addr: 192.168.0.1:3332
+        replication: 192.168.0.1:4442
+groups:
+-   range:
+    -   a
+    -   d
+    replicas:
+        1: 192.168.0.1:4442
+-   range:
+    -   g
+    -   h
+    replicas:
+        2: 127.0.0.1:4441
+";
+    let (_f, ci) = load_conf(cont).unwrap();
+
+    let g = ci.get_group_for_key("a");
+    assert_eq!(&ci.groups[0], g.unwrap());
+
+    let g = ci.get_group_for_key("d".into());
+    assert!(g.is_none());
+
+    let g = ci.get_group_for_key("g");
+    assert_eq!(&ci.groups[1], g.unwrap());
+
+    let g = ci.get_group_for_key("h");
+    assert!(g.is_none());
 }

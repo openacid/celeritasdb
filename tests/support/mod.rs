@@ -56,7 +56,11 @@ nodes:
         api_addr: 127.0.0.1:6379
         replication: 127.0.0.1:6666
 groups:
--   1: 127.0.0.1:6666
+-   range:
+    -   a
+    -   b
+    replicas:
+        1: 127.0.0.1:6666
 ";
         let mut f = tempfile::NamedTempFile::new().unwrap();
         f.write_all(cluster.as_bytes()).unwrap();
