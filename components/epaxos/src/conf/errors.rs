@@ -1,4 +1,4 @@
-use crate::conf::NodeID;
+use crate::conf::NodeId;
 use crate::qpaxos::ReplicaID;
 use std::net::AddrParseError;
 
@@ -17,7 +17,7 @@ quick_error! {
             from(e: AddrParseError) -> (e)
         }
 
-        OrphanReplica(rid: ReplicaID, nid: NodeID) {}
+        OrphanReplica(rid: ReplicaID, nid: NodeId) {}
 
         DupReplica(rid: ReplicaID) {}
     }

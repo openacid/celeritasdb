@@ -14,16 +14,16 @@ use serde::{Deserialize, Serialize};
 #[path = "./tests/conf_tests.rs"]
 mod tests;
 
-/// NodeID is the global identity of a service.
+/// NodeId is the global identity of a service.
 /// A physical server could have several node on it.
 /// A node has one or more Replica it serves for.
-pub type NodeID = String;
+pub type NodeId = String;
 
 /// Node is a struct to represent a cluster node, not necessary a replica.
 #[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
 pub struct Node {
     #[serde(default)]
-    pub node_id: NodeID,
+    pub node_id: NodeId,
     pub api_addr: SocketAddr,
     pub api_uaddr: Option<String>,
     pub replication: SocketAddr,
@@ -33,13 +33,13 @@ pub struct Node {
 #[derive(Debug, Eq, PartialEq)]
 pub struct ReplicaInfo {
     pub group: Vec<ReplicaID>,
-    pub node_id: NodeID,
+    pub node_id: NodeId,
 }
 
 #[derive(Serialize, Deserialize, Debug)]
 pub struct ClusterInfo {
-    /// The key is NodeID and should be unique globally.
-    /// And when parsing cluster conf yaml, it tries to convert the key:NodeID to replication addr.
+    /// The key is NodeId and should be unique globally.
+    /// And when parsing cluster conf yaml, it tries to convert the key:NodeId to replication addr.
     /// In this case a user does not need to fill in `replication`.
     //
     // TODO: graceful handling replication addr in `key`: e.g. only when replication is None, or
@@ -49,7 +49,7 @@ pub struct ClusterInfo {
     /// groups defines the replication-groups in this cluster.
     /// Every group has about 3 replicas, and every replica is assigned to one node.
     /// No two groups have the same replica id.
-    pub groups: Vec<BTreeMap<ReplicaID, NodeID>>,
+    pub groups: Vec<BTreeMap<ReplicaID, NodeId>>,
 
     #[serde(skip)]
     pub replicas: BTreeMap<ReplicaID, ReplicaInfo>,
