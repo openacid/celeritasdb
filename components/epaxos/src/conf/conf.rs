@@ -32,7 +32,7 @@ pub struct Node {
 
 #[derive(Debug, Eq, PartialEq)]
 pub struct ReplicaInfo {
-    pub group: Vec<ReplicaID>,
+    pub group_idx: usize,
     pub node_id: NodeId,
 }
 
@@ -158,19 +158,18 @@ impl ClusterInfo {
     pub fn populate_replicas(&mut self) -> Result<(), ConfError> {
         self.replicas = BTreeMap::new();
 
-        for g in self.groups.iter() {
-            let mut gvec = vec![];
+        for (gidx, g) in self.groups.iter().enumerate() {
             for (rid, _) in g.replicas.iter() {
                 if self.replicas.contains_key(rid) {
                     return Err(ConfError::DupReplica(*rid));
                 }
-                gvec.push(*rid);
             }
+
             for (rid, nid) in g.replicas.iter() {
                 self.replicas.insert(
                     *rid,
                     ReplicaInfo {
-                        group: gvec.clone(),
+                        group_idx: gidx, 
                         node_id: nid.clone(),
                     },
                 );

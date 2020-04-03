@@ -170,28 +170,28 @@ groups:
     assert_eq!(
         ci.get_replica(1),
         Some(&ReplicaInfo {
-            group: vec![1, 2],
+            group_idx: 0,
             node_id: "192.168.0.1:4442".into(),
         })
     );
     assert_eq!(
         ci.get_replica(2),
         Some(&ReplicaInfo {
-            group: vec![1, 2],
+            group_idx: 0,
             node_id: "192.168.0.1:4442".into(),
         })
     );
     assert_eq!(
         ci.get_replica(3),
         Some(&ReplicaInfo {
-            group: vec![3],
+            group_idx: 1,
             node_id: "127.0.0.1:4441".into(),
         })
     );
     assert_eq!(
         ci.get_replica(4),
         Some(&ReplicaInfo {
-            group: vec![4],
+            group_idx: 2,
             node_id: "192.168.0.1:4442".into(),
         })
     );
