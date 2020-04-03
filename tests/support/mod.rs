@@ -1,15 +1,16 @@
 #![allow(dead_code)]
 
-use net2;
 use rand;
 
 use redis;
 
 use std::env;
 use std::fs;
+use std::io::Write;
 use std::process;
 use std::thread::sleep;
 use std::time::Duration;
+use tempfile;
 
 use std::path::PathBuf;
 
@@ -24,6 +25,7 @@ enum ServerType {
 #[derive(Debug)]
 pub struct RedisServer {
     pub process: process::Child,
+    pub conff: tempfile::NamedTempFile,
     addr: redis::ConnectionAddr,
 }
 
@@ -47,30 +49,29 @@ impl ServerType {
 impl RedisServer {
     pub fn new() -> RedisServer {
         let server_type = ServerType::get_intended();
-        // let mut cmd = process::Command::new("redis-server");
+
+        let cluster = "
+nodes:
+    127.0.0.1:6666:
+        api_addr: 127.0.0.1:6379
+        replication: 127.0.0.1:6666
+groups:
+-   1: 127.0.0.1:6666
+";
+        let mut f = tempfile::NamedTempFile::new().unwrap();
+        f.write_all(cluster.as_bytes()).unwrap();
+        f.as_file().sync_all().unwrap();
+
         let mut cmd = process::Command::new("./target/debug/cele");
-        // cmd.stdout(process::Stdio::null())
-        //     .stderr(process::Stdio::null());
 
         let addr = match server_type {
             ServerType::Tcp => {
-                // this is technically a race but we can't do better with
-                // the tools that redis gives us :(
-                let listener = net2::TcpBuilder::new_v4()
-                    .unwrap()
-                    .reuse_address(true)
-                    .unwrap()
-                    .bind("127.0.0.1:0")
-                    .unwrap()
-                    .listen(1)
-                    .unwrap();
-                let server_port = listener.local_addr().unwrap().port();
-                cmd.arg("--port")
-                    .arg(server_port.to_string())
-                    .arg("--replication-port")
-                    .arg("6666")
-                    .arg("--bind")
-                    .arg("127.0.0.1");
+                let server_port = 6379;
+
+                cmd.arg("--cluster")
+                    .arg(f.path())
+                    .arg("--id")
+                    .arg("127.0.0.1:6666");
 
                 redis::ConnectionAddr::Tcp("127.0.0.1".to_string(), server_port)
             }
@@ -83,7 +84,11 @@ impl RedisServer {
         };
 
         let process = cmd.spawn().unwrap();
-        RedisServer { process, addr }
+        RedisServer {
+            process,
+            conff: f,
+            addr,
+        }
     }
 
     pub fn wait(&mut self) {

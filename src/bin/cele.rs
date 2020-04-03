@@ -5,6 +5,7 @@ use clap::{App, Arg};
 use net2;
 use redis;
 
+use std::net::SocketAddr;
 use std::net::ToSocketAddrs;
 use std::str::from_utf8;
 
@@ -14,6 +15,7 @@ use tokio::net::TcpListener;
 use tokio::task::JoinHandle;
 use tonic;
 
+use epaxos::conf::*;
 use epaxos::qpaxos::*;
 
 use parse::Response;
@@ -45,37 +47,37 @@ impl Server {
     #[tokio::main]
     async fn start_servers(
         &mut self,
-        api_addrs: &str,
-        repl_addrs: &str,
+        api_addrs: SocketAddr,
+        repl_addrs: SocketAddr,
         tcp_backlog: i32,
     ) -> Result<(), Box<dyn std::error::Error>> {
-        let addr = api_addrs.to_socket_addrs().unwrap().next().unwrap();
-
         let builder = net2::TcpBuilder::new_v4().unwrap();
         builder.reuse_address(true).unwrap();
-        let lis = builder.bind(addr).unwrap().listen(tcp_backlog).unwrap();
+        let lis = builder
+            .bind(api_addrs)
+            .unwrap()
+            .listen(tcp_backlog)
+            .unwrap();
 
         let listener1 = TcpListener::from_std(lis).unwrap();
 
-        println!("api listened: {}", addr);
+        println!("api listened: {}", api_addrs);
 
         let j1 = tokio::spawn(async move {
             api_loop(listener1).await;
         });
 
-        println!("serving: {}", addr);
-
-        let addr = repl_addrs.to_socket_addrs().unwrap().next().unwrap();
+        println!("serving: {}", api_addrs);
 
         let qp = MyQPaxos::default();
         let s = tonic::transport::Server::builder().add_service(QPaxosServer::new(qp));
 
         let j2 = tokio::spawn(async move {
             println!("repl server spawned");
-            s.serve(addr).await.unwrap();
+            s.serve(repl_addrs).await.unwrap();
         });
 
-        println!("serving: {}", addr);
+        println!("serving: {}", repl_addrs);
 
         j1.await.unwrap();
         j2.await.unwrap();
@@ -180,43 +182,30 @@ fn main() {
         .author("openacid")
         .about("distributed redis")
         .arg(
-            Arg::with_name("port")
-                .long("port")
+            Arg::with_name("cluster")
+                .long("cluster")
                 .takes_value(true)
-                .help("port to listen"),
+                .help("cluster config in yaml"),
         )
         .arg(
-            Arg::with_name("bind")
-                .long("bind")
+            Arg::with_name("id")
+                .long("id")
                 .takes_value(true)
-                .help("network address to listen"),
-        )
-        .arg(
-            Arg::with_name("replication_port")
-                .long("replication-port")
-                .takes_value(true)
-                .help("replication port to listen"),
-        )
-        .arg(
-            Arg::with_name("replication_bind")
-                .long("replication-bind")
-                .takes_value(true)
-                .help("network address to listen for replication"),
+                .help("node id for this server. It must be one key of clusterconf.nodes"),
         )
         .get_matches();
 
-    let port_str = matches.value_of("port").unwrap_or("6379");
-    let port = port_str.parse::<u16>().unwrap();
+    let conffn = matches.value_of("cluster").unwrap();
+    let nodeid = matches.value_of("id").unwrap();
 
-    let repl_port_str = matches.value_of("replication_port").unwrap_or("6377");
-    let repl_port = repl_port_str.parse::<u16>().unwrap();
+    let cluster = ClusterInfo::from_file(conffn).unwrap();
+    let node = cluster.get(nodeid).unwrap();
+
+    //6379
+    let api_addr = node.api_addr;
+    //6377
+    let repl_addr = node.replication;
 
     let mut server = Server::new();
-    server
-        .start_servers(
-            format!("127.0.0.1:{}", port).as_str(),
-            format!("127.0.0.1:{}", repl_port).as_str(),
-            10,
-        )
-        .unwrap();
+    server.start_servers(api_addr, repl_addr, 10).unwrap();
 }
