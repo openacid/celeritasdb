@@ -15,69 +15,70 @@ use tokio::net::TcpListener;
 use tokio::task::JoinHandle;
 use tonic;
 
-use epaxos::conf::*;
+use epaxos::conf::ClusterInfo;
+use epaxos::conf::Node;
+use epaxos::conf::NodeId;
 use epaxos::qpaxos::*;
 
 use parse::Response;
 
 pub struct Server {
+    cluster: ClusterInfo,
+    node_id: NodeId,
+    node: Node,
     _join_handles: Vec<JoinHandle<()>>,
 }
 
 impl Server {
-    pub fn new() -> Server {
-        return Server {
+    pub fn new(cluster: ClusterInfo, node_id: NodeId) -> Server {
+        let n = cluster.get(&node_id).unwrap().clone();
+        Server {
+            cluster: cluster,
+            node_id: node_id.clone(),
+            node: n,
             _join_handles: Vec::new(),
-        };
+        }
     }
 
     /// Starts service:
     ///
     /// # Arguments
     ///
-    /// - `api_addrs`: addresses to listen to receive client request.
-    /// - `repl_addrs`: internal replication listening addresses.
+    /// - `tcp_backlog`: tcp backlog.
     ///
     /// # Examples
     ///
     /// ```norun
-    /// start_servers("127.0.0.1:1234",
-    ///               "127.0.0.1:4567", 10);
+    /// start_servers(10);
     /// ```
     #[tokio::main]
-    async fn start_servers(
-        &mut self,
-        api_addrs: SocketAddr,
-        repl_addrs: SocketAddr,
-        tcp_backlog: i32,
-    ) -> Result<(), Box<dyn std::error::Error>> {
+    async fn start_servers(&mut self, tcp_backlog: i32) -> Result<(), Box<dyn std::error::Error>> {
+        let api_addr = self.node.api_addr;
+        let repl_addr = self.node.replication;
+
         let builder = net2::TcpBuilder::new_v4().unwrap();
         builder.reuse_address(true).unwrap();
-        let lis = builder
-            .bind(api_addrs)
-            .unwrap()
-            .listen(tcp_backlog)
-            .unwrap();
+        let lis = builder.bind(api_addr).unwrap().listen(tcp_backlog).unwrap();
 
         let listener1 = TcpListener::from_std(lis).unwrap();
 
-        println!("api listened: {}", api_addrs);
+        println!("api listened: {}", api_addr);
 
         let j1 = tokio::spawn(async move {
             api_loop(listener1).await;
         });
 
-        println!("serving: {}", api_addrs);
+        println!("serving: {}", api_addr);
 
         let qp = MyQPaxos::default();
         let s = tonic::transport::Server::builder().add_service(QPaxosServer::new(qp));
 
         let j2 = tokio::spawn(async move {
             println!("repl server spawned");
-            s.serve(repl_addrs).await.unwrap();
+            s.serve(repl_addr).await.unwrap();
         });
 
-        println!("serving: {}", repl_addrs);
+        println!("serving: {}", repl_addr);
 
         j1.await.unwrap();
         j2.await.unwrap();
@@ -196,16 +197,9 @@ fn main() {
         .get_matches();
 
     let conffn = matches.value_of("cluster").unwrap();
-    let nodeid = matches.value_of("id").unwrap();
+    let node_id = matches.value_of("id").unwrap();
 
     let cluster = ClusterInfo::from_file(conffn).unwrap();
-    let node = cluster.get(nodeid).unwrap();
-
-    //6379
-    let api_addr = node.api_addr;
-    //6377
-    let repl_addr = node.replication;
-
-    let mut server = Server::new();
-    server.start_servers(api_addr, repl_addr, 10).unwrap();
+    let mut server = Server::new(cluster, node_id.into());
+    server.start_servers(10).unwrap();
 }

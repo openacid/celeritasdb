@@ -20,7 +20,7 @@ mod tests;
 pub type NodeId = String;
 
 /// Node is a struct to represent a cluster node, not necessary a replica.
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 pub struct Node {
     #[serde(default)]
     pub node_id: NodeId,
