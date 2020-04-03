@@ -23,9 +23,9 @@ tokio-util = { version = "0.2.0", features = ["full"] }
 tonic = "0.1"
 clap  = { version = "~2.33.0" } # command line argument parse
 epaxos = { path = "components/epaxos" }
-tempfile = { version = "3.1.0" }
 
 [dev-dependencies]
+tempfile = { version = "3.1.0" }
 pretty_assertions = { version = "0.6.1" }
 
 [workspace]
