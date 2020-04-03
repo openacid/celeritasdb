@@ -228,6 +228,28 @@ groups:
 }
 
 #[test]
+fn test_conf_groups_range_start_gt_end() {
+    let cont = "
+nodes:
+    127.0.0.1:4441:
+        api_addr: 127.0.0.1:3331
+        replication: 127.0.0.1:5551
+groups:
+-   range:
+    -   b
+    -   a
+    replicas:
+        1: 127.0.0.1:4441
+";
+
+    let r = load_conf(cont);
+    assert_eq!(
+        ConfError::GroupOutOfOrder("b".into(), "a".into()),
+        r.err().unwrap()
+    );
+}
+
+#[test]
 fn test_conf_groups_get_by_key_range() {
     let cont = "
 nodes:

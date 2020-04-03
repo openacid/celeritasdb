@@ -110,6 +110,7 @@ impl ClusterInfo {
         self.nodes.get(nid)
     }
 
+    /// get_group_for_key returns the GroupInfo of which the range covers the specified key.
     pub fn get_group_for_key(&self, key: &str) -> Option<&GroupInfo> {
         for g in self.groups.iter() {
             if g.range.0.as_str() <= key && g.range.1.as_str() > key {
@@ -132,6 +133,14 @@ impl ClusterInfo {
         if self.groups.len() == 0 {
             return Ok(());
         }
+        for g in self.groups.iter() {
+            let a = &g.range.0;
+            let b = &g.range.1;
+            if a >= b {
+                return Err(ConfError::GroupOutOfOrder(a.clone(), b.clone()));
+            }
+        }
+
         for i in 0..self.groups.len() - 1 {
             let x = &self.groups[i];
             let y = &self.groups[i + 1];
