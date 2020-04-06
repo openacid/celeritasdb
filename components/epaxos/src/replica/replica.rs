@@ -126,6 +126,28 @@ impl Replica {
         Ok(inst)
     }
 
+    /// get_max_instance_ids returns the max instance-id for every specified replica.
+    /// If there is no instance at all by a replica, a `(rid, -1)` is filled.
+    pub fn get_max_instance_ids(&self, rids: &[ReplicaID]) -> Vec<InstanceId> {
+        // TODO move the max-ids into replica. it does not need to be in storage.
+        // This way, every time the server starts, a replica need to load the max ids from storage.
+
+        let mut iids = Vec::with_capacity(rids.len());
+
+        for rid in rids.iter() {
+            let start_iid = (*rid, i64::MAX).into();
+            let mut it = self.storage.get_instance_iter(start_iid, true, true);
+            let inst = it.next();
+            let max = match inst {
+                Some(v) => v.instance_id.unwrap(),
+                None => (*rid, -1).into(),
+            };
+
+            iids.push(max);
+        }
+        iids
+    }
+
     fn _handle_prepare(&self, _req: &PrepareRequest) -> Result<PrepareReply, String> {
         Err("not implemented".to_string())
     }

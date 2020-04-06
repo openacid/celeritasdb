@@ -191,6 +191,17 @@ fn test_quorums() {
 }
 
 #[test]
+fn test_get_max_instance_ids() {
+    let (i12, i13, i34) = (foo_inst!((1, 2)), foo_inst!((1, 3)), foo_inst!((3, 4)));
+
+    let insts = vec![((1, 2), &i12), ((1, 3), &i13), ((3, 4), &i34)];
+
+    let r = new_foo_replica(3, new_mem_sto(), &insts);
+    let maxs = r.get_max_instance_ids(&[1, 3, 5]);
+    assert_eq!(maxs, instids![(1, 3), (3, 4), (5, -1)]);
+}
+
+#[test]
 fn test_handle_xxx_request_invalid() {
     let replica_id = 2;
     let mut replica = new_foo_replica(replica_id, new_mem_sto(), &vec![]);
