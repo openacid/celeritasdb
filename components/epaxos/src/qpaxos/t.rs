@@ -97,11 +97,17 @@ fn test_instance_id_to_key() {
         str::from_utf8(&k).unwrap()
     );
 
-    let k = InstanceId::from((-1, -10)).to_key();
+    let k = InstanceId::from((-1, 0)).to_key();
     assert_eq!(
-        "/instance/ffffffffffffffff/fffffffffffffff6",
+        "/instance/ffffffffffffffff/0000000000000000",
         str::from_utf8(&k).unwrap()
     );
+}
+
+#[test]
+#[should_panic(expected = "idx can not be less than 0:-1")]
+fn test_instance_id_to_key_negative() {
+    InstanceId::from((1, -1)).to_key();
 }
 
 #[test]

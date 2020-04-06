@@ -117,6 +117,9 @@ impl From<(&str, &str, &str)> for Command {
 
 impl ToKey for InstanceId {
     fn to_key(&self) -> Vec<u8> {
+        if self.idx < 0 {
+            panic!("idx can not be less than 0:{}", self.idx);
+        }
         format!("/instance/{:016x}/{:016x}", self.replica_id, self.idx).into_bytes()
     }
 }
