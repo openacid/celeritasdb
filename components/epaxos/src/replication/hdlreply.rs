@@ -34,7 +34,7 @@ pub fn handle_fast_accept_reply(
 
     // TODO check iid matches
     let (last_ballot, _iid) = check_repl_common(&repl.cmn)?;
-    let inst = st.instance;
+    let inst = &st.instance;
 
     let deps = repl
         .deps
@@ -72,8 +72,8 @@ pub fn handle_fast_accept_reply(
     Ok(())
 }
 
-pub async fn handle_accept_reply<'a>(
-    st: &mut Status<'a>,
+pub async fn handle_accept_reply(
+    st: &mut Status,
     from_rid: ReplicaID,
     ra: &Replica,
     repl: &AcceptReply,

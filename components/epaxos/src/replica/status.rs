@@ -34,13 +34,13 @@ impl Instance {
 
 /// Status tracks replication status during fast-accept, accept and commit phase.
 #[derive(Debug)]
-pub struct Status<'a> {
+pub struct Status {
     // TODO: to work with cluster membership updating, a single number quorum is not enough in future.
     pub fast_quorum: i32,
     pub quorum: i32,
 
     // With a cached instance it is possible to reduce storage access during replication.
-    pub instance: &'a Instance,
+    pub instance: Instance,
 
     /// fast_replied tracks what replica has sent back FastAcceptReply.
     /// It is used to de-dup duplicated messages.
@@ -61,10 +61,10 @@ pub struct Status<'a> {
     pub accept_ok: i32,
 }
 
-impl<'a> Status<'a> {
+impl Status {
     /// new creates a Status with initial deps filled, as if it already fast-accepted from the
     /// instnace it serves.
-    pub fn new(n_replica: i32, instance: &'a Instance) -> Self {
+    pub fn new(n_replica: i32, instance: Instance) -> Self {
         let mut st = Self {
             quorum: quorum(n_replica),
             fast_quorum: fast_quorum(n_replica),

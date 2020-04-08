@@ -113,7 +113,7 @@ fn test_handle_fast_accept_reply_err() {
     ];
 
     for (repl, want) in cases.iter() {
-        let mut st = Status::new(3, &inst);
+        let mut st = Status::new(3, inst.clone());
         let r = handle_fast_accept_reply(&mut st, 3, repl);
         assert_eq!(r.err().unwrap(), *want, "fast-reply: {:?}", repl);
     }
@@ -133,7 +133,7 @@ fn test_handle_fast_accept_reply() {
     }
 
     let inst = init_inst!((1, 2), [("Set", "x", "1")], []);
-    let mut st = Status::new(3, &inst);
+    let mut st = Status::new(3, inst.clone());
 
     {
         // positive reply updates the Status.
@@ -203,8 +203,8 @@ fn test_handle_fast_accept_reply() {
 }
 
 #[tokio::main]
-async fn _handle_accept_reply<'a>(
-    st: &mut Status<'a>,
+async fn _handle_accept_reply(
+    st: &mut Status,
     from_rid: ReplicaID,
     ra: &Replica,
     repl: &AcceptReply,
@@ -241,7 +241,7 @@ fn test_handle_accept_reply() {
 
     {
         // with high ballot num
-        let mut st = Status::new(n, &inst);
+        let mut st = Status::new(n, inst.clone());
         st.start_accept();
         let mut repl = MakeReply::accept(&inst);
         repl.cmn.as_mut().unwrap().last_ballot = Some((10, 2, replica_id).into());
@@ -253,7 +253,7 @@ fn test_handle_accept_reply() {
 
     {
         // with reply err
-        let mut st = Status::new(n, &inst);
+        let mut st = Status::new(n, inst.clone());
         st.start_accept();
         let mut repl = MakeReply::accept(&inst);
         repl.err = Some(ProtocolError::LackOf("test".to_string()).into());
@@ -265,7 +265,7 @@ fn test_handle_accept_reply() {
 
     {
         // success
-        let mut st = Status::new(n, &inst);
+        let mut st = Status::new(n, inst.clone());
         st.start_accept();
         let repl = MakeReply::accept(&inst);
         let r = _handle_accept_reply(&mut st, 0, &rp, &repl);

@@ -29,11 +29,11 @@ fn test_status_new() {
     let iid = inst.instance_id.unwrap();
     let replica_id = iid.replica_id;
 
-    let st = Status::new(7, &inst);
+    let st = Status::new(7, inst.clone());
 
     assert_eq!(4, st.quorum);
     assert_eq!(5, st.fast_quorum);
-    assert_eq!(st.instance, &inst);
+    assert_eq!(st.instance, inst);
 
     get!(st.fast_replied, &replica_id, true);
 
