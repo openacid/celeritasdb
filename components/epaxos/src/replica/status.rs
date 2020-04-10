@@ -114,6 +114,23 @@ impl Status {
         self.accept_ok += 1;
         self.accept_ok >= self.quorum
     }
+
+    /// get_fast_commit_deps returns a InstanceId Vec if current status satisfies fast-commit
+    /// condition. Otherwise it returns None.
+    pub fn get_fast_commit_deps(&mut self, cluster: &[ReplicaID]) -> Option<Vec<InstanceId>> {
+        let mut rst: Vec<InstanceId> = Vec::with_capacity(cluster.len());
+        for rid in cluster.iter() {
+            let deps = self.fast_deps.get_mut(rid)?;
+
+            // TODO do not need to sort every time calling this function.
+            deps.sort();
+
+            let fdep = get_fast_commit_dep(deps, &self.fast_committed, self.fast_quorum)?;
+            rst.push(fdep);
+        }
+        Some(rst)
+    }
+
     /// get_accept_deps returns a InstanceId Vec for accept request.
     /// If current status accumulated enough fast-accept-replies. Otherwise it returns None.
     pub fn get_accept_deps(&mut self, cluster: &[ReplicaID]) -> Option<Vec<InstanceId>> {
