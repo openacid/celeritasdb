@@ -4,10 +4,13 @@ use clap::{App, Arg};
 
 use net2;
 use redis;
+use std::i64;
 
+use std::collections::BTreeMap;
 use std::net::SocketAddr;
 use std::net::ToSocketAddrs;
 use std::str::from_utf8;
+use std::sync::Arc;
 
 use tokio;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
@@ -16,28 +19,97 @@ use tokio::task::JoinHandle;
 use tonic;
 
 use epaxos::conf::ClusterInfo;
+use epaxos::conf::GroupInfo;
 use epaxos::conf::Node;
 use epaxos::conf::NodeId;
-use epaxos::qpaxos::*;
+use epaxos::qpaxos::Command;
+use epaxos::qpaxos::Instance;
+use epaxos::qpaxos::InstanceId;
+use epaxos::qpaxos::MyQPaxos;
+use epaxos::qpaxos::OpCode;
+use epaxos::qpaxos::QPaxosServer;
+use epaxos::qpaxos::ReplicaID;
+use epaxos::replica::bcast_accept;
+use epaxos::replica::bcast_fast_accept;
+use epaxos::replica::Replica;
+use epaxos::replica::ReplicaConf;
+use epaxos::replica::ReplicaPeer;
+use epaxos::replica::Status;
+use epaxos::replication::handle_accept_reply;
+use epaxos::replication::handle_fast_accept_reply;
+use epaxos::snapshot::MemEngine;
+use epaxos::snapshot::Storage;
 
 use parse::Response;
 
-pub struct Server {
+/// CeleError defines all error occurs at server level.
+/// It also wraps lower level errors.
+pub enum CeleError {
+    NoGroupForKey(String),
+    NoLocalReplicaForKey(String),
+}
+
+impl From<CeleError> for Response {
+    fn from(e: CeleError) -> Response {
+        match e {
+            CeleError::NoGroupForKey(k) => Response::Error(format!("No gruop serves: {}", k)),
+            CeleError::NoLocalReplicaForKey(k) => Response::Error(format!("No replica serve: {}", k)),
+        }
+    }
+}
+
+/// ServerData is shared between threads or coroutine.
+/// TODO: Storage does not need to be shared with Arc any more.
+pub struct ServerData {
     cluster: ClusterInfo,
     node_id: NodeId,
     node: Node,
+    local_replicas: BTreeMap<ReplicaID, Replica>,
+    storage: Storage,
+}
+
+/// Server impl some user protocol such as redis protocol and a replication service.
+pub struct Server {
+    server_data: Arc<ServerData>,
     _join_handles: Vec<JoinHandle<()>>,
 }
 
 impl Server {
-    pub fn new(cluster: ClusterInfo, node_id: NodeId) -> Server {
+    pub fn new(sto: Storage, cluster: ClusterInfo, node_id: NodeId) -> Server {
         let n = cluster.get(&node_id).unwrap().clone();
-        Server {
-            cluster: cluster,
-            node_id: node_id.clone(),
-            node: n,
-            _join_handles: Vec::new(),
+
+        let mut rs = BTreeMap::new();
+        for (rid, rinfo) in cluster.replicas.iter() {
+            if rinfo.node_id == node_id {
+                let gidx = rinfo.group_idx;
+                let g = &cluster.groups[gidx];
+                rs.insert(
+                    *rid,
+                    Replica {
+                        replica_id: *rid,
+                        group_replica_ids: g.replicas.keys().cloned().collect(),
+                        peers: vec![], // TODO
+                        conf: ReplicaConf {
+                            dreply: false,
+                            inst_committed_timeout: 100000,
+                        },
+                        storage: sto.clone(),
+                    },
+                );
+            }
         }
+        let s = Server {
+            server_data: Arc::new(ServerData {
+                cluster: cluster,
+                node_id: node_id.clone(),
+                node: n,
+                local_replicas: rs,
+                storage: sto,
+            }),
+            _join_handles: Vec::new(),
+        };
+
+        s
     }
 
     /// Starts service:
@@ -53,8 +125,9 @@ impl Server {
     /// ```
     #[tokio::main]
     async fn start_servers(&mut self, tcp_backlog: i32) -> Result<(), Box<dyn std::error::Error>> {
-        let api_addr = self.node.api_addr;
-        let repl_addr = self.node.replication;
+        let sd = &self.server_data;
+        let api_addr = sd.node.api_addr;
+        let repl_addr = sd.node.replication;
 
         let builder = net2::TcpBuilder::new_v4().unwrap();
         builder.reuse_address(true).unwrap();
@@ -64,8 +137,12 @@ impl Server {
 
         println!("api listened: {}", api_addr);
 
+        let redisapi = RedisApi {
+            server_data: sd.clone(),
+        };
+
         let j1 = tokio::spawn(async move {
-            api_loop(listener1).await;
+            redisapi.api_loop(listener1).await;
         });
 
         println!("serving: {}", api_addr);
@@ -87,92 +164,106 @@ impl Server {
     }
 }
 
-fn exec_redis_cmd(v: redis::Value) -> Option<Response> {
-    // cmd is a nested array: ["set", "a", "1"] or ["set", ["b", "c"], ...]
-    // A "set" or "get" redis command is serialized as non-nested array.
-    //
-    // Flatten one level:
-    // tokens is a vec[Value].
-    let tokens = match v {
-        redis::Value::Bulk(tokens) => tokens,
-        _ => vec![],
-    };
-
-    // the first token is instruction, e.g. "set" or "get".
-    let tok0 = &tokens[0];
-
-    let t = match tok0 {
-        redis::Value::Data(d) => d,
-        _ => {
-            println!("tok0 is not a Data!!!");
-            return Some(Response::Error("invalid command".to_owned()));
-        }
-    };
-
-    println!("instruction: {:?}", t);
-    let tok0str = from_utf8(&t).unwrap();
-
-    // execute the command
-
-    match tok0str {
-        "FLUSHDB" => Some(Response::Status("OK".to_owned())),
-        "SET" => Some(Response::Status("OK".to_owned())),
-        "GET" => Some(Response::Integer(42)),
-        _ => Some(Response::Error("invalid command".to_owned())),
-    }
+/// ReidsApi impl redis-protocol
+#[derive(Clone)]
+struct RedisApi {
+    server_data: Arc<ServerData>,
 }
 
-async fn api_loop(mut listener: TcpListener) {
-    println!("api_loop start");
-    loop {
-        let (mut sock, _) = listener.accept().await.expect("accept failure");
-        println!("new connection");
+impl RedisApi {
+    async fn api_loop(self, mut listener: TcpListener) {
+        println!("api_loop start");
+        loop {
+            let (mut sock, _) = listener.accept().await.expect("accept failure");
+            println!("new connection");
 
-        tokio::spawn(async move {
-            loop {
-                let mut buf = vec![0u8; 1024];
+            let slf = self.clone();
 
-                let n = sock
-                    .read(&mut buf)
-                    .await
-                    .expect("failed to read data from socket");
+            tokio::spawn(async move {
+                loop {
+                    let mut buf = vec![0u8; 1024];
 
-                println!("read buf: len={:}, {:?}", n, buf);
+                    let n = sock
+                        .read(&mut buf)
+                        .await
+                        .expect("failed to read data from socket");
 
-                if n == 0 {
-                    println!("client closed");
-                    return;
+                    println!("read buf: len={:}, {:?}", n, buf);
+
+                    if n == 0 {
+                        println!("client closed");
+                        return;
+                    }
+
+                    let v = redis::parse_redis_value(&buf);
+                    let v = match v {
+                        Ok(q) => {
+                            println!("parsed redis value: {:?}", q);
+                            q
+                        }
+                        Err(err) => {
+                            // TODO bad protocol handling
+                            println!("parse error: {:}", err);
+                            panic!("bad redis protocol");
+                        }
+                    };
+                    let r = slf.exec_redis_cmd(v).await;
+                    println!("r={:?}", r);
+                    println!("response bytes:{:?}", r.as_bytes());
+                    sock.write_all(&*r.as_bytes())
+                        .await
+                        .expect("failed to write data to socket");
                 }
-
-                let v = redis::parse_redis_value(&buf);
-                let v = match v {
-                    Ok(q) => {
-                        println!("parsed redis value: {:?}", q);
-                        q
-                    }
-                    Err(err) => {
-                        // TODO bad protocol handling
-                        println!("parse error: {:}", err);
-                        panic!("bad redis protocol");
-                    }
-                };
-                let r = exec_redis_cmd(v);
-                println!("r={:?}", r);
-                match r {
-                    // received a response, send it to the client
-                    Some(response) => {
-                        println!("response bytes:{:?}", response.as_bytes());
-                        sock.write_all(&*response.as_bytes())
-                            .await
-                            .expect("failed to write data to socket");
-                    }
-                    None => {
-                        // TODO
-                    }
-                };
-            }
-        });
+            });
+        }
     }
+
+    async fn exec_redis_cmd(&self, v: redis::Value) -> Response {
+        // cmd is a nested array: ["set", "a", "1"] or ["set", ["b", "c"], ...]
+        // A "set" or "get" redis command is serialized as non-nested array.
+        //
+        // Flatten one level:
+        // tokens is a vec[Value].
+        let tokens = match v {
+            redis::Value::Bulk(tokens) => tokens,
+            _ => vec![],
+        };
+
+        // the first token is instruction, e.g. "set" or "get".
+        let tok0 = &tokens[0];
+
+        let t = match tok0 {
+            redis::Value::Data(d) => d,
+            _ => {
+                println!("tok0 is not a Data!!!");
+                return Response::Error("invalid command".to_owned());
+            }
+        };
+
+        println!("instruction: {:?}", t);
+        let tok0str = from_utf8(&t).unwrap();
+
+        // execute the command
+
+        let r = match tok0str {
+            "SET" => self.cmd_set(&tokens).await,
+            "FLUSHDB" => Ok(Response::Status("OK".to_owned())),
+            "GET" => Ok(Response::Integer(42)),
+            _ => Err(Response::Error("invalid command".to_owned())),
+        };
+
+        match r {
+            Ok(rr) => rr,
+            Err(rr) => rr,
+        }
+    }
+
+    /// cmd_set impl redis-command set. TODO impl it.
+    async fn cmd_set(&self, tokens: &[redis::Value]) -> Result<Response, Response> {
+
+        Ok(Response::Status("OK".to_owned()))
+    }
+
 }
 
 fn main() {
@@ -199,7 +290,10 @@ fn main() {
     let conffn = matches.value_of("cluster").unwrap();
     let node_id = matches.value_of("id").unwrap();
 
+    let sto = MemEngine::new().unwrap();
+
     let cluster = ClusterInfo::from_file(conffn).unwrap();
-    let mut server = Server::new(cluster, node_id.into());
+    let mut server = Server::new(Arc::new(sto), cluster, node_id.into());
+
     server.start_servers(10).unwrap();
 }
