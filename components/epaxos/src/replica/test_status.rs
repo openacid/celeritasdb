@@ -77,6 +77,8 @@ fn test_get_fast_commit_dep() {
         HashMap<InstanceId, bool>,
         Option<InstanceId>,
     )> = vec![
+        case!(0, [2], {}, Some(instid!(1, 2))),
+        case!(1, [2], {}, Some(instid!(1, 2))),
         case!(2, [2], {}, None),
         case!(2, [2], { 2 }, None),
         case!(2, [2, 3], {}, None),

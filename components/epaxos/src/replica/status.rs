@@ -146,6 +146,12 @@ pub fn get_fast_commit_dep(
         return None;
     }
 
+    if fast_quorum == 0 {
+        // only when n==1 fast_quorum could be 0
+        assert!(n == 1);
+        return Some(deps[0]);
+    }
+
     let x = (n - fast_quorum) as usize;
 
     for i in 0..=x {
