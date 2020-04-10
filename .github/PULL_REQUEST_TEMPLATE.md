@@ -11,20 +11,6 @@ Fixes # (issue)
 - **Document changes**
 - **Test changes**
 
-
-<!-- delete this line if it is a bug-fix PR
-## How to reproduce it
-
-- Env: x86-64, CentOS-7.4, kernel-3.10.0, GO-1.10.1, etc.
-
-- Step-1:
-- Step-2:
-
-
-## The solution (to fix a bug, implement a new feature etc.)
-
-<!-- end of bug-fix desc -->
-
 # Checklist:
 
 - [ ] **Self-review**: I have performed a **self-review** of my own code
