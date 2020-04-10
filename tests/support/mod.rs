@@ -58,7 +58,7 @@ nodes:
 groups:
 -   range:
     -   a
-    -   b
+    -   z
     replicas:
         1: 127.0.0.1:6666
 ";
