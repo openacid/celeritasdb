@@ -141,3 +141,57 @@ fn test_get_accept_dep() {
         assert_eq!(*want, adep, "deps:{:?}, f:{}", deps, quorum);
     }
 }
+
+#[test]
+fn test_status_get_accept_deps() {
+    macro_rules! case(
+        (
+            $n:expr,
+            {
+                $(
+                [$($didx:expr),*]
+                ),*
+            },
+            $want:expr
+            ) => {
+            (
+                $n,
+                {
+                    let mut m = ::std::collections::HashMap::new();
+                    let mut rid = 0;
+                    $(
+                        rid += 1;
+                        m.insert(rid, instids![$((rid, $didx)),*]);
+                     )*
+                    m
+                },
+                $want
+            )
+         };
+    );
+
+    let mut cases: Vec<(
+        i32,
+        HashMap<ReplicaID, Vec<InstanceId>>,
+        Option<Vec<InstanceId>>,
+    )> = vec![
+        case!(1, { [2] }, Some(instids![(1, 2)])),
+        case!(2, {[2], [2]}, None),
+        case!(2, {[2, 3], [2, 4]}, Some(instids![(1, 3), (2, 4)])),
+        case!(3, {[2], [3], [4]}, None),
+        case!(3, {[2, 2], [3, 4], [3, 5]}, Some(instids![(1, 2), (2, 4), (3, 5)])),
+        case!(3, {[2, 2, 4], [3, 4, 4], [3, 5, 5]}, Some(instids![(1, 2), (2, 4), (3, 5)])),
+    ];
+
+    for (n, deps, want) in cases.iter_mut() {
+        let q = quorum(*n);
+        let mut st = Status {
+            quorum: q,
+            fast_deps: deps.clone(),
+            ..Default::default()
+        };
+        let cluster: Vec<i64> = (1..(*n + 1) as i64).map(|x| x).collect();
+        let adep = st.get_accept_deps(&cluster);
+        assert_eq!(*want, adep, "deps:{:?}, n:{}, q:{}", deps, n, q);
+    }
+}

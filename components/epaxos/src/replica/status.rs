@@ -33,7 +33,7 @@ impl Instance {
 }
 
 /// Status tracks replication status during fast-accept, accept and commit phase.
-#[derive(Debug)]
+#[derive(Debug, Default)]
 pub struct Status {
     // TODO: to work with cluster membership updating, a single number quorum is not enough in future.
     pub fast_quorum: i32,
@@ -114,6 +114,21 @@ impl Status {
         self.accept_ok += 1;
         self.accept_ok >= self.quorum
     }
+    /// get_accept_deps returns a InstanceId Vec for accept request.
+    /// If current status accumulated enough fast-accept-replies. Otherwise it returns None.
+    pub fn get_accept_deps(&mut self, cluster: &[ReplicaID]) -> Option<Vec<InstanceId>> {
+        let mut rst: Vec<InstanceId> = Vec::with_capacity(cluster.len());
+        for rid in cluster.iter() {
+            let deps = self.fast_deps.get_mut(rid)?;
+
+            // TODO do not need to sort every time calling this function.
+            deps.sort();
+
+            let fdep = get_accept_dep(deps, self.quorum)?;
+            rst.push(fdep);
+        }
+        Some(rst)
+    }
 }
 
 /// `get_fast_commit_dep` finds out the safe dependency by a leader for fast commit.
@@ -170,6 +185,13 @@ pub fn get_fast_commit_dep(
 /// get_accept_dep returns the dep for accept-request if a quorum of replies received.
 /// Otherwise it returns None.
 /// It always choose an as low instance as possible to reduce conflict.
+///
+/// E.g. If n=5 and quorum is 3 then if the leader `L` accumulated: [a, a, a, b].
+/// Then we could just choose `a` instead of `b`.
+/// Although in original paper it specifies the deps for accept is the union of all replied deps.
+/// If the leader saw 3 `a`, it means leader of `b` did not commit when `L` initiated.
+/// Thus `L` does not have to be after `b`.
+///
 /// It contains the initial dep at the 0-th slot, and updated deps from 1-th slot.
 /// `deps` in Accept Request is the union of `deps` replied in fast-accept phase.
 ///
