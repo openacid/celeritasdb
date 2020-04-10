@@ -1,5 +1,7 @@
 use crate::qpaxos::{Instance, InstanceId, ReplicaID};
 use crate::tokey::ToKey;
+use std::marker::Send;
+use std::marker::Sync;
 use std::sync::Arc;
 
 // required by encode/decode
@@ -57,7 +59,7 @@ pub trait Base {
 }
 
 pub type Storage =
-    Arc<dyn InstanceEngine<ColumnId = ReplicaID, ObjId = InstanceId, Obj = Instance>>;
+    Arc<dyn InstanceEngine<ColumnId = ReplicaID, ObjId = InstanceId, Obj = Instance> + Sync + Send>;
 
 /// InstanceEngine offer functions to operate snapshot instances
 pub trait InstanceEngine: TxEngine + ColumnedEngine {
