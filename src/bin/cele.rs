@@ -4,11 +4,7 @@ use clap::{App, Arg};
 
 use net2;
 use redis;
-use std::i64;
 
-use std::collections::BTreeMap;
-use std::net::SocketAddr;
-use std::net::ToSocketAddrs;
 use std::str::from_utf8;
 use std::sync::Arc;
 
@@ -19,96 +15,17 @@ use tokio::task::JoinHandle;
 use tonic;
 
 use epaxos::conf::ClusterInfo;
-use epaxos::conf::GroupInfo;
-use epaxos::conf::Node;
 use epaxos::conf::NodeId;
 use epaxos::qpaxos::Command;
-use epaxos::qpaxos::Instance;
-use epaxos::qpaxos::InstanceId;
 use epaxos::qpaxos::MyQPaxos;
 use epaxos::qpaxos::OpCode;
 use epaxos::qpaxos::QPaxosServer;
-use epaxos::qpaxos::ReplicaID;
-use epaxos::replica::bcast_accept;
-use epaxos::replica::bcast_fast_accept;
-use epaxos::replica::Replica;
-use epaxos::replica::ReplicaConf;
-use epaxos::replica::ReplicaPeer;
-use epaxos::replica::Status;
-use epaxos::replication::handle_accept_reply;
-use epaxos::replication::handle_fast_accept_reply;
 use epaxos::snapshot::MemEngine;
 use epaxos::snapshot::Storage;
 
 use parse::Response;
 
-use cele::RangeLookupError;
-
-/// ServerData is shared between threads or coroutine.
-/// TODO: Storage does not need to be shared with Arc any more.
-pub struct ServerData {
-    cluster: ClusterInfo,
-    node_id: NodeId,
-    node: Node,
-    local_replicas: BTreeMap<ReplicaID, Replica>,
-    storage: Storage,
-}
-
-impl ServerData {
-    pub fn new(sto: Storage, cluster: ClusterInfo, node_id: NodeId) -> ServerData {
-        let n = cluster.get(&node_id).unwrap().clone();
-
-        let mut rs = BTreeMap::new();
-        for (rid, rinfo) in cluster.replicas.iter() {
-            if rinfo.node_id == node_id {
-                let gidx = rinfo.group_idx;
-                let g = &cluster.groups[gidx];
-                rs.insert(
-                    *rid,
-                    Replica {
-                        replica_id: *rid,
-                        group_replica_ids: g.replicas.keys().cloned().collect(),
-                        peers: vec![], // TODO
-                        conf: ReplicaConf {
-                            dreply: false,
-                            inst_committed_timeout: 100000,
-                        },
-                        storage: sto.clone(),
-                    },
-                );
-            }
-        }
-
-        ServerData {
-            cluster: cluster,
-            node_id: node_id.clone(),
-            node: n,
-            local_replicas: rs,
-            storage: sto,
-        }
-    }
-
-    pub fn get_local_replica_for_key(
-        &self,
-        key: &[u8],
-    ) -> Result<(&GroupInfo, &Replica), RangeLookupError> {
-        let k = String::from_utf8(key.to_vec()).unwrap();
-
-        let g = self
-            .cluster
-            .get_group_for_key(&k)
-            .ok_or(RangeLookupError::NoGroupForKey(k.clone()))?;
-
-        for (rid, _) in g.replicas.iter() {
-            let replica = self.local_replicas.get(rid);
-            if let Some(v) = replica {
-                return Ok((g, v));
-            }
-        }
-
-        Err(RangeLookupError::NoLocalReplicaForKey(k.clone()))
-    }
-}
+use cele::ServerData;
 
 /// Server impl some user protocol such as redis protocol and a replication service.
 pub struct Server {
@@ -288,9 +205,9 @@ impl RedisApi {
             }
         };
 
-        let cmd = Command::of(cmd, key, value);
+        let _cmd = Command::of(cmd, key, value);
 
-        let (g, r) = self.server_data.get_local_replica_for_key(key)?;
+        let (_g, _r) = self.server_data.get_local_replica_for_key(key)?;
 
         // TODO run fast-accept etc.
         Ok(Response::Status("OK".to_owned()))

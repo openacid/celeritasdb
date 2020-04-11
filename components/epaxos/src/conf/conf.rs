@@ -30,13 +30,13 @@ pub struct Node {
     // idc: String, // TODO(lsl): need topology information of a node
 }
 
-#[derive(Debug, Eq, PartialEq)]
+#[derive(Debug, Eq, PartialEq, Clone)]
 pub struct ReplicaInfo {
     pub group_idx: usize,
     pub node_id: NodeId,
 }
 
-#[derive(Serialize, Deserialize, Debug, Eq, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, Eq, PartialEq, Clone)]
 pub struct GroupInfo {
     /// range defines the starting and ending key this group serves.
     /// It is a left-close right-open range.
@@ -44,7 +44,7 @@ pub struct GroupInfo {
     pub replicas: BTreeMap<ReplicaID, NodeId>,
 }
 
-#[derive(Serialize, Deserialize, Debug, PartialEq)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
 pub struct ClusterInfo {
     /// The key is NodeId and should be unique globally.
     /// And when parsing cluster conf yaml, it tries to convert the key:NodeId to replication addr.
@@ -173,7 +173,7 @@ impl ClusterInfo {
                 self.replicas.insert(
                     *rid,
                     ReplicaInfo {
-                        group_idx: gidx, 
+                        group_idx: gidx,
                         node_id: nid.clone(),
                     },
                 );

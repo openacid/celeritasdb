@@ -190,16 +190,8 @@ fn test_status_get_fast_commit_deps() {
         HashMap<InstanceId, bool>,
         Option<Vec<InstanceId>>,
     )> = vec![
-        case!(1, {
-            [2]
-        },
-        {},
-        Some(instids![(1, 2)])),
-        case!(1, {
-            [2]
-        },
-        { (1, 2) },
-        Some(instids![(1, 2)])),
+        case!(1, { [2] }, {}, Some(instids![(1, 2)])),
+        case!(1, { [2] }, { (1, 2) }, Some(instids![(1, 2)])),
         case!(2, {
             [2, 3],
             [2]
@@ -239,7 +231,7 @@ fn test_status_get_fast_commit_deps() {
         },
         {(2, 4), (3, 5)},
         Some(instids![(1, 2), (2, 4), (3, 5)])),
-        ];
+    ];
 
     for (n, deps, committed, want) in cases.iter_mut() {
         let fq = fast_quorum(*n);
