@@ -158,39 +158,6 @@ fn test_new_instance() {
 }
 
 #[test]
-fn test_quorums() {
-    let cases: Vec<(i32, i32, i32)> = vec![
-        (0, 1, 1),
-        (1, 1, 1),
-        (2, 2, 2),
-        (3, 2, 2),
-        (4, 3, 3),
-        (5, 3, 3),
-        (6, 4, 4),
-        (7, 4, 5),
-        (8, 5, 5),
-        (9, 5, 6),
-    ];
-
-    for (n_replicas, q, fastq) in cases {
-        let mut r = new_foo_replica(1, new_mem_sto(), &[]);
-        r.group_replica_ids = vec![];
-
-        for i in 0..n_replicas {
-            r.group_replica_ids.push(i as ReplicaID);
-        }
-
-        assert_eq!(q, quorum(n_replicas), "quorum n={}", n_replicas);
-        assert_eq!(
-            fastq,
-            fast_quorum(n_replicas),
-            "fast-quorum n={}",
-            n_replicas
-        );
-    }
-}
-
-#[test]
 fn test_get_max_instance_ids() {
     let (i12, i13, i34) = (foo_inst!((1, 2)), foo_inst!((1, 3)), foo_inst!((3, 4)));
 
