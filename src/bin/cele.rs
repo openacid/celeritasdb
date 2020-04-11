@@ -25,7 +25,7 @@ use epaxos::snapshot::Storage;
 
 use parse::Response;
 
-use cele::ServerData;
+use epaxos::ServerData;
 
 /// Server impl some user protocol such as redis protocol and a replication service.
 pub struct Server {

@@ -1,7 +1,7 @@
 use crate::RangeLookupError;
 use crate::ServerData;
-use epaxos::conf::ClusterInfo;
-use epaxos::snapshot::MemEngine;
+use crate::conf::ClusterInfo;
+use crate::snapshot::MemEngine;
 use std::sync::Arc;
 
 #[test]

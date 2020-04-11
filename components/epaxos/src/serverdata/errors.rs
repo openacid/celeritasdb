@@ -1,3 +1,5 @@
+
+extern crate parse;
 use parse::Response;
 
 quick_error! {

@@ -1,12 +1,12 @@
 use crate::RangeLookupError;
-use epaxos::conf::ClusterInfo;
-use epaxos::conf::GroupInfo;
-use epaxos::conf::Node;
-use epaxos::conf::NodeId;
-use epaxos::qpaxos::ReplicaID;
-use epaxos::replica::Replica;
-use epaxos::replica::ReplicaConf;
-use epaxos::snapshot::Storage;
+use crate::conf::ClusterInfo;
+use crate::conf::GroupInfo;
+use crate::conf::Node;
+use crate::conf::NodeId;
+use crate::qpaxos::ReplicaID;
+use crate::replica::Replica;
+use crate::replica::ReplicaConf;
+use crate::snapshot::Storage;
 use std::collections::BTreeMap;
 
 /// ServerData is shared between threads or coroutine.

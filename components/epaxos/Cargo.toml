@@ -17,6 +17,7 @@ net2 = "0.2"
 pretty_assertions = { version = "0.6.1" }
 
 [dependencies]
+parse = { path = "../parse" }
 quick-error = { version = "1.2.2" }
 rocksdb = { git = "https://github.com/tikv/rust-rocksdb.git", branch = "release-2.0" }
 tempfile = { version = "3.1.0" }
