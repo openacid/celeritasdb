@@ -42,18 +42,18 @@ use epaxos::snapshot::Storage;
 
 use parse::Response;
 
-/// CeleError defines all error occurs at server level.
+/// RangeLookupError defines all error occurs at server level.
 /// It also wraps lower level errors.
-pub enum CeleError {
+pub enum RangeLookupError {
     NoGroupForKey(String),
     NoLocalReplicaForKey(String),
 }
 
-impl From<CeleError> for Response {
-    fn from(e: CeleError) -> Response {
+impl From<RangeLookupError> for Response {
+    fn from(e: RangeLookupError) -> Response {
         match e {
-            CeleError::NoGroupForKey(k) => Response::Error(format!("No gruop serves: {}", k)),
-            CeleError::NoLocalReplicaForKey(k) => {
+            RangeLookupError::NoGroupForKey(k) => Response::Error(format!("No gruop serves: {}", k)),
+            RangeLookupError::NoLocalReplicaForKey(k) => {
                 Response::Error(format!("No replica serve: {}", k))
             }
         }
@@ -107,13 +107,13 @@ impl ServerData {
     pub fn get_local_replica_for_key(
         &self,
         key: &[u8],
-    ) -> Result<(&GroupInfo, &Replica), CeleError> {
+    ) -> Result<(&GroupInfo, &Replica), RangeLookupError> {
         let k = String::from_utf8(key.to_vec()).unwrap();
 
         let g = self
             .cluster
             .get_group_for_key(&k)
-            .ok_or(CeleError::NoGroupForKey(k.clone()))?;
+            .ok_or(RangeLookupError::NoGroupForKey(k.clone()))?;
 
         for (rid, _) in g.replicas.iter() {
             let replica = self.local_replicas.get(rid);
@@ -122,7 +122,7 @@ impl ServerData {
             }
         }
 
-        Err(CeleError::NoLocalReplicaForKey(k.clone()))
+        Err(RangeLookupError::NoLocalReplicaForKey(k.clone()))
     }
 }
 
