@@ -3,34 +3,10 @@ use super::{Base, BaseIter, DBColumnFamily, Error, RocksDBEngine};
 use rocksdb::{CFHandle, SeekKey, Writable, WriteBatch};
 use std::str;
 
-#[allow(dead_code)]
-struct CfKV<'a> {
-    cf: &'a DBColumnFamily,
-    k: &'a [u8],
-    v: &'a [u8],
-}
-
-impl<'a> From<(&'a DBColumnFamily, &'a [u8], &'a [u8])> for CfKV<'a> {
-    fn from(cfkv: (&'a DBColumnFamily, &'a [u8], &'a [u8])) -> CfKV<'a> {
-        CfKV {
-            cf: cfkv.0,
-            k: cfkv.1,
-            v: cfkv.2,
-        }
-    }
-}
-
-// just for test
-impl<'a> From<(&'a str, &'a str, &'a str)> for CfKV<'a> {
-    fn from(cfkv: (&'a str, &'a str, &'a str)) -> CfKV<'a> {
-        let cf = DBColumnFamily::from_str(cfkv.0).unwrap();
-
-        CfKV {
-            cf,
-            k: cfkv.1.as_bytes(),
-            v: cfkv.2.as_bytes(),
-        }
-    }
+pub enum Command<'a> {
+    Get(DBColumnFamily, &'a Vec<u8>),
+    Set(DBColumnFamily, &'a Vec<u8>, &'a Vec<u8>),
+    Delete(DBColumnFamily, &'a Vec<u8>),
 }
 
 impl RocksDBEngine {
@@ -57,61 +33,31 @@ impl RocksDBEngine {
     }
 
     /// make rocksdb column family handle
-    fn _make_cf_handle(&self, cf: &DBColumnFamily) -> Result<&CFHandle, Error> {
-        match self.db.cf_handle(cf.as_str()) {
+    fn _make_cf_handle(&self, cf: DBColumnFamily) -> Result<&CFHandle, Error> {
+        match self.db.cf_handle(cf.into()) {
             Some(h) => Ok(h),
-            None => Err(format!("got column family {} handle failed", cf.as_str()).into()),
+            None => Err(format!("got column family {:?} handle failed", cf).into()),
         }
     }
 
     /// Set a key-value pair to rocksdb.
-    fn set(&self, cfkv: &CfKV) -> Result<(), Error> {
-        let cfh = self._make_cf_handle(cfkv.cf)?;
-        Ok(self.db.put_cf(cfh, cfkv.k, cfkv.v)?)
+    fn set(&self, cf: DBColumnFamily, k: &[u8], v: &[u8]) -> Result<(), Error> {
+        let cfh = self._make_cf_handle(cf)?;
+        Ok(self.db.put_cf(cfh, k, v)?)
     }
 
     /// Get a value from rocksdb with it's key.
-    fn get(&self, cf: &DBColumnFamily, k: &[u8]) -> Result<Vec<u8>, Error> {
+    /// if the key not found, return a None
+    fn get(&self, cf: DBColumnFamily, k: &[u8]) -> Result<Option<Vec<u8>>, Error> {
         let cfh = self._make_cf_handle(cf)?;
-
-        match self.db.get_cf(cfh, k) {
-            Ok(option_val) => match option_val {
-                Some(val) => {
-                    return Ok(val.to_vec());
-                }
-                None => {
-                    let k_str = match str::from_utf8(k) {
-                        Ok(s) => s,
-                        Err(err) => {
-                            return Err(format!("{} while converting utf8 to str", err).into());
-                        }
-                    };
-                    return Err(format!("key not found: {}", k_str).into());
-                }
-            },
-            Err(err) => {
-                let k_str = match str::from_utf8(k) {
-                    Ok(s) => s,
-                    Err(err) => {
-                        return Err(format!("{} while converting utf8 to str", err).into());
-                    }
-                };
-                return Err(format!("{} while loading key {}", err, k_str).into());
-            }
-        };
+        let r = self.db.get_cf(cfh, k)?;
+        Ok(r.map(|x| x.to_vec()))
     }
 
-    /// Set multi keys-values to rocksdb atomically.
-    fn _mset(&self, cfkvs: &Vec<CfKV>) -> Result<(), Error> {
-        let wb = WriteBatch::new();
-
-        for cfkv in cfkvs {
-            let cfh = self._make_cf_handle(cfkv.cf)?;
-
-            wb.put_cf(cfh, cfkv.k, cfkv.v)?;
-        }
-
-        Ok(self.db.write(wb)?)
+    /// Delete a key in rocksdb.
+    fn delete(&self, cf: DBColumnFamily, k: &[u8]) -> Result<(), Error> {
+        let cfh = self._make_cf_handle(cf)?;
+        Ok(self.db.delete_cf(cfh, k)?)
     }
 
     fn _range(&self, key: &Vec<u8>, include: bool, reverse: bool) -> Option<(Vec<u8>, Vec<u8>)> {
@@ -151,16 +97,16 @@ impl RocksDBEngine {
 }
 
 impl Base for RocksDBEngine {
-    fn set_kv(&self, key: Vec<u8>, value: Vec<u8>) -> Result<(), Error> {
-        self.set(&CfKV {
-            cf: &DBColumnFamily::Default,
-            k: &key,
-            v: &value,
-        })
+    fn set_kv(&self, key: &Vec<u8>, value: &Vec<u8>) -> Result<(), Error> {
+        self.set(DBColumnFamily::Default, &key, &value)
     }
 
-    fn get_kv(&self, key: &Vec<u8>) -> Result<Vec<u8>, Error> {
-        self.get(&DBColumnFamily::Default, key)
+    fn get_kv(&self, key: &Vec<u8>) -> Result<Option<Vec<u8>>, Error> {
+        self.get(DBColumnFamily::Default, key)
+    }
+
+    fn delete_kv(&self, key: &Vec<u8>) -> Result<(), Error> {
+        self.delete(DBColumnFamily::Default, key)
     }
 
     fn next_kv(&self, key: &Vec<u8>, include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
@@ -179,6 +125,25 @@ impl Base for RocksDBEngine {
             reverse,
         };
     }
+
+    fn write_batch(&self, cmds: &Vec<Command>) -> Result<(), Error> {
+        let batch = WriteBatch::with_capacity(cmds.len());
+        for cmd in cmds {
+            match cmd {
+                Command::Get(_, _) => panic!("write batch don't support Get command"),
+                Command::Set(cf, k, v) => {
+                    let cfh = self._make_cf_handle(*cf)?;
+                    batch.put_cf(cfh, k, v)?;
+                }
+                Command::Delete(cf, k) => {
+                    let cfh = self._make_cf_handle(*cf)?;
+                    batch.delete_cf(cfh, k)?;
+                }
+            }
+        }
+
+        Ok(self.db.write(batch)?)
+    }
 }
 
 #[test]
@@ -193,21 +158,37 @@ fn test_rocks_engine() {
     let k0 = "key0";
     let v0 = "value0";
 
-    eng.set(&("default", k0, v0).into()).unwrap();
+    eng.set_kv(&k0.as_bytes().to_vec(), &v0.as_bytes().to_vec())
+        .unwrap();
 
-    let v_get = eng.get(&DBColumnFamily::Default, k0.as_bytes()).unwrap();
-    assert_eq!(v_get, v0.as_bytes());
+    let v_get = eng.get(DBColumnFamily::Default, k0.as_bytes()).unwrap();
+    assert_eq!(v_get.unwrap(), v0.as_bytes());
 
-    let cfkvs = vec![
-        ("default", "key1", "value1").into(),
-        ("instance", "key2", "value2").into(),
-        ("status", "key3", "value3").into(),
+    let k1 = "k1".as_bytes().to_vec();
+    let k2 = "k2".as_bytes().to_vec();
+    let v1 = "v1".as_bytes().to_vec();
+    let v2 = "v2".as_bytes().to_vec();
+
+    let cmds = vec![
+        Command::Set(DBColumnFamily::Default, &k1, &v1),
+        Command::Set(DBColumnFamily::Default, &k2, &v2),
     ];
 
-    eng._mset(&cfkvs).unwrap();
+    eng.write_batch(&cmds).unwrap();
+    assert_eq!(
+        "v1".as_bytes().to_vec(),
+        eng.get_kv(&"k1".as_bytes().to_vec()).unwrap().unwrap()
+    );
+    assert_eq!(
+        "v2".as_bytes().to_vec(),
+        eng.get_kv(&"k2".as_bytes().to_vec()).unwrap().unwrap()
+    );
 
-    for cfkv in cfkvs {
-        let v_get = eng.get(cfkv.cf, cfkv.k).unwrap();
-        assert_eq!(v_get, cfkv.v);
-    }
+    let cmds = vec![
+        Command::Set(DBColumnFamily::Default, &k1, &v1),
+        Command::Delete(DBColumnFamily::Default, &k1),
+    ];
+
+    eng.write_batch(&cmds).unwrap();
+    assert_eq!(None, eng.get_kv(&"k1".as_bytes().to_vec()).unwrap());
 }

@@ -4,7 +4,7 @@ use tonic::Response;
 use crate::conf::ClusterInfo;
 use crate::qpaxos::*;
 use crate::replica::Error as ReplicaError;
-use crate::snapshot::{Error as SnapError, Storage};
+use crate::snapshot::Storage;
 
 /// ref_or_bug extracts a immutable ref from an Option.
 /// If the Option is None a bug handler is triggered.
@@ -97,15 +97,8 @@ impl Replica {
         let mut deps = Vec::with_capacity(n);
         // TODO ensure replica_ids are sorted
         for rid in self.group_replica_ids.iter() {
-            let max = self.storage.get_ref("max", *rid);
-            match max {
-                Ok(v) => deps.push(v),
-                Err(e) => match e {
-                    SnapError::NotFound => {}
-                    _ => {
-                        return Err(e.into());
-                    }
-                },
+            if let Some(v) = self.storage.get_ref("max", *rid)? {
+                deps.push(v);
             }
         }
 

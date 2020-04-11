@@ -1,7 +1,7 @@
 use super::traits::*;
 use crate::qpaxos::*;
-
 use crate::tokey::ToKey;
+use prost::Message;
 
 pub struct InstanceIter<'a> {
     pub curr_inst_id: InstanceId,
@@ -44,8 +44,7 @@ impl<'a> Iterator for InstanceIter<'a> {
             return None;
         }
 
-        let inst = self.engine.decode_obj(&val_bytes);
-        let inst = match inst {
+        let inst = match Self::Item::decode(val_bytes.as_slice()) {
             Ok(v) => v,
             Err(e) => {
                 // TODO handle data damaging.

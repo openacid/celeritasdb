@@ -1,4 +1,5 @@
 use crate::qpaxos::{Instance, InstanceId, ReplicaID};
+use crate::snapshot::Command;
 use crate::tokey::ToKey;
 use std::marker::Send;
 use std::marker::Sync;
@@ -42,10 +43,13 @@ impl<'a> Iterator for BaseIter<'a> {
 /// Base offer basic key-value access
 pub trait Base {
     /// set a new key-value
-    fn set_kv(&self, key: Vec<u8>, value: Vec<u8>) -> Result<(), Error>;
+    fn set_kv(&self, key: &Vec<u8>, value: &Vec<u8>) -> Result<(), Error>;
 
     /// get an existing value with key
-    fn get_kv(&self, key: &Vec<u8>) -> Result<Vec<u8>, Error>;
+    fn get_kv(&self, key: &Vec<u8>) -> Result<Option<Vec<u8>>, Error>;
+
+    /// delete a key
+    fn delete_kv(&self, key: &Vec<u8>) -> Result<(), Error>;
 
     /// next_kv returns a key-value pair greater than the given one(include=false),
     /// or greater or equal the given one(include=true)
@@ -56,13 +60,15 @@ pub trait Base {
     fn prev_kv(&self, key: &Vec<u8>, include: bool) -> Option<(Vec<u8>, Vec<u8>)>;
 
     fn get_iter(&self, key: Vec<u8>, include: bool, reverse: bool) -> BaseIter;
+
+    fn write_batch(&self, cmds: &Vec<Command>) -> Result<(), Error>;
 }
 
 pub type Storage =
     Arc<dyn InstanceEngine<ColumnId = ReplicaID, ObjId = InstanceId, Obj = Instance> + Sync + Send>;
 
 /// InstanceEngine offer functions to operate snapshot instances
-pub trait InstanceEngine: TxEngine + ColumnedEngine {
+pub trait InstanceEngine: ColumnedEngine {
     /// Find next available instance id and increase max-instance-id ref.
     fn next_instance_id(&self, rid: ReplicaID) -> Result<InstanceId, Error>;
 
@@ -74,18 +80,6 @@ pub trait InstanceEngine: TxEngine + ColumnedEngine {
 
     /// get an iterator to scan all instances with a leader replica id
     fn get_instance_iter(&self, iid: InstanceId, include: bool, reverse: bool) -> InstanceIter;
-}
-
-/// TxEngine offer a transactional operation on a storage.
-pub trait TxEngine {
-    /// start a transaction
-    fn trans_begin(&self);
-    /// commit a transaction
-    fn trans_commit(&self) -> Result<(), Error>;
-    /// rollback a transaction
-    fn trans_rollback(&self) -> Result<(), Error>;
-    /// get a key to set exclusively, must be called in an transaction
-    fn get_kv_for_update(&self, key: &Vec<u8>) -> Result<Vec<u8>, Error>;
 }
 
 /// ObjectEngine wraps bytes based storage engine into an object based engine.
@@ -104,42 +98,22 @@ pub trait ObjectEngine: Base {
 
     fn set_obj(&self, objid: Self::ObjId, obj: &Self::Obj) -> Result<(), Error> {
         let key = objid.to_key();
-        let value = self.encode_obj(obj)?;
+        let mut value = vec![];
+        obj.encode(&mut value)?;
 
-        self.set_kv(key, value)
+        self.set_kv(&key, &value)
     }
 
     fn get_obj(&self, objid: Self::ObjId) -> Result<Option<Self::Obj>, Error> {
         let key = objid.to_key();
-        let vbs = self.get_kv(&key);
+        let vbs = self.get_kv(&key)?;
 
-        let vbs = match vbs {
-            Ok(v) => v,
-            Err(e) => match e {
-                Error::NotFound => {
-                    return Ok(None);
-                }
-                _ => {
-                    return Err(e);
-                }
-            },
+        let r = match vbs {
+            Some(v) => Self::Obj::decode(v.as_slice())?,
+            None => return Ok(None),
         };
 
-        let itm = self.decode_obj(&vbs)?;
-        Ok(Some(itm))
-    }
-
-    fn encode_obj(&self, itm: &Self::Obj) -> Result<Vec<u8>, Error> {
-        let mut value = vec![];
-        itm.encode(&mut value).unwrap();
-        Ok(value)
-    }
-
-    fn decode_obj(&self, bs: &Vec<u8>) -> Result<Self::Obj, Error> {
-        match Self::Obj::decode(bs.as_slice()) {
-            Ok(v) => Ok(v),
-            Err(_) => Err("parse instance id error".to_string().into()),
-        }
+        Ok(Some(r))
     }
 }
 
@@ -163,19 +137,21 @@ pub trait ColumnedEngine: ObjectEngine {
         let key = self.make_ref_key(typ, col_id);
 
         let mut value = vec![];
-        objid.encode(&mut value).unwrap();
+        objid.encode(&mut value)?;
 
-        self.set_kv(key, value)
+        self.set_kv(&key, &value)
     }
 
-    fn get_ref(&self, typ: &str, col_id: Self::ColumnId) -> Result<Self::ObjId, Error> {
+    fn get_ref(&self, typ: &str, col_id: Self::ColumnId) -> Result<Option<Self::ObjId>, Error> {
         let key = self.make_ref_key(typ, col_id);
-        let val_bytes = self.get_kv(&key)?;
+        let val = self.get_kv(&key)?;
 
-        match Self::ObjId::decode(val_bytes.as_slice()) {
-            Ok(v) => Ok(v),
-            Err(_) => Err("parse instance id error".to_string().into()),
-        }
+        let val = match val {
+            Some(v) => v,
+            None => return Ok(None),
+        };
+
+        Ok(Some(Self::ObjId::decode(val.as_slice())?))
     }
 
     /// set_ref_if set ref if the current value satisifies specified condition.
@@ -201,14 +177,8 @@ pub trait ColumnedEngine: ObjectEngine {
         Self: Sized,
         P: Fn(Self::ObjId) -> bool,
     {
-        let r0 = self.get_ref(typ, col_id);
-        let r0 = match r0 {
-            Ok(v) => v,
-            Err(e) => match e {
-                Error::NotFound => default,
-                _ => return Err(e),
-            },
-        };
+        let r0 = self.get_ref(typ, col_id)?;
+        let r0 = r0.unwrap_or(default);
 
         if cond(r0) {
             self.set_ref(typ, col_id, objid)

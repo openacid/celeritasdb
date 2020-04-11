@@ -1,5 +1,4 @@
-use crate::qpaxos::QError;
-use crate::qpaxos::StorageFailure;
+use prost::{DecodeError, EncodeError};
 
 quick_error! {
     /// Errors occur when set/get with snapshot
@@ -10,22 +9,14 @@ quick_error! {
             display("got db error:{}", msg)
         }
 
-        NotFound{}
-    }
-}
+        ProtoDecodeError(err: DecodeError) {
+            from(err: DecodeError) -> (err)
+            display("prost decode error: {:?}", err)
+        }
 
-impl Into<QError> for Error {
-    fn into(self) -> QError {
-        match self {
-            Self::DBError(_) => QError {
-                sto: Some(StorageFailure {}),
-                ..Default::default()
-            },
-
-            Self::NotFound {} => QError {
-                sto: Some(StorageFailure {}),
-                ..Default::default()
-            },
+        ProtoEncodeError(err: EncodeError) {
+            from(err: EncodeError) -> (err)
+            display("prost encode error: {:?}", err)
         }
     }
 }

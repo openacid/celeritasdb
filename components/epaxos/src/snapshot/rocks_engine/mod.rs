@@ -14,27 +14,35 @@ pub struct RocksDBEngine {
     db: DB,
 }
 
-enum_str! {
-    pub DBColumnFamily {
-        Default("default")
-        Instance("instance")
-        Status("status")
-    }
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+pub enum DBColumnFamily {
+    Default,
+    Instance,
+    Status,
 }
 
 impl DBColumnFamily {
-    fn all<'a>() -> Vec<&'a str> {
+    fn all() -> Vec<DBColumnFamily> {
         vec![
-            DBColumnFamily::Default.as_str(),
-            DBColumnFamily::Instance.as_str(),
-            DBColumnFamily::Status.as_str(),
+            DBColumnFamily::Default,
+            DBColumnFamily::Instance,
+            DBColumnFamily::Status,
         ]
     }
 }
 
-#[test]
-fn test_db_columnfamily() {
-    let exp = vec!["default", "instance", "status"];
+impl From<&DBColumnFamily> for &str {
+    fn from(cf: &DBColumnFamily) -> Self {
+        match cf {
+            DBColumnFamily::Default => return "default",
+            DBColumnFamily::Instance => return "instance",
+            DBColumnFamily::Status => return "status",
+        }
+    }
+}
 
-    assert_eq!(exp, DBColumnFamily::all());
+impl From<DBColumnFamily> for &str {
+    fn from(cf: DBColumnFamily) -> Self {
+        (&cf).into()
+    }
 }

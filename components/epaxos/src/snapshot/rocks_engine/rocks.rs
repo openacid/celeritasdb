@@ -1,22 +1,21 @@
 use std::fs;
 use std::path::Path;
 
+use crate::snapshot::DBColumnFamily;
 use rocksdb::{ColumnFamilyOptions, DBOptions, DB};
 
-use super::DBColumnFamily;
-
-struct CFOptions<'a> {
-    cf: &'a str,
+struct CFOptions {
+    cf: DBColumnFamily,
     options: ColumnFamilyOptions,
 }
 
-impl<'a> CFOptions<'a> {
-    fn new(cf: &'a str, options: ColumnFamilyOptions) -> CFOptions<'a> {
+impl CFOptions {
+    fn new(cf: DBColumnFamily, options: ColumnFamilyOptions) -> CFOptions {
         CFOptions { cf, options }
     }
 }
 
-fn get_all_cfs_opts<'a>() -> Vec<CFOptions<'a>> {
+fn get_all_cfs_opts() -> Vec<CFOptions> {
     let mut cfs_opts = Vec::with_capacity(DBColumnFamily::all().len());
 
     for cf in DBColumnFamily::all() {
@@ -52,7 +51,7 @@ pub fn open(path: &str) -> Result<DB, String> {
         db_opt.create_if_missing(true);
 
         for x in cfs_opts {
-            if x.cf == DBColumnFamily::Default.as_str() {
+            if x.cf == DBColumnFamily::Default {
                 exist_cfs_opts.push(CFOptions::new(x.cf, x.options.clone()));
             } else {
                 new_cfs_opts.push(CFOptions::new(x.cf, x.options.clone()));
@@ -66,14 +65,14 @@ pub fn open(path: &str) -> Result<DB, String> {
 
     let cf_list = DB::list_column_families(&db_opt, path)?;
     let existed: Vec<&str> = cf_list.iter().map(|v| v.as_str()).collect();
-    let needed: Vec<&str> = cfs_opts.iter().map(|x| x.cf).collect();
+    let needed: Vec<&str> = cfs_opts.iter().map(|x| x.cf.into()).collect();
 
     if existed == needed {
         return open_db_cfs(path, db_opt, vec![], cfs_opts);
     }
 
     for x in cfs_opts {
-        if existed.contains(&x.cf) {
+        if existed.contains(&x.cf.into()) {
             exist_cfs_opts.push(CFOptions::new(x.cf, x.options.clone()));
         } else {
             new_cfs_opts.push(CFOptions::new(x.cf, x.options.clone()));
@@ -86,8 +85,8 @@ pub fn open(path: &str) -> Result<DB, String> {
 fn open_db_cfs(
     path: &str,
     db_opt: DBOptions,
-    new_cfs_opts: Vec<CFOptions<'_>>,
-    exist_cfs_opts: Vec<CFOptions<'_>>,
+    new_cfs_opts: Vec<CFOptions>,
+    exist_cfs_opts: Vec<CFOptions>,
 ) -> Result<DB, String> {
     let len_exist_cf = exist_cfs_opts.len();
     let len_new_cf = new_cfs_opts.len();
@@ -96,11 +95,11 @@ fn open_db_cfs(
         return Err(format!("no column family specified"));
     }
 
-    let mut exist_cfs_v = Vec::with_capacity(len_exist_cf);
+    let mut exist_cfs_v: Vec<&str> = Vec::with_capacity(len_exist_cf);
     let mut exist_opts_v = Vec::with_capacity(len_exist_cf);
 
     for x in exist_cfs_opts {
-        exist_cfs_v.push(x.cf);
+        exist_cfs_v.push(x.cf.into());
         exist_opts_v.push(x.options);
     }
 
@@ -111,7 +110,7 @@ fn open_db_cfs(
     )?;
 
     for x in new_cfs_opts {
-        db.create_cf((x.cf, x.options))?;
+        db.create_cf((x.cf.into(), x.options))?;
     }
 
     return Ok(db);
@@ -128,6 +127,10 @@ fn test_open() {
     assert_eq!(db.path(), db_path);
 
     let mut cfs = db.cf_names();
+    let mut exp: Vec<&str> = vec![];
+    for cf in DBColumnFamily::all() {
+        exp.push(cf.into());
+    }
 
-    assert_eq!(cfs.sort(), DBColumnFamily::all().sort());
+    assert_eq!(cfs.sort(), exp.sort());
 }

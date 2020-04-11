@@ -3,7 +3,6 @@ use std::time::SystemTime;
 
 use crate::qpaxos::{Instance, InstanceId, InstanceIdVec, OpCode};
 use crate::replica::{errors::Error, Replica};
-use crate::snapshot::Error as SnapError;
 
 thread_local! {
     static PROBLEM_INSTS: RefCell<Vec<(InstanceId, SystemTime)>> = RefCell::new(vec![]);
@@ -12,8 +11,7 @@ thread_local! {
 #[derive(Clone, Debug, Eq, PartialEq)]
 pub enum ExecuteResult {
     Success,
-    SuccessWithVal { value: Vec<u8> },
-    NotFound,
+    SuccessWithVal { value: Option<Vec<u8>> },
 }
 
 impl Replica {
@@ -75,16 +73,11 @@ impl Replica {
             if OpCode::NoOp as i32 == cmd.op {
                 rst.push(ExecuteResult::Success);
             } else if OpCode::Set as i32 == cmd.op {
-                self.storage.set_kv(cmd.key.clone(), cmd.value.clone())?;
+                self.storage.set_kv(&cmd.key, &cmd.value)?;
                 rst.push(ExecuteResult::Success);
             } else if OpCode::Get as i32 == cmd.op {
-                match self.storage.get_kv(&cmd.key) {
-                    Ok(r) => rst.push(ExecuteResult::SuccessWithVal { value: r }),
-                    Err(e) => match e {
-                        SnapError::NotFound => rst.push(ExecuteResult::NotFound),
-                        _ => return Err(Error::from(e)),
-                    },
-                }
+                let v = self.storage.get_kv(&cmd.key)?;
+                rst.push(ExecuteResult::SuccessWithVal { value: v });
             } else {
                 return Err(Error::CmdNotSupport(format!("{:?}", cmd.op)));
             }
@@ -135,25 +128,14 @@ impl Replica {
 
         let mut rst = Vec::new();
         let mut replys = Vec::new();
-        self.storage.trans_begin();
         for inst in can_exec.iter() {
             match self.execute_commands(inst) {
                 Ok(r) => replys.push(r),
                 Err(e) => {
-                    self.storage.trans_rollback()?;
                     return Err(e);
                 }
             };
             rst.push(inst.instance_id.unwrap());
-        }
-
-        match self.storage.trans_commit() {
-            // TODO send replys to client
-            Ok(_) => {}
-            Err(e) => {
-                self.storage.trans_rollback()?;
-                return Err(Error::from(e));
-            }
         }
 
         Ok(rst)
@@ -222,6 +204,13 @@ impl Replica {
         for rid in self.group_replica_ids.iter() {
             let exec_iid = self.storage.get_ref("exec", *rid)?;
             let max_iid = self.storage.get_ref("max", *rid)?;
+            if let None = max_iid {
+                continue;
+            }
+
+            let exec_iid = exec_iid.unwrap_or((*rid, -1).into());
+            let max_iid = max_iid.unwrap();
+
             exec_up_to.push(exec_iid);
             if exec_iid < max_iid {
                 smallest_inst_ids.push((*rid, exec_iid.idx + 1).into());

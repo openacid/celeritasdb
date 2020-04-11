@@ -1,6 +1,5 @@
 use super::traits::*;
 use crate::qpaxos::*;
-use crate::snapshot::errors::*;
 
 pub fn test_set_instance(
     eng: &mut dyn InstanceEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceId>,
@@ -10,27 +9,27 @@ pub fn test_set_instance(
     let iid = inst.instance_id.unwrap();
     eng.set_instance(&inst).unwrap();
 
-    assert_eq!(Err(Error::NotFound), eng.get_ref("exec", leader_id));
+    assert_eq!(Ok(None), eng.get_ref("exec", leader_id));
 
     // exec-ref is updated if executed
 
     inst.executed = true;
     eng.set_instance(&inst).unwrap();
-    assert_eq!(iid, eng.get_ref("exec", leader_id).unwrap());
+    assert_eq!(Some(iid), eng.get_ref("exec", leader_id).unwrap());
 
     // exec-ref is not updated
 
     inst.executed = false;
     inst.instance_id = Some((leader_id, 10).into());
     eng.set_instance(&inst).unwrap();
-    assert_eq!(iid, eng.get_ref("exec", leader_id).unwrap());
+    assert_eq!(Some(iid), eng.get_ref("exec", leader_id).unwrap());
 
     // exec-ref is not updated
 
     inst.executed = false;
     inst.instance_id = Some((leader_id, 0).into());
     eng.set_instance(&inst).unwrap();
-    assert_eq!(iid, eng.get_ref("exec", leader_id).unwrap());
+    assert_eq!(Some(iid), eng.get_ref("exec", leader_id).unwrap());
 }
 
 pub fn test_get_instance(
@@ -171,14 +170,14 @@ pub fn test_base_trait(eng: &mut dyn Base) {
         ("k3".as_bytes().to_vec(), "v3".as_bytes().to_vec()),
     ];
 
-    eng.set_kv(kvs[0].0.clone(), kvs[0].1.clone()).unwrap();
-    let v0 = eng.get_kv(&kvs[0].0).unwrap();
+    eng.set_kv(&kvs[0].0, &kvs[0].1).unwrap();
+    let v0 = eng.get_kv(&kvs[0].0).unwrap().unwrap();
     assert_eq!(v0, kvs[0].1.clone());
 
     let next0 = eng.next_kv(&prefix, true);
     assert_eq!(next0, Some(kvs[0].clone()));
 
-    for (k, v) in kvs.clone() {
+    for (k, v) in kvs.iter() {
         eng.set_kv(k, v).unwrap();
     }
 
@@ -211,12 +210,12 @@ pub fn test_columned_trait(
         let iid = InstanceId::from((rid, idx));
 
         eng.set_ref("max", rid, iid).unwrap();
-        let act = eng.get_ref("max", rid).unwrap();
+        let act = eng.get_ref("max", rid).unwrap().unwrap();
 
         assert_eq!(act, iid);
 
         eng.set_ref("exec", rid, iid).unwrap();
-        let act = eng.get_ref("exec", rid).unwrap();
+        let act = eng.get_ref("exec", rid).unwrap().unwrap();
 
         assert_eq!(act, iid);
     }

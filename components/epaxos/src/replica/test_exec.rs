@@ -151,27 +151,33 @@ fn test_find_missing_instances() {
 fn test_execute_commands() {
     let rp = new_replica();
     rp.storage
-        .set_kv("x".as_bytes().to_vec(), vec![11])
+        .set_kv(&"x".as_bytes().to_vec(), &vec![11])
         .unwrap();
     rp.storage
-        .set_kv("y".as_bytes().to_vec(), vec![22])
+        .set_kv(&"y".as_bytes().to_vec(), &vec![22])
         .unwrap();
 
     let cases = [
         (test_inst!((2, 2), []), Vec::<ExecuteResult>::new()),
         (
             test_inst!((2, 2), [("Get", "xx", "")]),
-            vec![ExecuteResult::NotFound],
+            vec![ExecuteResult::SuccessWithVal { value: None }],
         ),
         (
             test_inst!((2, 2), [("Get", "x", "")]),
-            vec![ExecuteResult::SuccessWithVal { value: vec![11] }],
+            vec![ExecuteResult::SuccessWithVal {
+                value: Some(vec![11]),
+            }],
         ),
         (
             test_inst!((2, 2), [("Get", "x", ""), ("Get", "y", "")]),
             vec![
-                ExecuteResult::SuccessWithVal { value: vec![11] },
-                ExecuteResult::SuccessWithVal { value: vec![22] },
+                ExecuteResult::SuccessWithVal {
+                    value: Some(vec![11]),
+                },
+                ExecuteResult::SuccessWithVal {
+                    value: Some(vec![22]),
+                },
             ],
         ),
         (
@@ -183,7 +189,7 @@ fn test_execute_commands() {
                 ExecuteResult::Success,
                 ExecuteResult::Success,
                 ExecuteResult::SuccessWithVal {
-                    value: "foo".as_bytes().to_vec(),
+                    value: Some("foo".as_bytes().to_vec()),
                 },
             ],
         ),
@@ -320,7 +326,10 @@ fn test_replica_execute() {
             Ok(r) => {
                 assert_eq!(rst, &r);
                 for iid in r.iter() {
-                    assert_eq!(*iid, rp.storage.get_ref("exec", iid.replica_id).unwrap());
+                    assert_eq!(
+                        *iid,
+                        rp.storage.get_ref("exec", iid.replica_id).unwrap().unwrap()
+                    );
                     assert_eq!(
                         true,
                         rp.storage.get_instance(*iid).unwrap().unwrap().executed
