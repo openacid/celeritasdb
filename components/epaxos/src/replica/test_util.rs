@@ -3,6 +3,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use crate::qpaxos::*;
+use crate::MyQPaxos;
 use crate::replica::{Replica, ReplicaConf, ReplicaPeer};
 use crate::snapshot::MemEngine;
 use crate::snapshot::Storage;

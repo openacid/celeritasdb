@@ -17,7 +17,7 @@ use tonic;
 use epaxos::conf::ClusterInfo;
 use epaxos::conf::NodeId;
 use epaxos::qpaxos::Command;
-use epaxos::qpaxos::MyQPaxos;
+use epaxos::MyQPaxos;
 use epaxos::qpaxos::OpCode;
 use epaxos::qpaxos::QPaxosServer;
 use epaxos::snapshot::MemEngine;

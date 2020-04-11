@@ -7,6 +7,8 @@ extern crate quick_error;
 mod testutil;
 
 pub mod conf;
+mod serverdata;
+mod service;
 
 #[macro_use]
 pub mod qpaxos;
@@ -15,5 +17,5 @@ pub mod replication;
 pub mod snapshot;
 pub mod tokey;
 
-mod serverdata;
 pub use serverdata::*;
+pub use service::*;

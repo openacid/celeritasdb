@@ -7,6 +7,7 @@ use tokio::time::delay_for;
 use std::time::Duration;
 
 use epaxos::qpaxos as qp;
+use epaxos::MyQPaxos;
 
 #[test]
 fn test_repl_server() {
@@ -22,7 +23,7 @@ async fn _repl_server() {
 
     // start a replication server in a coroutine
 
-    let qp = qp::MyQPaxos::default();
+    let qp = MyQPaxos::default();
     let s = Server::builder().add_service(qp::QPaxosServer::new(qp));
 
     tokio::spawn(async move {
