@@ -53,7 +53,9 @@ impl From<CeleError> for Response {
     fn from(e: CeleError) -> Response {
         match e {
             CeleError::NoGroupForKey(k) => Response::Error(format!("No gruop serves: {}", k)),
-            CeleError::NoLocalReplicaForKey(k) => Response::Error(format!("No replica serve: {}", k)),
+            CeleError::NoLocalReplicaForKey(k) => {
+                Response::Error(format!("No replica serve: {}", k))
+            }
         }
     }
 }
@@ -68,14 +70,8 @@ pub struct ServerData {
     storage: Storage,
 }
 
-/// Server impl some user protocol such as redis protocol and a replication service.
-pub struct Server {
-    server_data: Arc<ServerData>,
-    _join_handles: Vec<JoinHandle<()>>,
-}
-
-impl Server {
-    pub fn new(sto: Storage, cluster: ClusterInfo, node_id: NodeId) -> Server {
+impl ServerData {
+    pub fn new(sto: Storage, cluster: ClusterInfo, node_id: NodeId) -> ServerData {
         let n = cluster.get(&node_id).unwrap().clone();
 
         let mut rs = BTreeMap::new();
@@ -98,18 +94,50 @@ impl Server {
                 );
             }
         }
-        let s = Server {
-            server_data: Arc::new(ServerData {
-                cluster: cluster,
-                node_id: node_id.clone(),
-                node: n,
-                local_replicas: rs,
-                storage: sto,
-            }),
-            _join_handles: Vec::new(),
-        };
 
-        s
+        ServerData {
+            cluster: cluster,
+            node_id: node_id.clone(),
+            node: n,
+            local_replicas: rs,
+            storage: sto,
+        }
+    }
+
+    pub fn get_local_replica_for_key(
+        &self,
+        key: &[u8],
+    ) -> Result<(&GroupInfo, &Replica), CeleError> {
+        let k = String::from_utf8(key.to_vec()).unwrap();
+
+        let g = self
+            .cluster
+            .get_group_for_key(&k)
+            .ok_or(CeleError::NoGroupForKey(k.clone()))?;
+
+        for (rid, _) in g.replicas.iter() {
+            let replica = self.local_replicas.get(rid);
+            if let Some(v) = replica {
+                return Ok((g, v));
+            }
+        }
+
+        Err(CeleError::NoLocalReplicaForKey(k.clone()))
+    }
+}
+
+/// Server impl some user protocol such as redis protocol and a replication service.
+pub struct Server {
+    server_data: Arc<ServerData>,
+    _join_handles: Vec<JoinHandle<()>>,
+}
+
+impl Server {
+    pub fn new(sto: Storage, cluster: ClusterInfo, node_id: NodeId) -> Server {
+        Server {
+            server_data: Arc::new(ServerData::new(sto, cluster, node_id)),
+            _join_handles: Vec::new(),
+        }
     }
 
     /// Starts service:
@@ -260,10 +288,29 @@ impl RedisApi {
 
     /// cmd_set impl redis-command set. TODO impl it.
     async fn cmd_set(&self, tokens: &[redis::Value]) -> Result<Response, Response> {
+        let cmd = OpCode::Set;
+        let key = match tokens[1] {
+            redis::Value::Data(ref d) => d,
+            _ => {
+                println!("expect tokens[1] to be key but not a Data");
+                return Err(Response::Error("invalid key".to_owned()));
+            }
+        };
+        let value = match tokens[2] {
+            redis::Value::Data(ref d) => d,
+            _ => {
+                println!("expect tokens[2] to be value but not a Data");
+                return Err(Response::Error("invalid value".to_owned()));
+            }
+        };
 
+        let cmd = Command::of(cmd, key, value);
+
+        let (g, r) = self.server_data.get_local_replica_for_key(key)?;
+
+        // TODO run fast-accept etc.
         Ok(Response::Status("OK".to_owned()))
     }
-
 }
 
 fn main() {
