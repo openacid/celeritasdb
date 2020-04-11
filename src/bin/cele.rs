@@ -42,23 +42,7 @@ use epaxos::snapshot::Storage;
 
 use parse::Response;
 
-/// RangeLookupError defines all error occurs at server level.
-/// It also wraps lower level errors.
-pub enum RangeLookupError {
-    NoGroupForKey(String),
-    NoLocalReplicaForKey(String),
-}
-
-impl From<RangeLookupError> for Response {
-    fn from(e: RangeLookupError) -> Response {
-        match e {
-            RangeLookupError::NoGroupForKey(k) => Response::Error(format!("No gruop serves: {}", k)),
-            RangeLookupError::NoLocalReplicaForKey(k) => {
-                Response::Error(format!("No replica serve: {}", k))
-            }
-        }
-    }
-}
+use cele::RangeLookupError;
 
 /// ServerData is shared between threads or coroutine.
 /// TODO: Storage does not need to be shared with Arc any more.

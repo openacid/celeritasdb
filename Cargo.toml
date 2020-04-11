@@ -12,6 +12,8 @@ edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[lib]
+name = "cele"
 
 [dependencies]
 net2  = { version = "0.2.2", features = ["nightly"] }
@@ -23,6 +25,7 @@ tokio-util = { version = "0.2.0", features = ["full"] }
 tonic = "0.1"
 clap  = { version = "~2.33.0" } # command line argument parse
 epaxos = { path = "components/epaxos" }
+quick-error = { version = "1.2.2" }
 
 [dev-dependencies]
 tempfile = { version = "3.1.0" }
