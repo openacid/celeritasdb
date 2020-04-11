@@ -10,6 +10,30 @@ fn load_conf(cont: &str) -> Result<(tempfile::NamedTempFile, ClusterInfo), ConfE
     let ci = ClusterInfo::from_file(f.path())?;
     Ok((f, ci))
 }
+#[test]
+fn test_conf_from_str() {
+    let cont = "
+nodes:
+    127.0.0.1:4441:
+        api_addr: 127.0.0.1:3331
+        replication: 127.0.0.1:5551
+    192.168.0.1:4442:
+        api_addr: 192.168.0.1:3332
+        api_uaddr: /var/run/usocket2
+        replication: 192.168.0.1:4442
+groups:
+-   range:
+    -   a
+    -   b
+    replicas:
+        1: 192.168.0.1:4442
+        2: 192.168.0.1:4442
+";
+
+    let (_tmpf, ci) = load_conf(cont).unwrap();
+    let ci2 = ClusterInfo::from_str(cont).unwrap();
+    assert_eq!(ci, ci2);
+}
 
 #[test]
 fn test_conf_serde_yaml() {

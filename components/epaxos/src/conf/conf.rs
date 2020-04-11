@@ -44,7 +44,7 @@ pub struct GroupInfo {
     pub replicas: BTreeMap<ReplicaID, NodeId>,
 }
 
-#[derive(Serialize, Deserialize, Debug)]
+#[derive(Serialize, Deserialize, Debug, PartialEq)]
 pub struct ClusterInfo {
     /// The key is NodeId and should be unique globally.
     /// And when parsing cluster conf yaml, it tries to convert the key:NodeId to replication addr.
@@ -82,7 +82,11 @@ impl ClusterInfo {
     /// from_file read cluster conf yaml from a local file.
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<ClusterInfo, ConfError> {
         let content = fs::read_to_string(path)?;
-        let mut cluster: ClusterInfo = serde_yaml::from_str(content.as_str())?;
+        Self::from_str(content.as_str())
+    }
+
+    pub fn from_str(yaml: &str) -> Result<ClusterInfo, ConfError> {
+        let mut cluster: ClusterInfo = serde_yaml::from_str(yaml)?;
 
         for (nid, node) in cluster.nodes.iter_mut() {
             ClusterInfo::norm_node(nid, node)?;
