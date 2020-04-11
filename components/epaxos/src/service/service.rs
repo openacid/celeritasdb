@@ -1,21 +1,31 @@
+use crate::qpaxos::AcceptReply;
+use crate::qpaxos::AcceptRequest;
+use crate::qpaxos::CommitReply;
+use crate::qpaxos::CommitRequest;
+use crate::qpaxos::FastAcceptReply;
+use crate::qpaxos::FastAcceptRequest;
+use crate::qpaxos::Instance;
 use crate::qpaxos::MakeReply;
 use crate::qpaxos::MakeRequest;
-use crate::qpaxos::QPaxos;
-use crate::qpaxos::FastAcceptRequest;
-use crate::qpaxos::FastAcceptReply;
-use crate::qpaxos::AcceptRequest;
-use crate::qpaxos::AcceptReply;
-use crate::qpaxos::CommitRequest;
-use crate::qpaxos::CommitReply;
-use crate::qpaxos::PrepareRequest;
 use crate::qpaxos::PrepareReply;
-use crate::qpaxos::Instance;
+use crate::qpaxos::PrepareRequest;
+use crate::qpaxos::QPaxos;
+use crate::ServerData;
+use std::sync::Arc;
 
 use tonic;
 use tonic::{Request, Response, Status};
 
-#[derive(Debug, Default)]
-pub struct MyQPaxos {}
+#[derive(Default)]
+pub struct MyQPaxos {
+    server_data: Arc<ServerData>,
+}
+
+impl MyQPaxos {
+    pub fn new(server_data: Arc<ServerData>) -> Self {
+        MyQPaxos { server_data }
+    }
+}
 
 #[tonic::async_trait]
 impl QPaxos for MyQPaxos {

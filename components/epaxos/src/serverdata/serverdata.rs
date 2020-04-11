@@ -1,4 +1,3 @@
-use crate::RangeLookupError;
 use crate::conf::ClusterInfo;
 use crate::conf::GroupInfo;
 use crate::conf::Node;
@@ -6,17 +5,44 @@ use crate::conf::NodeId;
 use crate::qpaxos::ReplicaID;
 use crate::replica::Replica;
 use crate::replica::ReplicaConf;
+use crate::snapshot::MemEngine;
 use crate::snapshot::Storage;
+use crate::RangeLookupError;
 use std::collections::BTreeMap;
+use std::sync::Arc;
 
 /// ServerData is shared between threads or coroutine.
 /// TODO: Storage does not need to be shared with Arc any more.
+// #[derive(Debug)]
 pub struct ServerData {
     pub cluster: ClusterInfo,
     pub node_id: NodeId,
     pub node: Node,
     pub local_replicas: BTreeMap<ReplicaID, Replica>,
     pub storage: Storage,
+}
+
+impl Default for ServerData {
+    /// default creates a damn simple cluster with only one node, one group and one replica.
+    fn default() -> Self {
+        let yaml = "
+nodes:
+    127.0.0.1:4441:
+        api_addr: 127.0.0.1:6379
+        replication: 127.0.0.1:4441
+groups:
+-   range:
+    -   a
+    -   z
+    replicas:
+        1: 127.0.0.1:4441
+";
+        let ci = ClusterInfo::from_str(yaml).unwrap();
+        let sto = MemEngine::new().unwrap();
+        let sto = Arc::new(sto);
+        let node_id = "127.0.0.1:4441";
+        ServerData::new(sto, ci, node_id.into())
+    }
 }
 
 impl ServerData {

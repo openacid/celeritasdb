@@ -1,7 +1,7 @@
-use crate::RangeLookupError;
-use crate::ServerData;
 use crate::conf::ClusterInfo;
 use crate::snapshot::MemEngine;
+use crate::RangeLookupError;
+use crate::ServerData;
 use std::sync::Arc;
 
 #[test]
