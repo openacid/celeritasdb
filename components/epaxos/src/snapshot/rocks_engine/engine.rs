@@ -1,13 +1,9 @@
 use super::open;
-use super::{Base, BaseIter, DBColumnFamily, Error, RocksDBEngine};
+use super::{Base, Error, RocksDBEngine};
+use crate::snapshot::Command;
+use crate::snapshot::DBColumnFamily;
 use rocksdb::{CFHandle, SeekKey, Writable, WriteBatch};
 use std::str;
-
-pub enum Command<'a> {
-    Get(DBColumnFamily, &'a Vec<u8>),
-    Set(DBColumnFamily, &'a Vec<u8>, &'a Vec<u8>),
-    Delete(DBColumnFamily, &'a Vec<u8>),
-}
 
 impl RocksDBEngine {
     /// Open a Engine base on rocksdb to use snapshot.
@@ -40,28 +36,15 @@ impl RocksDBEngine {
         }
     }
 
-    /// Set a key-value pair to rocksdb.
-    fn set(&self, cf: DBColumnFamily, k: &[u8], v: &[u8]) -> Result<(), Error> {
-        let cfh = self._make_cf_handle(cf)?;
-        Ok(self.db.put_cf(cfh, k, v)?)
-    }
-
-    /// Get a value from rocksdb with it's key.
-    /// if the key not found, return a None
-    fn get(&self, cf: DBColumnFamily, k: &[u8]) -> Result<Option<Vec<u8>>, Error> {
-        let cfh = self._make_cf_handle(cf)?;
-        let r = self.db.get_cf(cfh, k)?;
-        Ok(r.map(|x| x.to_vec()))
-    }
-
-    /// Delete a key in rocksdb.
-    fn delete(&self, cf: DBColumnFamily, k: &[u8]) -> Result<(), Error> {
-        let cfh = self._make_cf_handle(cf)?;
-        Ok(self.db.delete_cf(cfh, k)?)
-    }
-
-    fn _range(&self, key: &Vec<u8>, include: bool, reverse: bool) -> Option<(Vec<u8>, Vec<u8>)> {
-        let mut iter = self.db.iter();
+    fn _range(
+        &self,
+        cf: DBColumnFamily,
+        key: &Vec<u8>,
+        include: bool,
+        reverse: bool,
+    ) -> Option<(Vec<u8>, Vec<u8>)> {
+        let cf = self._make_cf_handle(cf).ok()?;
+        let mut iter = self.db.iter_cf(cf);
 
         iter.seek(SeekKey::from(&key[..]));
         if !iter.valid() {
@@ -97,33 +80,28 @@ impl RocksDBEngine {
 }
 
 impl Base for RocksDBEngine {
-    fn set_kv(&self, key: &Vec<u8>, value: &Vec<u8>) -> Result<(), Error> {
-        self.set(DBColumnFamily::Default, &key, &value)
+    fn set(&self, cf: DBColumnFamily, key: &Vec<u8>, value: &Vec<u8>) -> Result<(), Error> {
+        let cfh = self._make_cf_handle(cf)?;
+        Ok(self.db.put_cf(cfh, key, value)?)
     }
 
-    fn get_kv(&self, key: &Vec<u8>) -> Result<Option<Vec<u8>>, Error> {
-        self.get(DBColumnFamily::Default, key)
+    fn get(&self, cf: DBColumnFamily, key: &Vec<u8>) -> Result<Option<Vec<u8>>, Error> {
+        let cfh = self._make_cf_handle(cf)?;
+        let r = self.db.get_cf(cfh, key)?;
+        Ok(r.map(|x| x.to_vec()))
     }
 
-    fn delete_kv(&self, key: &Vec<u8>) -> Result<(), Error> {
-        self.delete(DBColumnFamily::Default, key)
+    fn delete(&self, cf: DBColumnFamily, key: &Vec<u8>) -> Result<(), Error> {
+        let cfh = self._make_cf_handle(cf)?;
+        Ok(self.db.delete_cf(cfh, key)?)
     }
 
-    fn next_kv(&self, key: &Vec<u8>, include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
-        self._range(key, include, false)
+    fn next(&self, cf: DBColumnFamily, key: &Vec<u8>, include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
+        self._range(cf, key, include, false)
     }
 
-    fn prev_kv(&self, key: &Vec<u8>, include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
-        self._range(key, include, true)
-    }
-
-    fn get_iter(&self, key: Vec<u8>, include: bool, reverse: bool) -> BaseIter {
-        return BaseIter {
-            cursor: key,
-            include,
-            engine: self,
-            reverse,
-        };
+    fn prev(&self, cf: DBColumnFamily, key: &Vec<u8>, include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
+        self._range(cf, key, include, true)
     }
 
     fn write_batch(&self, cmds: &Vec<Command>) -> Result<(), Error> {
@@ -148,6 +126,7 @@ impl Base for RocksDBEngine {
 
 #[test]
 fn test_rocks_engine() {
+    use crate::snapshot::*;
     use tempfile::Builder;
 
     let tmp_root = Builder::new().tempdir().unwrap();
@@ -161,7 +140,9 @@ fn test_rocks_engine() {
     eng.set_kv(&k0.as_bytes().to_vec(), &v0.as_bytes().to_vec())
         .unwrap();
 
-    let v_get = eng.get(DBColumnFamily::Default, k0.as_bytes()).unwrap();
+    let v_get = eng
+        .get(DBColumnFamily::Default, &k0.as_bytes().to_vec())
+        .unwrap();
     assert_eq!(v_get.unwrap(), v0.as_bytes());
 
     let k1 = "k1".as_bytes().to_vec();

@@ -2,10 +2,13 @@ use std::sync::Arc;
 
 use crate::qpaxos::*;
 use crate::replica::*;
+use crate::snapshot::DBColumnFamily;
 use crate::snapshot::MemEngine;
 use crate::snapshot::Storage;
+use crate::tokey::ToKey;
 
 use pretty_assertions::assert_eq;
+use prost::Message;
 
 /// Create an instance with command "set x=y".
 /// Use this when only deps are concerned.
@@ -105,7 +108,13 @@ fn new_foo_replica(
     };
 
     for (iid, inst) in insts.iter() {
-        r.storage.set_obj((*iid).into(), inst).unwrap();
+        let mut value = vec![];
+        inst.encode(&mut value).unwrap();
+
+        let iid = InstanceId::from(iid);
+        r.storage
+            .set(DBColumnFamily::Instance, &iid.to_key(), &value)
+            .unwrap();
     }
 
     r

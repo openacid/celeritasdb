@@ -3,10 +3,40 @@ use crate::qpaxos::*;
 use crate::tokey::ToKey;
 use prost::Message;
 
+pub struct BaseIter<'a> {
+    pub cursor: Vec<u8>,
+    pub include: bool,
+    pub engine: &'a dyn Base,
+    pub reverse: bool,
+    pub cf: DBColumnFamily,
+}
+
+impl<'a> Iterator for BaseIter<'a> {
+    type Item = (Vec<u8>, Vec<u8>);
+
+    // TODO add unittest.
+    fn next(&mut self) -> Option<Self::Item> {
+        let r = if self.reverse {
+            self.engine.prev(self.cf, &self.cursor, self.include)
+        } else {
+            self.engine.next(self.cf, &self.cursor, self.include)
+        };
+
+        self.include = false;
+        match r {
+            Some(kv) => {
+                self.cursor = kv.0.clone();
+                Some(kv)
+            }
+            None => None,
+        }
+    }
+}
+
 pub struct InstanceIter<'a> {
     pub curr_inst_id: InstanceId,
     pub include: bool,
-    pub engine: &'a dyn InstanceEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceId>,
+    pub engine: &'a dyn Base,
     pub reverse: bool,
 }
 
@@ -16,9 +46,11 @@ impl<'a> Iterator for InstanceIter<'a> {
     fn next(&mut self) -> Option<Instance> {
         let k = self.curr_inst_id.to_key();
         let (key_bytes, val_bytes) = if self.reverse {
-            self.engine.prev_kv(&k, self.include)?
+            self.engine
+                .prev(DBColumnFamily::Instance, &k, self.include)?
         } else {
-            self.engine.next_kv(&k, self.include)?
+            self.engine
+                .next(DBColumnFamily::Instance, &k, self.include)?
         };
 
         let key = String::from_utf8(key_bytes);
@@ -65,11 +97,12 @@ mod tests {
     use super::super::mem_engine::*;
     use super::*;
     use crate::qpaxos::{Command, OpCode};
+    use std::sync::Arc;
 
     #[test]
     fn test_instance_iter() {
         let mut ints = Vec::<Instance>::new();
-        let engine = MemEngine::new().unwrap();
+        let engine = Arc::new(MemEngine::new().unwrap());
 
         for rid in 0..3 {
             for idx in 0..10 {
@@ -88,7 +121,7 @@ mod tests {
 
                 let _ = engine.set_instance(&inst).unwrap();
 
-                let act = engine.get_obj(iid).unwrap().unwrap();
+                let act = engine.get_instance(iid).unwrap().unwrap();
                 assert_eq!(act.cmds, cmds);
 
                 ints.push(inst);

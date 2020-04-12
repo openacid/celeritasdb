@@ -87,6 +87,9 @@ impl Replica {
         new_inst.executed = true;
         self.storage.set_instance(&new_inst)?;
 
+        let iid = inst.instance_id.unwrap();
+        self.storage.set_ref("exec", iid.replica_id, iid)?;
+
         Ok(rst)
     }
 

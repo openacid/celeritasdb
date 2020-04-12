@@ -1,40 +1,19 @@
-use super::traits::*;
 use crate::qpaxos::*;
+use crate::snapshot::ColumnedEngine;
+use crate::snapshot::DBColumnFamily;
+use crate::snapshot::InstanceEngine;
+use crate::snapshot::Storage;
 
-pub fn test_set_instance(
-    eng: &mut dyn InstanceEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceId>,
-) {
+pub fn test_set_instance(eng: &mut dyn InstanceEngine) {
     let leader_id = 2;
-    let mut inst = new_foo_inst(leader_id);
-    let iid = inst.instance_id.unwrap();
+    let inst = new_foo_inst(leader_id);
     eng.set_instance(&inst).unwrap();
 
+    // exec-ref donot update when set instance
     assert_eq!(Ok(None), eng.get_ref("exec", leader_id));
-
-    // exec-ref is updated if executed
-
-    inst.executed = true;
-    eng.set_instance(&inst).unwrap();
-    assert_eq!(Some(iid), eng.get_ref("exec", leader_id).unwrap());
-
-    // exec-ref is not updated
-
-    inst.executed = false;
-    inst.instance_id = Some((leader_id, 10).into());
-    eng.set_instance(&inst).unwrap();
-    assert_eq!(Some(iid), eng.get_ref("exec", leader_id).unwrap());
-
-    // exec-ref is not updated
-
-    inst.executed = false;
-    inst.instance_id = Some((leader_id, 0).into());
-    eng.set_instance(&inst).unwrap();
-    assert_eq!(Some(iid), eng.get_ref("exec", leader_id).unwrap());
 }
 
-pub fn test_get_instance(
-    eng: &mut dyn InstanceEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceId>,
-) {
+pub fn test_get_instance(eng: &mut dyn InstanceEngine) {
     let leader_id = 2;
     let inst = new_foo_inst(leader_id);
     let iid = inst.instance_id.unwrap();
@@ -47,9 +26,7 @@ pub fn test_get_instance(
     assert_eq!(Some(inst), got);
 }
 
-pub fn test_next_instance_id(
-    eng: &mut dyn InstanceEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceId>,
-) {
+pub fn test_next_instance_id(eng: &mut dyn InstanceEngine) {
     let leader_id = 2;
     let max = (leader_id, 3).into();
 
@@ -65,9 +42,7 @@ pub fn test_next_instance_id(
     assert_eq!(InstanceId::from((leader_id, 4)), got);
 }
 
-pub fn test_get_instance_iter(
-    eng: &mut dyn InstanceEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceId>,
-) {
+pub fn test_get_instance_iter(eng: Storage) {
     let mut ints = Vec::<Instance>::new();
 
     for rid in 1..4 {
@@ -89,7 +64,7 @@ pub fn test_get_instance_iter(
 
             eng.set_instance(&inst).unwrap();
 
-            let act = eng.get_obj(iid).unwrap().unwrap();
+            let act = eng.get_instance(iid).unwrap().unwrap();
 
             assert_eq!(act.cmds, cmds);
             assert_eq!(act.ballot, Some(ballot));
@@ -158,7 +133,7 @@ fn new_foo_inst(leader_id: i64) -> Instance {
     inst
 }
 
-pub fn test_base_trait(eng: &mut dyn Base) {
+pub fn test_base_trait(eng: Storage) {
     let none = eng.next_kv(&"init".as_bytes().to_vec(), true);
     assert_eq!(none, None);
 
@@ -190,20 +165,18 @@ pub fn test_base_trait(eng: &mut dyn Base) {
     let next_last = eng.next_kv(&kvs[3].0.clone(), false);
     assert_eq!(next_last, None);
 
-    let iter = eng.get_iter(kvs[0].0.clone(), true, false);
+    let iter = eng.get_iter(kvs[0].0.clone(), true, false, DBColumnFamily::Default);
     for (idx, item) in iter.enumerate() {
         assert_eq!(kvs[idx], item)
     }
 
-    let iter = eng.get_iter(kvs[3].0.clone(), true, true);
+    let iter = eng.get_iter(kvs[3].0.clone(), true, true, DBColumnFamily::Default);
     for (idx, item) in iter.enumerate() {
         assert_eq!(kvs[kvs.len() - idx - 1], item)
     }
 }
 
-pub fn test_columned_trait(
-    eng: &mut dyn ColumnedEngine<ColumnId = ReplicaID, Obj = Instance, ObjId = InstanceId>,
-) {
+pub fn test_columned_trait(eng: &mut dyn ColumnedEngine) {
     let cases = vec![(1i64, 2), (2i64, 3)];
 
     for (rid, idx) in cases {
