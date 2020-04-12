@@ -21,7 +21,7 @@ quick-error = { version = "1.2.2" }
 rocksdb = { git = "https://github.com/tikv/rust-rocksdb.git", branch = "release-2.0" }
 tempfile = { version = "3.1.0" }
 prost = { version = "0.6.1" }
-tonic = "0.1"
+tonic = "0.2"
 tokio = { version = "0.2", features = ["macros"] }
 derive_more = "0.99.3"
 num = "0.2.1"
