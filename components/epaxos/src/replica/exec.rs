@@ -167,7 +167,7 @@ impl Replica {
 
             if let Some(p) = p.iter().find(|x| x.0 == iid) {
                 let dt = now.duration_since(p.1).unwrap();
-                if dt.as_millis() as i32 >= self.conf.inst_committed_timeout {
+                if dt.as_millis() as i32 >= self.committed_timeout {
                     rst = true;
                 }
             } else {

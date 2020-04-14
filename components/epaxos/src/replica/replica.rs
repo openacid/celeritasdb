@@ -27,6 +27,7 @@ macro_rules! ref_or_bug {
 }
 
 /// information of communication peer
+#[derive(Debug, PartialEq, Eq)]
 pub struct ReplicaPeer {
     pub replica_id: ReplicaID,
     pub addr: String, // ip: port pairs of each replica
@@ -55,37 +56,45 @@ impl From<(ReplicaID, String, bool)> for ReplicaPeer {
     }
 }
 
-/// misc configuration info
-#[derive(Default)]
-pub struct ReplicaConf {
-    pub dreply: bool, // delay replying to client after command has been executed or not
-    pub inst_committed_timeout: i32, // instance committed timeout
-}
-
 /// structure to represent a replica
 pub struct Replica {
     pub replica_id: ReplicaID,
     pub group_replica_ids: Vec<ReplicaID>,
     pub peers: Vec<ReplicaPeer>,
-    pub conf: ReplicaConf,
     pub storage: Storage,
+    pub committed_timeout: i32,
 }
 
 impl Replica {
     /// create a new Replica
-    /// do all the initialization and start all necessary threads here,
-    /// so after this call, replica is fully functional.
-    pub fn new(
-        _replica_id: ReplicaID,
-        _cluster: &ClusterInfo,
-        _thrifty: bool,
-        _exec: bool,
-    ) -> Result<Replica, String> {
-        Err("not implemented".to_string())
-    }
+    pub fn new(rid: ReplicaID, cinfo: &ClusterInfo, sto: Storage) -> Result<Replica, ReplicaError> {
+        let group = cinfo
+            .get_group(rid)
+            .ok_or(ReplicaError::ReplicaNotFound(rid))?;
+        let mut peers = vec![];
 
-    /// start exec thread
-    fn _start_exec_thread(&self) {}
+        for prid in group.replicas.keys() {
+            let node = cinfo
+                .get_replica_node(*prid)
+                .ok_or(ReplicaError::ReplicaNotFound(*prid))?;
+
+            if *prid == rid {
+                continue;
+            }
+
+            // TODO check the replica is alive or not
+            peers.push((*prid, node.replication.to_string(), true).into());
+        }
+
+        Ok(Replica {
+            replica_id: rid,
+            group_replica_ids: group.replicas.keys().cloned().collect(),
+            peers,
+            storage: sto,
+            // TODO get from conf
+            committed_timeout: 10000,
+        })
+    }
 
     pub fn new_instance(&self, cmds: Vec<Command>) -> Result<Instance, ReplicaError> {
         // TODO locking

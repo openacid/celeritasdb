@@ -4,7 +4,6 @@ use crate::conf::Node;
 use crate::conf::NodeId;
 use crate::qpaxos::ReplicaID;
 use crate::replica::Replica;
-use crate::replica::ReplicaConf;
 use crate::snapshot::MemEngine;
 use crate::snapshot::Storage;
 use crate::RangeLookupError;
@@ -52,27 +51,14 @@ impl ServerData {
         let mut rs = BTreeMap::new();
         for (rid, rinfo) in cluster.replicas.iter() {
             if rinfo.node_id == node_id {
-                let gidx = rinfo.group_idx;
-                let g = &cluster.groups[gidx];
-                rs.insert(
-                    *rid,
-                    Replica {
-                        replica_id: *rid,
-                        group_replica_ids: g.replicas.keys().cloned().collect(),
-                        peers: vec![], // TODO
-                        conf: ReplicaConf {
-                            dreply: false,
-                            inst_committed_timeout: 100000,
-                        },
-                        storage: sto.clone(),
-                    },
-                );
+                let rp = Replica::new(*rid, &cluster, sto.clone()).unwrap();
+                rs.insert(*rid, rp);
             }
         }
 
         ServerData {
-            cluster: cluster,
-            node_id: node_id.clone(),
+            cluster,
+            node_id,
             node: n,
             local_replicas: rs,
             storage: sto,

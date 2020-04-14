@@ -1,4 +1,4 @@
-use crate::qpaxos::ProtocolError;
+use crate::qpaxos::{ProtocolError, ReplicaID};
 use crate::qpaxos::{QError, StorageFailure};
 use crate::snapshot::Error as SnapError;
 
@@ -19,6 +19,10 @@ quick_error! {
 
         Protocol(e: ProtocolError) {
             from(e: ProtocolError) -> (e)
+        }
+
+        ReplicaNotFound(rid: ReplicaID) {
+            display("replica {:?} not found in cluster", rid)
         }
     }
 }
@@ -49,6 +53,12 @@ impl Into<QError> for Error {
             },
 
             Self::Protocol(e) => e.into(),
+
+            // TODO impl
+            Self::ReplicaNotFound(_) => QError {
+                sto: Some(StorageFailure {}),
+                ..Default::default()
+            },
         }
     }
 }

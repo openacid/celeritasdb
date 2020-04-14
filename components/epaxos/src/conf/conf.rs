@@ -120,6 +120,12 @@ impl ClusterInfo {
         None
     }
 
+    /// get_group returns the GroupInfo where the specified replica in.
+    pub fn get_group(&self, rid: ReplicaID) -> Option<&GroupInfo> {
+        let rinfo = self.replicas.get(&rid)?;
+        Some(&self.groups[rinfo.group_idx])
+    }
+
     // TODO test bad node id as replication addr
     // make a node id from key, i.e. mac address
     pub fn norm_node(nid: &str, node: &mut Node) -> Result<(), AddrParseError> {

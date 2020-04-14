@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::conf::ClusterInfo;
 use crate::qpaxos::*;
 use crate::replica::*;
 use crate::snapshot::DBColumnFamily;
@@ -97,15 +98,7 @@ fn new_foo_replica(
     storage: Storage,
     insts: &[((i64, i64), &Instance)],
 ) -> Replica {
-    let r = Replica {
-        replica_id,
-        group_replica_ids: vec![0, 1, 2],
-        peers: vec![],
-        conf: ReplicaConf {
-            ..Default::default()
-        },
-        storage,
-    };
+    let r = test_util::new_replica(replica_id, vec![0, 1, 2], vec![], storage);
 
     for (iid, inst) in insts.iter() {
         let mut value = vec![];
@@ -581,4 +574,55 @@ fn _test_get_inst(
     assert_eq!(final_deps, got.final_deps);
     assert_eq!(committed, got.committed);
     assert_eq!(executed, got.executed);
+}
+
+#[test]
+fn test_new_replica() {
+    let cont = "
+nodes:
+    127.0.0.1:4441:
+        api_addr: 127.0.0.1:3331
+        replication: 127.0.0.1:5551
+    192.168.0.1:4442:
+        api_addr: 192.168.0.1:3332
+        replication: 192.168.0.1:4442
+groups:
+-   range:
+    -   a
+    -   b
+    replicas:
+        1: 127.0.0.1:4441
+        2: 192.168.0.1:4442
+        3: 192.168.0.1:4442
+";
+
+    let ci = ClusterInfo::from_str(cont).unwrap();
+
+    let mut rp = Replica::new(1, &ci, new_mem_sto()).unwrap();
+    assert_eq!(1, rp.replica_id);
+
+    rp.group_replica_ids.sort();
+    assert_eq!(rp.group_replica_ids, [1, 2, 3]);
+
+    rp.peers.sort_by(|x, y| x.replica_id.cmp(&y.replica_id));
+    assert_eq!(2, rp.peers.len());
+    assert_eq!(
+        ReplicaPeer {
+            replica_id: 2,
+            addr: "192.168.0.1:4442".to_string(),
+            alive: true
+        },
+        rp.peers[0]
+    );
+    assert_eq!(
+        ReplicaPeer {
+            replica_id: 3,
+            addr: "192.168.0.1:4442".to_string(),
+            alive: true
+        },
+        rp.peers[1]
+    );
+
+    let rp = Replica::new(4, &ci, new_mem_sto());
+    assert!(rp.is_err());
 }

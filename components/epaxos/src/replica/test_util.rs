@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::time::Duration;
 
 use crate::qpaxos::*;
-use crate::replica::{Replica, ReplicaConf, ReplicaPeer};
+use crate::replica::{Replica, ReplicaPeer};
 use crate::snapshot::MemEngine;
 use crate::snapshot::Storage;
 use crate::MyQPaxos;
@@ -22,10 +22,8 @@ pub fn new_replica(
         replica_id: rid,
         group_replica_ids: group,
         peers,
-        conf: ReplicaConf {
-            ..Default::default()
-        },
         storage: sto,
+        committed_timeout: 1000,
     }
 }
 

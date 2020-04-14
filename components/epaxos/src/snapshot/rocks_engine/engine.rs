@@ -3,7 +3,6 @@ use super::{Base, Error, RocksDBEngine};
 use crate::snapshot::DBColumnFamily;
 use crate::snapshot::WriteEntry;
 use rocksdb::{CFHandle, SeekKey, Writable, WriteBatch};
-use std::str;
 
 impl RocksDBEngine {
     /// Open a Engine base on rocksdb to use snapshot.
