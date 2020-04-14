@@ -7,7 +7,7 @@ fn main() {
     // nightly channel.
     // Thus we disable formatting generated code on travis.
     let fmt = option_env!("TRAVIS_RUST_VERSION").is_none();
-    tonic_build::prost::configure()
+    tonic_build::configure()
         .format(fmt)
         .build_client(true)
         .build_server(true)

@@ -1,8 +1,10 @@
 use std::cell::RefCell;
+use std::collections::HashMap;
 use std::time::SystemTime;
 
 use crate::qpaxos::{Instance, InstanceId, InstanceIdVec, OpCode};
 use crate::replica::{errors::Error, Replica};
+use crate::snapshot::WriteEntry;
 
 thread_local! {
     static PROBLEM_INSTS: RefCell<Vec<(InstanceId, SystemTime)>> = RefCell::new(vec![]);
@@ -33,7 +35,7 @@ impl Replica {
         let mut iids = InstanceIdVec::from([0; 0]);
         let mut all_dep_iids = InstanceIdVec::from([0; 0]);
 
-        for inst in min_insts.iter() {
+        for inst in min_insts {
             iids.push(inst.instance_id.unwrap());
             all_dep_iids.extend(inst.final_deps.as_ref().unwrap().iter());
         }
@@ -67,29 +69,52 @@ impl Replica {
         None
     }
 
-    pub fn execute_commands(&self, inst: &Instance) -> Result<Vec<ExecuteResult>, Error> {
-        let mut rst = Vec::new();
-        for cmd in inst.cmds.iter() {
-            if OpCode::NoOp as i32 == cmd.op {
-                rst.push(ExecuteResult::Success);
-            } else if OpCode::Set as i32 == cmd.op {
-                self.storage.set_kv(&cmd.key, &cmd.value)?;
-                rst.push(ExecuteResult::Success);
-            } else if OpCode::Get as i32 == cmd.op {
-                let v = self.storage.get_kv(&cmd.key)?;
-                rst.push(ExecuteResult::SuccessWithVal { value: v });
-            } else {
-                return Err(Error::CmdNotSupport(format!("{:?}", cmd.op)));
+    pub fn execute_commands(&self, mut insts: Vec<Instance>) -> Result<Vec<InstanceId>, Error> {
+        let mut rst = Vec::with_capacity(insts.len());
+        let mut entrys: Vec<WriteEntry> = Vec::with_capacity(insts.len());
+        let mut existed = HashMap::new();
+        let mut replys = Vec::with_capacity(insts.len());
+
+        for inst in insts.iter() {
+            let iid = inst.instance_id.unwrap();
+            rst.push(iid);
+
+            let mut repl = Vec::with_capacity(inst.cmds.len());
+            for cmd in inst.cmds.iter() {
+                entrys.push(cmd.into());
+
+                if cmd.op == OpCode::Get as i32 {
+                    if !existed.contains_key(&cmd.key) {
+                        let v = self.storage.get_kv(&cmd.key)?;
+                        existed.insert(&cmd.key, v);
+                    }
+                    repl.push(ExecuteResult::SuccessWithVal {
+                        value: existed[&cmd.key].clone(),
+                    });
+                } else if cmd.op == OpCode::NoOp as i32 {
+                    repl.push(ExecuteResult::Success);
+                } else {
+                    let v = if cmd.op == OpCode::Delete as i32 {
+                        None
+                    } else {
+                        Some(cmd.value.clone())
+                    };
+                    existed.insert(&cmd.key, v);
+                    repl.push(ExecuteResult::Success);
+                }
             }
+
+            entrys.push(("exec", iid).into());
+            replys.push(repl);
         }
 
-        let mut new_inst = inst.clone();
-        new_inst.executed = true;
-        self.storage.set_instance(&new_inst)?;
+        while let Some(mut inst) = insts.pop() {
+            inst.executed = true;
+            entrys.push(inst.into());
+        }
 
-        let iid = inst.instance_id.unwrap();
-        self.storage.set_ref("exec", iid.replica_id, iid)?;
-
+        // TODO send replys to client
+        self.storage.write_batch(&entrys)?;
         Ok(rst)
     }
 
@@ -104,7 +129,7 @@ impl Replica {
     /// S = {x | x ∈ S and (∃y: y → x)}
     /// so S = {b, d}
     /// sort S by instance_id and execute
-    pub fn execute_instances(&self, insts: &Vec<Instance>) -> Result<Vec<InstanceId>, Error> {
+    pub fn execute_instances(&self, mut insts: Vec<Instance>) -> Result<Vec<InstanceId>, Error> {
         let mut early = vec![false; insts.len()];
         let mut late = vec![false; insts.len()];
         let mut can_exec = Vec::with_capacity(insts.len());
@@ -117,31 +142,18 @@ impl Replica {
             }
         }
 
-        for (i, inst) in insts.iter().enumerate() {
+        for i in (0..late.len()).rev() {
             if !late[i] && early[i] {
-                can_exec.push(inst);
+                can_exec.push(insts.remove(i));
             }
         }
 
         if can_exec.len() == 0 {
-            can_exec = insts.iter().collect();
+            can_exec = insts;
         }
 
-        can_exec.sort_by(|a, b| a.instance_id.unwrap().cmp(&b.instance_id.unwrap()));
-
-        let mut rst = Vec::new();
-        let mut replys = Vec::new();
-        for inst in can_exec.iter() {
-            match self.execute_commands(inst) {
-                Ok(r) => replys.push(r),
-                Err(e) => {
-                    return Err(e);
-                }
-            };
-            rst.push(inst.instance_id.unwrap());
-        }
-
-        Ok(rst)
+        can_exec.sort_by(|a, b| a.instance_id.cmp(&b.instance_id));
+        self.execute_commands(can_exec)
     }
 
     // only save one smallest problem instance of every replica with problem_inst_ids.
@@ -179,7 +191,7 @@ impl Replica {
         let mut rst = Vec::new();
         let mut recover_iids = InstanceIdVec::from([0; 0]);
 
-        for iid in inst_ids.iter() {
+        for iid in inst_ids {
             let inst = match self.storage.get_instance(*iid)? {
                 Some(i) => i,
                 None => {
@@ -232,6 +244,6 @@ impl Replica {
             }
         }
 
-        return self.execute_instances(&instances);
+        return self.execute_instances(instances);
     }
 }

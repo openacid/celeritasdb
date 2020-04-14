@@ -69,14 +69,14 @@ impl Base for MemEngine {
     }
 
     // TODO now just execute these commands in order
-    fn write_batch(&self, cmds: &Vec<Command>) -> Result<(), Error> {
-        for cmd in cmds {
-            match cmd {
-                Command::Get(_, _) => panic!("write batch don't support Get command"),
-                Command::Set(cf, k, v) => {
+    fn write_batch(&self, entrys: &Vec<WriteEntry>) -> Result<(), Error> {
+        for en in entrys {
+            match en {
+                WriteEntry::Nil => {}
+                WriteEntry::Set(cf, k, v) => {
                     self.set(*cf, k, v).unwrap();
                 }
-                Command::Delete(cf, k) => {
+                WriteEntry::Delete(cf, k) => {
                     self.delete(*cf, k).unwrap();
                 }
             }

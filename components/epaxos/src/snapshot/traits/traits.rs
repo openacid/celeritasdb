@@ -1,3 +1,5 @@
+use crate::qpaxos::Command;
+use crate::qpaxos::OpCode;
 use crate::qpaxos::{Instance, InstanceId, ReplicaID};
 use crate::tokey::ToKey;
 use std::sync::Arc;
@@ -42,10 +44,49 @@ impl From<DBColumnFamily> for &str {
     }
 }
 
-pub enum Command<'a> {
-    Get(DBColumnFamily, &'a Vec<u8>),
-    Set(DBColumnFamily, &'a Vec<u8>, &'a Vec<u8>),
-    Delete(DBColumnFamily, &'a Vec<u8>),
+pub enum WriteEntry {
+    Nil,
+    Set(DBColumnFamily, Vec<u8>, Vec<u8>),
+    Delete(DBColumnFamily, Vec<u8>),
+}
+
+impl From<&Command> for WriteEntry {
+    fn from(c: &Command) -> Self {
+        if OpCode::Set as i32 == c.op {
+            return WriteEntry::Set(DBColumnFamily::Default, c.key.clone(), c.value.clone());
+        } else if OpCode::Delete as i32 == c.op {
+            return WriteEntry::Delete(DBColumnFamily::Default, c.key.clone());
+        } else {
+            return WriteEntry::Nil;
+        }
+    }
+}
+
+impl From<Instance> for WriteEntry {
+    fn from(inst: Instance) -> Self {
+        let mut v = vec![];
+        inst.encode(&mut v).unwrap();
+        return WriteEntry::Set(DBColumnFamily::Instance, inst.to_key(), v);
+    }
+}
+
+impl<A: Into<InstanceId> + Copy> From<(&str, A)> for WriteEntry {
+    fn from(args: (&str, A)) -> Self {
+        let iid = args.1.into();
+        let k = make_ref_key(args.0, iid.replica_id);
+        let mut v = vec![];
+        iid.encode(&mut v).unwrap();
+
+        return WriteEntry::Set(DBColumnFamily::Status, k, v);
+    }
+}
+
+pub fn make_ref_key(typ: &str, rid: ReplicaID) -> Vec<u8> {
+    match typ {
+        "max" => format!("/status/max_instance_id/{:016x}", rid).into_bytes(),
+        "exec" => format!("/status/max_exec_instance_id/{:016x}", rid).into_bytes(),
+        _ => panic!("unknown type ref"),
+    }
 }
 
 /// Base offer basic key-value access
@@ -67,7 +108,7 @@ pub trait Base {
     /// or smaller or equal the given one(include=true)
     fn prev(&self, cf: DBColumnFamily, key: &Vec<u8>, include: bool) -> Option<(Vec<u8>, Vec<u8>)>;
 
-    fn write_batch(&self, cmds: &Vec<Command>) -> Result<(), Error>;
+    fn write_batch(&self, entrys: &Vec<WriteEntry>) -> Result<(), Error>;
 }
 
 pub trait KV: Base {
@@ -101,16 +142,8 @@ pub trait KV: Base {
 ///
 /// E.g.: `set_ref("max", 1, (1, 2).into())` to set the "max" InstanceId of Replica 1.
 pub trait ColumnedEngine: Base {
-    fn make_ref_key(&self, typ: &str, rid: ReplicaID) -> Vec<u8> {
-        match typ {
-            "max" => format!("/status/max_instance_id/{:016x}", rid).into_bytes(),
-            "exec" => format!("/status/max_exec_instance_id/{:016x}", rid).into_bytes(),
-            _ => panic!("unknown type ref"),
-        }
-    }
-
     fn set_ref(&self, typ: &str, rid: ReplicaID, iid: InstanceId) -> Result<(), Error> {
-        let key = self.make_ref_key(typ, rid);
+        let key = make_ref_key(typ, rid);
 
         let mut value = vec![];
         iid.encode(&mut value)?;
@@ -119,7 +152,7 @@ pub trait ColumnedEngine: Base {
     }
 
     fn get_ref(&self, typ: &str, rid: ReplicaID) -> Result<Option<InstanceId>, Error> {
-        let key = self.make_ref_key(typ, rid);
+        let key = make_ref_key(typ, rid);
         let val = self.get(DBColumnFamily::Status, &key)?;
 
         let val = match val {

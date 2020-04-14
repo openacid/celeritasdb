@@ -9,14 +9,10 @@ quick_error! {
             display("got db error:{}", msg)
         }
 
-        ProtoDecodeError(err: DecodeError) {
-            from(err: DecodeError) -> (err)
-            display("prost decode error: {:?}", err)
-        }
-
-        ProtoEncodeError(err: EncodeError) {
-            from(err: EncodeError) -> (err)
-            display("prost encode error: {:?}", err)
+        Prost(err: String) {
+            from(err: DecodeError) -> (format!("{:?}", err))
+            from(err: EncodeError) -> (format!("{:?}", err))
+            display("prost error: {:?}", err)
         }
     }
 }

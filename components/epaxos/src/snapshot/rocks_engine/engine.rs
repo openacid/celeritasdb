@@ -1,7 +1,7 @@
 use super::open;
 use super::{Base, Error, RocksDBEngine};
-use crate::snapshot::Command;
 use crate::snapshot::DBColumnFamily;
+use crate::snapshot::WriteEntry;
 use rocksdb::{CFHandle, SeekKey, Writable, WriteBatch};
 use std::str;
 
@@ -104,16 +104,16 @@ impl Base for RocksDBEngine {
         self._range(cf, key, include, true)
     }
 
-    fn write_batch(&self, cmds: &Vec<Command>) -> Result<(), Error> {
-        let batch = WriteBatch::with_capacity(cmds.len());
-        for cmd in cmds {
-            match cmd {
-                Command::Get(_, _) => panic!("write batch don't support Get command"),
-                Command::Set(cf, k, v) => {
+    fn write_batch(&self, entrys: &Vec<WriteEntry>) -> Result<(), Error> {
+        let batch = WriteBatch::with_capacity(entrys.len());
+        for en in entrys {
+            match en {
+                WriteEntry::Nil => {}
+                WriteEntry::Set(cf, k, v) => {
                     let cfh = self._make_cf_handle(*cf)?;
                     batch.put_cf(cfh, k, v)?;
                 }
-                Command::Delete(cf, k) => {
+                WriteEntry::Delete(cf, k) => {
                     let cfh = self._make_cf_handle(*cf)?;
                     batch.delete_cf(cfh, k)?;
                 }
@@ -151,8 +151,8 @@ fn test_rocks_engine() {
     let v2 = "v2".as_bytes().to_vec();
 
     let cmds = vec![
-        Command::Set(DBColumnFamily::Default, &k1, &v1),
-        Command::Set(DBColumnFamily::Default, &k2, &v2),
+        WriteEntry::Set(DBColumnFamily::Default, k1.clone(), v1.clone()),
+        WriteEntry::Set(DBColumnFamily::Default, k2.clone(), v2.clone()),
     ];
 
     eng.write_batch(&cmds).unwrap();
@@ -166,8 +166,8 @@ fn test_rocks_engine() {
     );
 
     let cmds = vec![
-        Command::Set(DBColumnFamily::Default, &k1, &v1),
-        Command::Delete(DBColumnFamily::Default, &k1),
+        WriteEntry::Set(DBColumnFamily::Default, k1.clone(), v1.clone()),
+        WriteEntry::Delete(DBColumnFamily::Default, k1.clone()),
     ];
 
     eng.write_batch(&cmds).unwrap();

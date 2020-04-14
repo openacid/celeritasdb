@@ -4,14 +4,13 @@ package qpaxos;
 
 enum OpCode {
     NoOp = 0;
-    Set = 1;
-    Put = 2;
-    Get = 3;
+    Get = 1;
+    Set = 2;
+    Delete = 3;
 };
 
 message Command{
     OpCode op = 1;
     bytes key = 2;
-    bytes value= 3;
+    bytes value = 3;
 };
-

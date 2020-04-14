@@ -158,46 +158,19 @@ fn test_execute_commands() {
         .unwrap();
 
     let cases = [
-        (test_inst!((2, 2), []), Vec::<ExecuteResult>::new()),
-        (
-            test_inst!((2, 2), [("Get", "xx", "")]),
-            vec![ExecuteResult::SuccessWithVal { value: None }],
-        ),
-        (
-            test_inst!((2, 2), [("Get", "x", "")]),
-            vec![ExecuteResult::SuccessWithVal {
-                value: Some(vec![11]),
-            }],
-        ),
-        (
-            test_inst!((2, 2), [("Get", "x", ""), ("Get", "y", "")]),
-            vec![
-                ExecuteResult::SuccessWithVal {
-                    value: Some(vec![11]),
-                },
-                ExecuteResult::SuccessWithVal {
-                    value: Some(vec![22]),
-                },
-            ],
-        ),
-        (
-            test_inst!(
-                (2, 2),
-                [("NoOp", "", ""), ("Set", "y", "foo"), ("Get", "y", "")]
-            ),
-            vec![
-                ExecuteResult::Success,
-                ExecuteResult::Success,
-                ExecuteResult::SuccessWithVal {
-                    value: Some("foo".as_bytes().to_vec()),
-                },
-            ],
+        test_inst!((2, 2), []),
+        test_inst!((2, 2), [("Get", "xx", "")]),
+        test_inst!((2, 2), [("Get", "x", "")]),
+        test_inst!((2, 2), [("Get", "x", ""), ("Get", "y", "")]),
+        test_inst!(
+            (2, 2),
+            [("NoOp", "", ""), ("Set", "y", "foo"), ("Get", "y", "")]
         ),
     ];
 
-    for (inst, res) in cases.iter() {
-        match rp.execute_commands(&inst) {
-            Ok(r) => assert_eq!(res, &r),
+    for inst in cases.iter() {
+        match rp.execute_commands(vec![inst.clone()]) {
+            Ok(r) => assert_eq!(vec![inst.instance_id.unwrap()], r),
             Err(_) => assert!(false),
         }
     }
@@ -214,7 +187,7 @@ fn test_execute_instances() {
         test_inst!((3, 1), [("Set", "y", "vy")], [(1, 1), (2, 1), (3, 0)]),
     ];
 
-    match rp.execute_instances(&min_insts) {
+    match rp.execute_instances(min_insts) {
         Ok(iids) => assert_eq!(vec![InstanceId::from((1, 1))], iids),
         Err(_) => assert!(false),
     };
@@ -226,7 +199,7 @@ fn test_execute_instances() {
         test_inst!((3, 1), [("Set", "y", "vy")], [(1, 1), (2, 0), (3, 0)]),
     ];
 
-    match rp.execute_instances(&min_insts) {
+    match rp.execute_instances(min_insts) {
         Ok(iids) => assert_eq!(
             vec![InstanceId::from((1, 1)), (2, 1).into(), (3, 1).into()],
             iids
@@ -243,7 +216,7 @@ fn test_execute_instances() {
         test_inst!((3, 1), [("Set", "y", "vy")], [(1, 1), (2, 1), (3, 0)]),
     ];
 
-    match rp.execute_instances(&min_insts) {
+    match rp.execute_instances(min_insts) {
         Ok(iids) => assert_eq!(vec![InstanceId::from((1, 1)), (2, 1).into()], iids),
         Err(_) => assert!(false),
     };
