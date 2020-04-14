@@ -10,10 +10,6 @@ use crate::qpaxos::ReplicaID;
 
 use serde::{Deserialize, Serialize};
 
-#[cfg(test)]
-#[path = "./tests/conf_tests.rs"]
-mod tests;
-
 /// NodeId is the global identity of a service.
 /// A physical server could have several node on it.
 /// A node has one or more Replica it serves for.
@@ -27,7 +23,6 @@ pub struct Node {
     pub api_addr: SocketAddr,
     pub api_uaddr: Option<String>,
     pub replication: SocketAddr,
-    // idc: String, // TODO(lsl): need topology information of a node
 }
 
 #[derive(Debug, Eq, PartialEq, Clone)]
