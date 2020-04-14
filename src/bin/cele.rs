@@ -5,12 +5,19 @@ use clap::{App, Arg};
 use net2;
 use redis;
 
+use std::net::SocketAddr;
 use std::str::from_utf8;
 use std::sync::Arc;
+
+// for boxed()
+use futures::future::FutureExt;
+
+use futures::Future;
 
 use tokio;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
+use tokio::net::TcpStream;
 use tokio::task::JoinHandle;
 use tonic;
 
@@ -50,28 +57,24 @@ impl Server {
     /// # Examples
     ///
     /// ```norun
-    /// start_servers(10);
+    /// start_servers();
     /// ```
     #[tokio::main]
-    async fn start_servers(&mut self, tcp_backlog: i32) -> Result<(), Box<dyn std::error::Error>> {
+    async fn start_servers(&mut self) -> Result<(), Box<dyn std::error::Error>> {
         let sd = &self.server_data;
         let api_addr = sd.node.api_addr;
         let repl_addr = sd.node.replication;
-
-        let builder = net2::TcpBuilder::new_v4().unwrap();
-        builder.reuse_address(true).unwrap();
-        let lis = builder.bind(api_addr).unwrap().listen(tcp_backlog).unwrap();
-
-        let listener1 = TcpListener::from_std(lis).unwrap();
-
-        println!("api listened: {}", api_addr);
 
         let redisapi = RedisApi {
             server_data: sd.clone(),
         };
 
+        // TODO send signal to shutdown with _tx
+        let (_tx, rx) = tokio::sync::oneshot::channel::<()>();
+
         let j1 = tokio::spawn(async move {
-            redisapi.api_loop(listener1).await;
+            let rst = redisapi.serve_with_shutdown(api_addr, rx).await;
+            println!("RedisApi rst={:?}", rst);
         });
 
         println!("serving: {}", api_addr);
@@ -79,9 +82,17 @@ impl Server {
         let qp = MyQPaxos::default();
         let s = tonic::transport::Server::builder().add_service(QPaxosServer::new(qp));
 
+        // TODO send signal to shutdown with _tx
+        let (_tx, rx) = tokio::sync::oneshot::channel::<()>();
+
         let j2 = tokio::spawn(async move {
             println!("repl server spawned");
-            s.serve(repl_addr).await.unwrap();
+            let rst = s
+                .serve_with_shutdown(repl_addr, async {
+                    rx.await.ok();
+                })
+                .await;
+            println!("replication server rst={:?}", rst);
         });
 
         println!("serving: {}", repl_addr);
@@ -100,50 +111,78 @@ struct RedisApi {
 }
 
 impl RedisApi {
-    async fn api_loop(self, mut listener: TcpListener) {
-        println!("api_loop start");
+    async fn serve_with_shutdown<F>(self, addr: SocketAddr, signal: F) -> Result<(), std::io::Error>
+    where
+        F: Future + Send,
+    {
+        // TODO config tcp backlog?
+        let backlog = 1024;
+
+        // impl Unpin
+        let mut sig = signal.boxed();
+
+        let builder = net2::TcpBuilder::new_v4().unwrap();
+        builder.reuse_address(true).unwrap();
+        let lis = builder.bind(addr).unwrap().listen(backlog).unwrap();
+
+        let mut lis = TcpListener::from_std(lis).unwrap();
+
+        println!("redis api listened: {}", addr);
         loop {
-            let (mut sock, _) = listener.accept().await.expect("accept failure");
-            println!("new connection");
-
-            let slf = self.clone();
-
-            tokio::spawn(async move {
-                loop {
-                    let mut buf = vec![0u8; 1024];
-
-                    let n = sock
-                        .read(&mut buf)
-                        .await
-                        .expect("failed to read data from socket");
-
-                    println!("read buf: len={:}, {:?}", n, buf);
-
-                    if n == 0 {
-                        println!("client closed");
-                        return;
-                    }
-
-                    let v = redis::parse_redis_value(&buf);
-                    let v = match v {
-                        Ok(q) => {
-                            println!("parsed redis value: {:?}", q);
-                            q
-                        }
-                        Err(err) => {
-                            // TODO bad protocol handling
-                            println!("parse error: {:}", err);
-                            panic!("bad redis protocol");
-                        }
-                    };
-                    let r = slf.exec_redis_cmd(v).await;
-                    println!("r={:?}", r);
-                    println!("response bytes:{:?}", r.as_bytes());
-                    sock.write_all(&*r.as_bytes())
-                        .await
-                        .expect("failed to write data to socket");
+            tokio::select! {
+                _v = (&mut sig) => {
+                    break;
+                },
+                inc = lis.accept() => {
+                    let (sock, _cli_addr) = inc?;
+                    let slf = self.clone();
+                    tokio::spawn(async move {
+                        slf.handle_new_conn(sock).await;
+                    });
                 }
-            });
+            }
+        }
+
+        println!("RedisApi stopped");
+        Ok(())
+    }
+
+    async fn handle_new_conn(self, mut sock: TcpStream) {
+        println!("new connection");
+
+        loop {
+            let mut buf = vec![0u8; 1024];
+
+            let n = sock
+                .read(&mut buf)
+                .await
+                .expect("failed to read data from socket");
+
+            println!("read buf: len={:}, {:?}", n, buf);
+
+            if n == 0 {
+                println!("client closed");
+                return;
+            }
+
+            let v = redis::parse_redis_value(&buf);
+            let v = match v {
+                Ok(q) => {
+                    println!("parsed redis value: {:?}", q);
+                    q
+                }
+                Err(err) => {
+                    // TODO bad protocol handling
+                    println!("parse error: {:}", err);
+                    panic!("bad redis protocol");
+                }
+            };
+            let r = self.exec_redis_cmd(v).await;
+            println!("r={:?}", r);
+            println!("response bytes:{:?}", r.as_bytes());
+            sock.write_all(&*r.as_bytes())
+                .await
+                .expect("failed to write data to socket");
         }
     }
 
@@ -243,5 +282,5 @@ fn main() {
     let cluster = ClusterInfo::from_file(conffn).unwrap();
     let mut server = Server::new(Arc::new(sto), cluster, node_id.into());
 
-    server.start_servers(10).unwrap();
+    server.start_servers().unwrap();
 }
