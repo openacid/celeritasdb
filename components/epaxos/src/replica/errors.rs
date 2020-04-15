@@ -1,12 +1,12 @@
 use crate::qpaxos::{ProtocolError, ReplicaID};
 use crate::qpaxos::{QError, StorageFailure};
-use crate::snapshot::Error as SnapError;
+use storage::StorageError;
 
 quick_error! {
     #[derive(Debug, Eq, PartialEq)]
     pub enum Error {
-        EngineError(s: SnapError) {
-            from(err: SnapError) -> (err)
+        EngineError(s: StorageError) {
+            from(err: StorageError) -> (err)
         }
 
         CmdNotSupport(s: String)

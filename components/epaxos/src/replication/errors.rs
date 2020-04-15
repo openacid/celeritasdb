@@ -3,7 +3,7 @@ use crate::qpaxos::ProtocolError;
 use crate::qpaxos::QError;
 use crate::qpaxos::ReplicaID;
 use crate::replica::Error as ReplicaError;
-use crate::snapshot::Error as SnapError;
+use storage::StorageError;
 
 quick_error! {
     /// HandlerError is an error encountered when handle-xx-request or handle-xx-reply.
@@ -32,7 +32,7 @@ quick_error! {
         /// A malformed replica error.
         Replica(r: ReplicaError) {
             from(r: ReplicaError) -> (r)
-            from(e: SnapError) -> (e.into())
+            from(e: StorageError) -> (e.into())
         }
 
         /// A delay reply is received

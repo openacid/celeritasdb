@@ -4,7 +4,8 @@ use tonic::Response;
 use crate::conf::ClusterInfo;
 use crate::qpaxos::*;
 use crate::replica::Error as ReplicaError;
-use crate::snapshot::Storage;
+use crate::Iter;
+use crate::Storage;
 
 /// ref_or_bug extracts a immutable ref from an Option.
 /// If the Option is None a bug handler is triggered.
@@ -97,6 +98,16 @@ impl Replica {
         })
     }
 
+    pub fn next_max_iid(&self, rid: ReplicaID) -> Result<InstanceId, ReplicaError> {
+        // TODO locking TODO Need to incr max-ref and add new-instance in a single tx.
+        //      Or iterator may encounter an empty instance slot.
+        let max = self.storage.get_ref("max", rid)?;
+        let mut max = max.unwrap_or((rid, -1).into());
+        max.idx += 1;
+        self.storage.set_ref("max", rid, max)?;
+        Ok(max)
+    }
+
     pub fn new_instance(&self, cmds: Vec<Command>) -> Result<Instance, ReplicaError> {
         // TODO locking
         // TODO do not need to store max instance id, store it in replica and when starting, scan
@@ -112,7 +123,7 @@ impl Replica {
             }
         }
 
-        let iid = self.storage.next_instance_id(self.replica_id)?;
+        let iid = self.next_max_iid(self.replica_id)?;
         let inst = Instance {
             last_ballot: None,
             // TODO need to use time stamp as epoch?

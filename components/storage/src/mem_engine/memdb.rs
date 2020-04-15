@@ -3,10 +3,10 @@ use std::ops::Bound::Included;
 use std::ops::Bound::Unbounded;
 use std::sync::Mutex;
 
-use crate::snapshot::*;
+use crate::{Base, DBColumnFamily, MemEngine, StorageError, WriteEntry};
 
 impl MemEngine {
-    pub fn new() -> Result<MemEngine, Error> {
+    pub fn new() -> Result<MemEngine, StorageError> {
         let db = HashMap::new();
         Ok(MemEngine {
             _db: Mutex::new(db),
@@ -18,20 +18,20 @@ impl Base for MemEngine {
     // TODO lock().unwrap() need to deal with poisoning
     // https://doc.rust-lang.org/std/sync/struct.Mutex.html#poisoning
 
-    fn set(&self, cf: DBColumnFamily, key: &Vec<u8>, value: &Vec<u8>) -> Result<(), Error> {
+    fn set(&self, cf: DBColumnFamily, key: &Vec<u8>, value: &Vec<u8>) -> Result<(), StorageError> {
         let mut bt = self._db.lock().unwrap();
         let bt = bt.entry(cf.into()).or_insert(BTreeMap::new());
         bt.insert(key.clone(), value.clone());
         Ok(())
     }
 
-    fn get(&self, cf: DBColumnFamily, key: &Vec<u8>) -> Result<Option<Vec<u8>>, Error> {
+    fn get(&self, cf: DBColumnFamily, key: &Vec<u8>) -> Result<Option<Vec<u8>>, StorageError> {
         let mut bt = self._db.lock().unwrap();
         let bt = bt.entry(cf.into()).or_insert(BTreeMap::new());
         Ok(bt.get(key).map(|x| x.clone()))
     }
 
-    fn delete(&self, cf: DBColumnFamily, key: &Vec<u8>) -> Result<(), Error> {
+    fn delete(&self, cf: DBColumnFamily, key: &Vec<u8>) -> Result<(), StorageError> {
         let mut bt = self._db.lock().unwrap();
         let bt = bt.entry(cf.into()).or_insert(BTreeMap::new());
         bt.remove(key);
@@ -69,7 +69,7 @@ impl Base for MemEngine {
     }
 
     // TODO now just execute these commands in order
-    fn write_batch(&self, entrys: &Vec<WriteEntry>) -> Result<(), Error> {
+    fn write_batch(&self, entrys: &Vec<WriteEntry>) -> Result<(), StorageError> {
         for en in entrys {
             match en {
                 WriteEntry::Nil => {}
@@ -88,41 +88,29 @@ impl Base for MemEngine {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use std::sync::Arc;
+    use crate::test_engine::*;
+    use crate::*;
 
     #[test]
-    fn test_base() {
-        let engine = Arc::new(MemEngine::new().unwrap());
-        test_base_trait(engine);
-    }
-
-    #[test]
-    fn test_columned() {
-        let mut engine = MemEngine::new().unwrap();
-        test_columned_trait(&mut engine);
-    }
-
-    #[test]
-    fn test_instance() {
+    fn test_engine() {
         {
-            let mut engine = MemEngine::new().unwrap();
-            test_set_instance(&mut engine);
+            let eng = MemEngine::new().unwrap();
+            test_base_trait(&eng);
         }
 
         {
-            let mut engine = MemEngine::new().unwrap();
-            test_get_instance(&mut engine);
+            let eng = MemEngine::new().unwrap();
+            test_kv_trait(&eng);
         }
 
         {
-            let mut engine = MemEngine::new().unwrap();
-            test_next_instance_id(&mut engine);
+            let eng = MemEngine::new().unwrap();
+            test_columned_trait(&eng);
         }
 
         {
-            let engine = Arc::new(MemEngine::new().unwrap());
-            test_get_instance_iter(engine);
+            let eng = MemEngine::new().unwrap();
+            test_instance_trait(&eng);
         }
     }
 }

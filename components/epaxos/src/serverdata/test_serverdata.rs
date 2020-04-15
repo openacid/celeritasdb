@@ -1,8 +1,8 @@
 use crate::conf::ClusterInfo;
-use crate::snapshot::MemEngine;
 use crate::RangeLookupError;
 use crate::ServerData;
 use std::sync::Arc;
+use storage::MemEngine;
 
 #[test]
 fn test_serverdata() {

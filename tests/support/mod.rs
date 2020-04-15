@@ -19,8 +19,8 @@ use redis::RedisResult;
 
 use cele::Server;
 use epaxos::conf::ClusterInfo;
-use epaxos::snapshot::MemEngine;
-use epaxos::snapshot::Storage;
+use epaxos::Storage;
+use storage::MemEngine;
 
 /// InProcContext setup a small cluster of an in-process server and a client.
 pub struct InProcContext {

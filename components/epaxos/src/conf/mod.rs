@@ -1,7 +1,7 @@
 mod conf;
 mod errors;
 
-pub use self::conf::*;
+pub use conf::*;
 pub use errors::*;
 
 #[cfg(test)]

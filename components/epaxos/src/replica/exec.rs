@@ -4,7 +4,7 @@ use std::time::SystemTime;
 
 use crate::qpaxos::{Instance, InstanceId, InstanceIdVec, OpCode};
 use crate::replica::{errors::Error, Replica};
-use crate::snapshot::WriteEntry;
+use storage::WriteEntry;
 
 thread_local! {
     static PROBLEM_INSTS: RefCell<Vec<(InstanceId, SystemTime)>> = RefCell::new(vec![]);
@@ -104,7 +104,7 @@ impl Replica {
                 }
             }
 
-            entrys.push(("exec", iid).into());
+            entrys.push(iid.into());
             replys.push(repl);
         }
 

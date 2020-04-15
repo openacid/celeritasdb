@@ -1,5 +1,5 @@
 #[macro_use]
-mod enum_str;
+extern crate quick_error;
 
 mod errors;
 pub use errors::*;
@@ -13,11 +13,5 @@ pub use traits::*;
 mod mem_engine;
 pub use mem_engine::*;
 
-mod iters;
-pub use iters::*;
-
 #[cfg(test)]
 mod test_engine;
-
-#[cfg(test)]
-use test_engine::*;

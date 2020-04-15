@@ -143,6 +143,7 @@ fn test_get_accept_dep() {
 }
 
 #[test]
+#[allow(unused_mut)]
 fn test_status_get_fast_commit_deps() {
     macro_rules! case(
         (

@@ -1,7 +1,7 @@
 use super::open;
-use super::{Base, Error, RocksDBEngine};
-use crate::snapshot::DBColumnFamily;
-use crate::snapshot::WriteEntry;
+use crate::DBColumnFamily;
+use crate::WriteEntry;
+use crate::{Base, RocksDBEngine, StorageError};
 use rocksdb::{CFHandle, SeekKey, Writable, WriteBatch};
 
 impl RocksDBEngine {
@@ -10,7 +10,7 @@ impl RocksDBEngine {
     /// # Examples:
     /// ```
     /// use tempfile::Builder;
-    /// use crate::epaxos::snapshot::RocksDBEngine;
+    /// use crate::storage::RocksDBEngine;
     ///
     /// let tmp_root = Builder::new().tempdir().unwrap();
     /// let db_path = format!("{}/test", tmp_root.path().display());
@@ -21,14 +21,14 @@ impl RocksDBEngine {
     ///     Err(err) => println!("failed to get rocksdb engine, failed: {}", err),
     /// };
     /// ```
-    pub fn new(path: &str) -> Result<RocksDBEngine, Error> {
+    pub fn new(path: &str) -> Result<RocksDBEngine, StorageError> {
         let db = open(path)?;
 
         Ok(RocksDBEngine { db })
     }
 
     /// make rocksdb column family handle
-    fn _make_cf_handle(&self, cf: DBColumnFamily) -> Result<&CFHandle, Error> {
+    fn _make_cf_handle(&self, cf: DBColumnFamily) -> Result<&CFHandle, StorageError> {
         match self.db.cf_handle(cf.into()) {
             Some(h) => Ok(h),
             None => Err(format!("got column family {:?} handle failed", cf).into()),
@@ -79,18 +79,18 @@ impl RocksDBEngine {
 }
 
 impl Base for RocksDBEngine {
-    fn set(&self, cf: DBColumnFamily, key: &Vec<u8>, value: &Vec<u8>) -> Result<(), Error> {
+    fn set(&self, cf: DBColumnFamily, key: &Vec<u8>, value: &Vec<u8>) -> Result<(), StorageError> {
         let cfh = self._make_cf_handle(cf)?;
         Ok(self.db.put_cf(cfh, key, value)?)
     }
 
-    fn get(&self, cf: DBColumnFamily, key: &Vec<u8>) -> Result<Option<Vec<u8>>, Error> {
+    fn get(&self, cf: DBColumnFamily, key: &Vec<u8>) -> Result<Option<Vec<u8>>, StorageError> {
         let cfh = self._make_cf_handle(cf)?;
         let r = self.db.get_cf(cfh, key)?;
         Ok(r.map(|x| x.to_vec()))
     }
 
-    fn delete(&self, cf: DBColumnFamily, key: &Vec<u8>) -> Result<(), Error> {
+    fn delete(&self, cf: DBColumnFamily, key: &Vec<u8>) -> Result<(), StorageError> {
         let cfh = self._make_cf_handle(cf)?;
         Ok(self.db.delete_cf(cfh, key)?)
     }
@@ -103,7 +103,7 @@ impl Base for RocksDBEngine {
         self._range(cf, key, include, true)
     }
 
-    fn write_batch(&self, entrys: &Vec<WriteEntry>) -> Result<(), Error> {
+    fn write_batch(&self, entrys: &Vec<WriteEntry>) -> Result<(), StorageError> {
         let batch = WriteBatch::with_capacity(entrys.len());
         for en in entrys {
             match en {
@@ -123,52 +123,39 @@ impl Base for RocksDBEngine {
     }
 }
 
-#[test]
-fn test_rocks_engine() {
-    use crate::snapshot::*;
+#[cfg(test)]
+mod tests {
+    use crate::test_engine::*;
+    use crate::*;
     use tempfile::Builder;
 
-    let tmp_root = Builder::new().tempdir().unwrap();
-    let db_path = format!("{}/test", tmp_root.path().display());
+    fn new_eng() -> RocksDBEngine {
+        let tmp_root = Builder::new().tempdir().unwrap();
+        let db_path = format!("{}/test", tmp_root.path().display());
 
-    let eng = RocksDBEngine::new(&db_path).unwrap();
+        RocksDBEngine::new(&db_path).unwrap()
+    }
 
-    let k0 = "key0";
-    let v0 = "value0";
+    #[test]
+    fn test_engine() {
+        {
+            let eng = new_eng();
+            test_base_trait(&eng);
+        }
 
-    eng.set_kv(&k0.as_bytes().to_vec(), &v0.as_bytes().to_vec())
-        .unwrap();
+        {
+            let eng = new_eng();
+            test_kv_trait(&eng);
+        }
 
-    let v_get = eng
-        .get(DBColumnFamily::Default, &k0.as_bytes().to_vec())
-        .unwrap();
-    assert_eq!(v_get.unwrap(), v0.as_bytes());
+        {
+            let eng = new_eng();
+            test_columned_trait(&eng);
+        }
 
-    let k1 = "k1".as_bytes().to_vec();
-    let k2 = "k2".as_bytes().to_vec();
-    let v1 = "v1".as_bytes().to_vec();
-    let v2 = "v2".as_bytes().to_vec();
-
-    let cmds = vec![
-        WriteEntry::Set(DBColumnFamily::Default, k1.clone(), v1.clone()),
-        WriteEntry::Set(DBColumnFamily::Default, k2.clone(), v2.clone()),
-    ];
-
-    eng.write_batch(&cmds).unwrap();
-    assert_eq!(
-        "v1".as_bytes().to_vec(),
-        eng.get_kv(&"k1".as_bytes().to_vec()).unwrap().unwrap()
-    );
-    assert_eq!(
-        "v2".as_bytes().to_vec(),
-        eng.get_kv(&"k2".as_bytes().to_vec()).unwrap().unwrap()
-    );
-
-    let cmds = vec![
-        WriteEntry::Set(DBColumnFamily::Default, k1.clone(), v1.clone()),
-        WriteEntry::Delete(DBColumnFamily::Default, k1.clone()),
-    ];
-
-    eng.write_batch(&cmds).unwrap();
-    assert_eq!(None, eng.get_kv(&"k1".as_bytes().to_vec()).unwrap());
+        {
+            let eng = new_eng();
+            test_instance_trait(&eng);
+        }
+    }
 }

@@ -25,6 +25,7 @@ tokio-util = { version = "0.2.0", features = ["full"] }
 tonic = "0.2"
 clap  = { version = "~2.33.0" } # command line argument parse
 epaxos = { path = "components/epaxos" }
+storage = { path = "components/storage" }
 quick-error = { version = "1.2.2" }
 futures = "0.3.0"
 
@@ -37,6 +38,7 @@ members = [
   "components/parse",
   "components/epaxos",
   "components/cele_threads",
+  "components/storage",
 ]
 exclude = [
     "components/protobuf-gen-rust",

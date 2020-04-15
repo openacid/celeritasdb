@@ -2,9 +2,9 @@ pub use std::cmp::Ordering;
 use std::ops::Index;
 use std::ops::{Deref, DerefMut};
 
-use super::tokey::ToKey;
 use derive_more;
 use enum_utils;
+use storage::ToKey;
 
 include!(concat!(env!("OUT_DIR"), "/qpaxos.rs"));
 

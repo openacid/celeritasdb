@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::qpaxos::{Command, Instance, InstanceId};
 use crate::replica::*;
-use crate::snapshot::MemEngine;
+use storage::MemEngine;
 
 #[allow(unused_macros)]
 macro_rules! test_inst {

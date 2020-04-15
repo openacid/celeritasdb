@@ -4,11 +4,11 @@ use crate::conf::Node;
 use crate::conf::NodeId;
 use crate::qpaxos::ReplicaID;
 use crate::replica::Replica;
-use crate::snapshot::MemEngine;
-use crate::snapshot::Storage;
 use crate::RangeLookupError;
+use crate::Storage;
 use std::collections::BTreeMap;
 use std::sync::Arc;
+use storage::MemEngine;
 
 /// ServerData is shared between threads or coroutine.
 /// TODO: Storage does not need to be shared with Arc any more.

@@ -6,10 +6,9 @@ use std::sync::Arc;
 
 use tokio;
 
-use epaxos::conf::ClusterInfo;
-use epaxos::snapshot::MemEngine;
-
 use cele::Server;
+use epaxos::conf::ClusterInfo;
+use storage::MemEngine;
 
 fn main() {
     // TODO standalone version file.

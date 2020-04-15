@@ -3,10 +3,10 @@ use std::sync::Arc;
 use crate::conf::ClusterInfo;
 use crate::qpaxos::*;
 use crate::replica::*;
-use crate::snapshot::DBColumnFamily;
-use crate::snapshot::MemEngine;
-use crate::snapshot::Storage;
-use crate::tokey::ToKey;
+use crate::Storage;
+use storage::DBColumnFamily;
+use storage::MemEngine;
+use storage::ToKey;
 
 use pretty_assertions::assert_eq;
 use prost::Message;

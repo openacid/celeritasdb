@@ -19,7 +19,6 @@ pretty_assertions = { version = "0.6.1" }
 [dependencies]
 parse = { path = "../parse" }
 quick-error = { version = "1.2.2" }
-rocksdb = { git = "https://github.com/tikv/rust-rocksdb.git", branch = "release-2.0" }
 tempfile = { version = "3.1.0" }
 prost = { version = "0.6.1" }
 tonic = "0.2"
@@ -28,6 +27,7 @@ derive_more = "0.99.3"
 num = "0.2.1"
 serde = { version = "1.0", features = ["derive"] }
 serde_yaml = { version = "0.8" }
+storage = { path = "../storage" }
 
 # derive FromStr for enum
 enum-utils = "0.1.2"

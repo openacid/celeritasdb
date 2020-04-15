@@ -4,7 +4,7 @@ use crate::qpaxos::*;
 use crate::replica::test_util;
 use crate::replica::*;
 use crate::replication::*;
-use crate::snapshot::MemEngine;
+use storage::MemEngine;
 
 #[cfg(test)]
 use pretty_assertions::assert_eq;

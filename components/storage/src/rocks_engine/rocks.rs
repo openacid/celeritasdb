@@ -1,7 +1,7 @@
 use std::fs;
 use std::path::Path;
 
-use crate::snapshot::DBColumnFamily;
+use crate::DBColumnFamily;
 use rocksdb::{ColumnFamilyOptions, DBOptions, DB};
 
 struct CFOptions {

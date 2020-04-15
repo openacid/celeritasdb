@@ -12,9 +12,9 @@ use tonic;
 use epaxos::conf::ClusterInfo;
 use epaxos::conf::NodeId;
 use epaxos::qpaxos::QPaxosServer;
-use epaxos::snapshot::Storage;
 use epaxos::MyQPaxos;
 use epaxos::ServerData;
+use epaxos::Storage;
 
 use crate::RedisApi;
 use crate::ServerError;

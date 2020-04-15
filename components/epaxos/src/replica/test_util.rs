@@ -4,9 +4,9 @@ use std::time::Duration;
 
 use crate::qpaxos::*;
 use crate::replica::{Replica, ReplicaPeer};
-use crate::snapshot::MemEngine;
-use crate::snapshot::Storage;
 use crate::MyQPaxos;
+use crate::Storage;
+use storage::MemEngine;
 
 use tokio::sync::oneshot;
 use tokio::time::delay_for;

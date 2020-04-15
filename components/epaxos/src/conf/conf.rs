@@ -5,7 +5,7 @@ use std::net::SocketAddr;
 use std::ops::{Deref, DerefMut};
 use std::path::Path;
 
-use super::errors::ConfError;
+use crate::conf::ConfError;
 use crate::qpaxos::ReplicaID;
 
 use serde::{Deserialize, Serialize};
