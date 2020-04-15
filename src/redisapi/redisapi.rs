@@ -22,7 +22,6 @@ use parse::Response;
 
 use epaxos::ServerData;
 
-
 /// ReidsApi impl redis-protocol
 #[derive(Clone)]
 pub struct RedisApi {
@@ -30,7 +29,11 @@ pub struct RedisApi {
 }
 
 impl RedisApi {
-    pub async fn serve_with_shutdown<F>(self, addr: SocketAddr, signal: F) -> Result<(), std::io::Error>
+    pub async fn serve_with_shutdown<F>(
+        self,
+        addr: SocketAddr,
+        signal: F,
+    ) -> Result<(), std::io::Error>
     where
         F: Future + Send,
     {
