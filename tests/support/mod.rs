@@ -1,6 +1,7 @@
 #![allow(dead_code)]
 
 use rand;
+use std::sync::Arc;
 
 use redis;
 
@@ -15,6 +16,75 @@ use tempfile;
 use std::path::PathBuf;
 
 use redis::RedisResult;
+
+use cele::Server;
+use epaxos::conf::ClusterInfo;
+use epaxos::snapshot::MemEngine;
+use epaxos::snapshot::Storage;
+
+/// InProcContext setup a small cluster of an in-process server and a client.
+pub struct InProcContext {
+    pub server: Server,
+    pub storage: Storage,
+    pub client: redis::Client,
+}
+
+impl InProcContext {
+    pub fn new() -> Self {
+        let cluster = "
+nodes:
+    127.0.0.1:6666:
+        api_addr: 127.0.0.1:6379
+        replication: 127.0.0.1:6666
+groups:
+-   range:
+    -   a
+    -   z
+    replicas:
+        1: 127.0.0.1:6666
+";
+
+        let node_id = "127.0.0.1:6666";
+
+        let sto = MemEngine::new().unwrap();
+        let sto = Arc::new(sto);
+        let cluster = ClusterInfo::from_str(cluster).unwrap();
+        let mut server = Server::new(sto.clone(), cluster, node_id.into());
+        server.start();
+
+        let server_port = 6379;
+        let addr = redis::ConnectionAddr::Tcp("127.0.0.1".to_string(), server_port);
+        let client = redis::Client::open(redis::ConnectionInfo {
+            addr: Box::new(addr),
+            db: 0,
+            passwd: None,
+        })
+        .unwrap();
+
+        // wait until connected.
+        let millisecond = Duration::from_millis(50);
+        loop {
+            match client.get_connection() {
+                Err(err) => {
+                    if err.is_connection_refusal() {
+                        sleep(millisecond);
+                    } else {
+                        panic!("Could not connect: {}", err);
+                    }
+                }
+                Ok(_x) => {
+                    break;
+                }
+            }
+        }
+
+        InProcContext {
+            server,
+            storage: sto,
+            client,
+        }
+    }
+}
 
 #[derive(PartialEq)]
 enum ServerType {

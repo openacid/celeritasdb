@@ -10,6 +10,18 @@ use tokio::time::delay_for;
 mod support;
 
 #[test]
+fn test_set() {
+    _test_set();
+}
+
+#[tokio::main]
+async fn _test_set() {
+    let ctx = InProcContext::new();
+    let mut con = ctx.client.get_connection().unwrap();
+    redis::cmd("SET").arg("foo").arg(42).execute(&mut con);
+}
+
+#[test]
 fn test_getset() {
     let ctx = TestContext::new();
     let mut con = ctx.connection();
