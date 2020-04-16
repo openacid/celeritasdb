@@ -40,6 +40,8 @@ pub fn handle_fast_accept_reply(
         .deps
         .as_ref()
         .ok_or(ProtocolError::LackOf("deps".into()))?;
+
+    // TODO choose the appropriate data structure to reduce needless error checking
     if repl.deps_committed.len() < deps.len() {
         return Err(ProtocolError::Incomplete(
             "deps_committed".into(),
@@ -77,7 +79,7 @@ pub async fn handle_accept_reply(
     from_rid: ReplicaID,
     ra: &Replica,
     repl: &AcceptReply,
-) -> Result<bool, HandlerError> {
+) -> Result<(), HandlerError> {
     // TODO test duplicated message
     // A duplicated message is received. Just ignore.
     if st.accept_replied.contains_key(&from_rid) {
@@ -90,7 +92,7 @@ pub async fn handle_accept_reply(
     }
 
     let (last_ballot, iid) = check_repl_common(&repl.cmn)?;
-    let mut inst = ra.get_instance(iid)?;
+    let inst = ra.get_instance(iid)?;
 
     // ignore delay reply
     let status = inst.status();
@@ -105,12 +107,5 @@ pub async fn handle_accept_reply(
         ));
     }
 
-    if st.finish() {
-        inst.committed = true;
-        ra.storage.set_instance(&inst)?;
-        bcast_commit(&ra.peers, &inst).await;
-        return Ok(true);
-    }
-
-    Ok(false)
+    Ok(())
 }

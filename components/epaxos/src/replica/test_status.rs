@@ -43,7 +43,6 @@ fn test_status_new() {
 
     get!(st.accept_replied, &1, None);
     get!(st.accept_replied, &2, None);
-    assert_eq!(st.accept_ok, 0);
 }
 
 #[test]

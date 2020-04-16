@@ -208,7 +208,7 @@ async fn _handle_accept_reply(
     from_rid: ReplicaID,
     ra: &Replica,
     repl: &AcceptReply,
-) -> Result<bool, HandlerError> {
+) -> Result<(), HandlerError> {
     handle_accept_reply(st, from_rid, ra, repl).await
 }
 
@@ -228,17 +228,6 @@ fn test_handle_accept_reply() {
     rp.storage.set_instance(&inst).unwrap();
     let n = rp.group_replica_ids.len() as i32;
 
-    macro_rules! assert_commit {
-        ($cmt:expr) => {
-            let got = rp
-                .storage
-                .get_instance(inst.instance_id.unwrap())
-                .unwrap()
-                .unwrap();
-            assert_eq!($cmt, got.committed);
-        };
-    }
-
     {
         // with high ballot num
         let mut st = Status::new(n, inst.clone());
@@ -248,7 +237,8 @@ fn test_handle_accept_reply() {
         let r = _handle_accept_reply(&mut st, 0, &rp, &repl);
         println!("{:?}", r);
         assert!(r.is_err());
-        assert_commit!(false);
+
+        assert_eq!(st.get_accept_deps(&rp.group_replica_ids), None);
     }
 
     {
@@ -260,7 +250,8 @@ fn test_handle_accept_reply() {
         let r = _handle_accept_reply(&mut st, 0, &rp, &repl);
         println!("{:?}", r);
         assert!(r.is_err());
-        assert_commit!(false);
+
+        assert_eq!(st.get_accept_deps(&rp.group_replica_ids), None);
     }
 
     {
@@ -270,7 +261,8 @@ fn test_handle_accept_reply() {
         let repl = MakeReply::accept(&inst);
         let r = _handle_accept_reply(&mut st, 0, &rp, &repl);
         println!("{:?}", r);
-        assert!(r.unwrap());
-        assert_commit!(true);
+        assert!(r.is_ok());
+
+        assert_eq!(2, st.accept_replied.len());
     }
 }

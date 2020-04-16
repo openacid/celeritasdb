@@ -57,8 +57,6 @@ pub struct Status {
     /// It does include the leader itself, although the leader update instance status
     /// to "accept" locally.
     pub accept_replied: HashMap<ReplicaID, bool>,
-
-    pub accept_ok: i32,
 }
 
 impl Status {
@@ -75,7 +73,6 @@ impl Status {
             fast_committed: HashMap::new(),
 
             accept_replied: HashMap::new(),
-            accept_ok: 0,
         };
 
         st.start_fast_accept();
@@ -106,13 +103,11 @@ impl Status {
     /// start_accept initiates Status to enter Accept phase.
     pub fn start_accept(&mut self) -> &mut Self {
         // local instance accepts it.
-        self.accept_ok = 1;
-        self
-    }
+        let iid = self.instance.instance_id.unwrap();
+        let rid = iid.replica_id;
+        self.accept_replied.insert(rid, true);
 
-    pub fn finish(&mut self) -> bool {
-        self.accept_ok += 1;
-        self.accept_ok >= self.quorum
+        self
     }
 
     /// get_fast_commit_deps returns a InstanceId Vec if current status satisfies fast-commit
