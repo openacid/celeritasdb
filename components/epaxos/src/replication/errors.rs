@@ -4,6 +4,7 @@ use crate::qpaxos::QError;
 use crate::qpaxos::ReplicaID;
 use crate::replica::Error as ReplicaError;
 use storage::StorageError;
+use crate::replica::InstanceStatus;
 
 quick_error! {
     /// HandlerError is an error encountered when handle-xx-request or handle-xx-reply.
@@ -36,8 +37,8 @@ quick_error! {
         }
 
         /// A delay reply is received
-        DelayReply(msg: String) {
-            display("receive delay msg :{}", &msg)
+        DelayedReply(inst_phase: InstanceStatus, reply_phase: InstanceStatus) {
+            display("instance phase:{:?} while recv reply of phase: {:?}", inst_phase, reply_phase)
         }
     }
 }
