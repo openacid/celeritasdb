@@ -364,14 +364,10 @@ macro_rules! bcast_msg {
                 }
             };
 
-            rst.push(repl);
+            rst.push((p.replica_id, repl));
         }
 
-        if rst.len() > 0 {
-            return Some(rst);
-        }
-
-        return None;
+        return rst;
     }};
 }
 
@@ -379,7 +375,7 @@ pub async fn bcast_fast_accept(
     peers: &Vec<ReplicaPeer>,
     inst: &Instance,
     deps_committed: &[bool],
-) -> Option<Vec<Response<FastAcceptReply>>> {
+) -> Vec<(ReplicaID, Response<FastAcceptReply>)> {
     bcast_msg!(
         peers,
         |rid| MakeRequest::fast_accept(rid, inst, deps_committed),
@@ -390,20 +386,20 @@ pub async fn bcast_fast_accept(
 pub async fn bcast_accept(
     peers: &Vec<ReplicaPeer>,
     inst: &Instance,
-) -> Option<Vec<Response<AcceptReply>>> {
+) -> Vec<(ReplicaID, Response<AcceptReply>)> {
     bcast_msg!(peers, |rid| MakeRequest::accept(rid, inst), accept);
 }
 
 pub async fn bcast_commit(
     peers: &Vec<ReplicaPeer>,
     inst: &Instance,
-) -> Option<Vec<Response<CommitReply>>> {
+) -> Vec<(ReplicaID, Response<CommitReply>)> {
     bcast_msg!(peers, |rid| MakeRequest::commit(rid, inst), commit);
 }
 
 pub async fn bcast_prepare(
     peers: &Vec<ReplicaPeer>,
     inst: &Instance,
-) -> Option<Vec<Response<PrepareReply>>> {
+) -> Vec<(ReplicaID, Response<PrepareReply>)> {
     bcast_msg!(peers, |rid| MakeRequest::prepare(rid, inst), prepare);
 }
