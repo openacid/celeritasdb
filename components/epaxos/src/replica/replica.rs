@@ -83,7 +83,8 @@ impl Replica {
             }
 
             // TODO check the replica is alive or not
-            peers.push((*prid, node.replication.to_string(), true).into());
+            let addr = format!("http://{}", node.replication.to_string());
+            peers.push((*prid, addr, true).into());
         }
 
         Ok(Replica {

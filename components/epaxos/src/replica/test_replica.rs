@@ -609,7 +609,7 @@ groups:
     assert_eq!(
         ReplicaPeer {
             replica_id: 2,
-            addr: "192.168.0.1:4442".to_string(),
+            addr: "http://192.168.0.1:4442".to_string(),
             alive: true
         },
         rp.peers[0]
@@ -617,7 +617,7 @@ groups:
     assert_eq!(
         ReplicaPeer {
             replica_id: 3,
-            addr: "192.168.0.1:4442".to_string(),
+            addr: "http://192.168.0.1:4442".to_string(),
             alive: true
         },
         rp.peers[1]
