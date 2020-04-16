@@ -98,51 +98,41 @@ impl Replica {
         })
     }
 
-    pub fn next_max_iid(&self, rid: ReplicaID) -> Result<InstanceId, ReplicaError> {
-        // TODO locking TODO Need to incr max-ref and add new-instance in a single tx.
-        //      Or iterator may encounter an empty instance slot.
-        let max = self.storage.get_ref("max", rid)?;
-        let mut max = max.unwrap_or((rid, -1).into());
-        max.idx += 1;
-        self.storage.set_ref("max", rid, max)?;
-        Ok(max)
-    }
-
-    pub fn new_instance(&self, cmds: Vec<Command>) -> Result<Instance, ReplicaError> {
+    /// new_instance creates a new instance with initial_deps and deps initialized and stores it in
+    /// replica storage.
+    pub fn new_instance(&self, cmds: &[Command]) -> Result<Instance, ReplicaError> {
         // TODO locking
         // TODO do not need to store max instance id, store it in replica and when starting, scan
         // backward to find the max
         // TODO test storage error
 
-        let n = self.group_replica_ids.len();
-        let mut deps = Vec::with_capacity(n);
         // TODO ensure replica_ids are sorted
-        for rid in self.group_replica_ids.iter() {
-            if let Some(v) = self.storage.get_ref("max", *rid)? {
-                deps.push(v);
+
+        let rid = self.replica_id;
+        let maxs = self.get_max_instance_ids(&self.group_replica_ids);
+
+        let this_iid = maxs.get(rid).unwrap();
+        let iid = (rid, this_iid.idx + 1).into();
+
+        let mut deps = vec![];
+        for d in maxs.iter() {
+            if d.idx >= 0 {
+                deps.push(*d);
             }
         }
 
-        let iid = self.next_max_iid(self.replica_id)?;
-        let inst = Instance {
-            last_ballot: None,
-            // TODO need to use time stamp as epoch?
-            ballot: Some((0, 0, self.replica_id).into()),
-            instance_id: Some(iid),
-            cmds,
-            initial_deps: Some(deps.clone().into()),
-            deps: Some(deps.into()),
-            final_deps: None,
-            committed: false,
-            executed: false,
-        };
+        let mut inst = Instance::of(cmds, (0, 0, rid).into(), &deps);
+        inst.deps = inst.initial_deps.clone();
+        inst.instance_id = Some(iid);
+
+        self.storage.set_instance(&inst)?;
 
         Ok(inst)
     }
 
     /// get_max_instance_ids returns the max instance-id for every specified replica.
     /// If there is no instance at all by a replica, a `(rid, -1)` is filled.
-    pub fn get_max_instance_ids(&self, rids: &[ReplicaID]) -> Vec<InstanceId> {
+    pub fn get_max_instance_ids(&self, rids: &[ReplicaID]) -> InstanceIdVec {
         // TODO move the max-ids into replica. it does not need to be in storage.
         // This way, every time the server starts, a replica need to load the max ids from storage.
 
@@ -159,7 +149,7 @@ impl Replica {
 
             iids.push(max);
         }
-        iids
+        iids.into()
     }
 
     fn _handle_prepare(&self, _req: &PrepareRequest) -> Result<PrepareReply, String> {

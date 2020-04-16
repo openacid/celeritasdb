@@ -145,17 +145,30 @@ fn test_new_instance() {
     let r2 = new_foo_replica(rid2, sto.clone(), &[]);
 
     // (1, 0) -> []
-    let i10 = r1.new_instance(cmds.clone()).unwrap();
+    let i10 = r1.new_instance(&cmds).unwrap();
     assert_eq!(i10, init_inst!((rid1, 0), [("Set", "x", "1")], []));
+    assert_eq!(
+        i10,
+        r1.storage.get_instance((rid1, 0).into()).unwrap().unwrap()
+    );
 
     // (2, 0) -> [(1, 0)]
-    let i20 = r2.new_instance(cmds.clone()).unwrap();
+    let i20 = r2.new_instance(&cmds).unwrap();
     assert_eq!(i20, init_inst!((rid2, 0), [("Set", "x", "1")], [(rid1, 0)]));
+    assert_eq!(
+        i20,
+        r1.storage.get_instance((rid2, 0).into()).unwrap().unwrap()
+    );
 
     // (2, 1) -> [(1, 0), (2, 0)]
+    let i21 = r2.new_instance(&cmds).unwrap();
     assert_eq!(
-        r2.new_instance(cmds.clone()).unwrap(),
+        i21,
         init_inst!((rid2, 1), [("Set", "x", "1")], [(rid1, 0), (rid2, 0)])
+    );
+    assert_eq!(
+        i21,
+        r1.storage.get_instance((rid2, 1).into()).unwrap().unwrap()
     );
 }
 
@@ -167,7 +180,7 @@ fn test_get_max_instance_ids() {
 
     let r = new_foo_replica(3, new_mem_sto(), &insts);
     let maxs = r.get_max_instance_ids(&[1, 3, 5]);
-    assert_eq!(maxs, instids![(1, 3), (3, 4), (5, -1)]);
+    assert_eq!(maxs, InstanceIdVec::from(instids![(1, 3), (3, 4), (5, -1)]));
 }
 
 #[test]
