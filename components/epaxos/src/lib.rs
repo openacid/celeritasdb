@@ -15,6 +15,7 @@ pub mod qpaxos;
 pub mod replica;
 pub mod replication;
 
+pub use replication::*;
 pub use serverdata::*;
 pub use service::*;
 

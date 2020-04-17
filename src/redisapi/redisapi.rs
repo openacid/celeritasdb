@@ -17,6 +17,7 @@ use tokio::net::TcpStream;
 
 use epaxos::qpaxos::Command;
 use epaxos::qpaxos::OpCode;
+use epaxos::replicate;
 
 use parse::Response;
 
@@ -166,11 +167,25 @@ impl RedisApi {
             }
         };
 
-        let _cmd = Command::of(cmd, key, value);
+        let cmd = Command::of(cmd, key, value);
+        let cmds = vec![cmd];
 
-        let (_g, _r) = self.server_data.get_local_replica_for_key(key)?;
+        let (g, r) = self.server_data.get_local_replica_for_key(key)?;
 
-        // TODO run fast-accept etc.
+        let mut st = replicate(&cmds, g, r).await?;
+        let inst = &mut st.instance;
+        inst.committed = true;
+        let rst = r.storage.set_instance(inst);
+
+        match rst {
+            Ok(_v) => {}
+            Err(_e) => {
+                return Ok(Response::Error("local commit error".into()));
+            }
+        }
+
+        // TODO bcast commit
+
         Ok(Response::Status("OK".to_owned()))
     }
 }

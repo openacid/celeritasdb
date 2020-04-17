@@ -3,8 +3,9 @@ use crate::qpaxos::ProtocolError;
 use crate::qpaxos::QError;
 use crate::qpaxos::ReplicaID;
 use crate::replica::Error as ReplicaError;
-use storage::StorageError;
 use crate::replica::InstanceStatus;
+use parse::Response;
+use storage::StorageError;
 
 quick_error! {
     /// HandlerError is an error encountered when handle-xx-request or handle-xx-reply.
@@ -40,5 +41,30 @@ quick_error! {
         DelayedReply(inst_phase: InstanceStatus, reply_phase: InstanceStatus) {
             display("instance phase:{:?} while recv reply of phase: {:?}", inst_phase, reply_phase)
         }
+    }
+}
+
+quick_error! {
+    /// ReplicationError is an error encountered during replicating an instance.
+    #[derive(Debug)]
+    pub enum ReplicationError {
+        NotEnoughQuorum(phase: InstanceStatus, want: i32, got: i32) {
+            display("{:?}: want at least {} replies, but:{}", phase, want, got)
+        }
+        Replica(re: ReplicaError) {
+            from(re: ReplicaError) -> (re)
+        }
+        Handler(e: HandlerError) {
+            from(e: HandlerError) -> (e)
+        }
+        Storage(e: StorageError) {
+            from(e: StorageError) -> (e)
+        }
+    }
+}
+
+impl From<ReplicationError> for Response {
+    fn from(e: ReplicationError) -> Self {
+        Response::Error(format!("{:?}", e))
     }
 }

@@ -146,7 +146,10 @@ fn test_new_instance() {
 
     // (1, 0) -> []
     let i10 = r1.new_instance(&cmds).unwrap();
-    assert_eq!(i10, init_inst!((rid1, 0), [("Set", "x", "1")], [(0, -1), (1, -1), (2, -1)]));
+    assert_eq!(
+        i10,
+        init_inst!((rid1, 0), [("Set", "x", "1")], [(0, -1), (1, -1), (2, -1)])
+    );
     assert_eq!(
         i10,
         r1.storage.get_instance((rid1, 0).into()).unwrap().unwrap()
@@ -154,7 +157,10 @@ fn test_new_instance() {
 
     // (2, 0) -> [(1, 0)]
     let i20 = r2.new_instance(&cmds).unwrap();
-    assert_eq!(i20, init_inst!((rid2, 0), [("Set", "x", "1")], [(0, -1), (1, 0), (2, -1)]));
+    assert_eq!(
+        i20,
+        init_inst!((rid2, 0), [("Set", "x", "1")], [(0, -1), (1, 0), (2, -1)])
+    );
     assert_eq!(
         i20,
         r1.storage.get_instance((rid2, 0).into()).unwrap().unwrap()
@@ -499,8 +505,7 @@ async fn _bcast_fast_accept() {
     let mut tc = test_util::TestCluster::new(3);
     tc.start().await;
     let inst = foo_inst!((0, 1), "key_x", [(0, 0), (1, 0), (2, 0)]);
-    let r = bcast_fast_accept(&tc.replicas[0].peers, &inst, &[true, true, true])
-        .await;
+    let r = bcast_fast_accept(&tc.replicas[0].peers, &inst, &[true, true, true]).await;
 
     println!("receive fast accept replys: {:?}", r);
     // not contain self
