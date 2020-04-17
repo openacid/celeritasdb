@@ -76,7 +76,7 @@ pub fn handle_fast_accept_reply(
     Ok(())
 }
 
-pub async fn handle_accept_reply(
+pub fn handle_accept_reply(
     st: &mut Status,
     from_rid: ReplicaID,
     ra: &Replica,

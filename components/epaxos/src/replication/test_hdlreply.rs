@@ -223,16 +223,6 @@ fn test_handle_fast_accept_reply() {
     }
 }
 
-#[tokio::main]
-async fn _handle_accept_reply(
-    st: &mut Status,
-    from_rid: ReplicaID,
-    ra: &Replica,
-    repl: &AcceptReply,
-) -> Result<(), HandlerError> {
-    handle_accept_reply(st, from_rid, ra, repl).await
-}
-
 #[test]
 fn test_handle_accept_reply() {
     let replica_id = 2;
@@ -255,7 +245,7 @@ fn test_handle_accept_reply() {
         st.start_accept();
         let mut repl = MakeReply::accept(&inst);
         repl.cmn.as_mut().unwrap().last_ballot = Some((10, 2, replica_id).into());
-        let r = _handle_accept_reply(&mut st, 0, &rp, &repl);
+        let r = handle_accept_reply(&mut st, 0, &rp, &repl);
         println!("{:?}", r);
         assert!(r.is_err());
 
@@ -270,7 +260,7 @@ fn test_handle_accept_reply() {
         st.start_accept();
         let mut repl = MakeReply::accept(&inst);
         repl.err = Some(ProtocolError::LackOf("test".to_string()).into());
-        let r = _handle_accept_reply(&mut st, 0, &rp, &repl);
+        let r = handle_accept_reply(&mut st, 0, &rp, &repl);
         println!("{:?}", r);
         assert!(r.is_err());
 
@@ -285,7 +275,7 @@ fn test_handle_accept_reply() {
         let mut st = Status::new(n, inst.clone());
         st.start_accept();
         let repl = MakeReply::accept(&inst);
-        let r = _handle_accept_reply(&mut st, 0, &rp, &repl);
+        let r = handle_accept_reply(&mut st, 0, &rp, &repl);
         println!("{:?}", r);
         assert!(r.is_ok());
 
