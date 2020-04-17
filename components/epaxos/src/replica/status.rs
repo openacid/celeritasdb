@@ -57,6 +57,10 @@ pub struct Status {
     /// It does include the leader itself, although the leader update instance status
     /// to "accept" locally.
     pub accept_replied: HashMap<ReplicaID, bool>,
+
+    /// accept_oks tracks positive accept-replies.
+    /// AcceptReply with error, delayed, or with lower ballot does not count.
+    pub accept_oks: HashMap<ReplicaID, bool>,
 }
 
 impl Status {
@@ -73,6 +77,7 @@ impl Status {
             fast_committed: HashMap::new(),
 
             accept_replied: HashMap::new(),
+            accept_oks: HashMap::new(),
         };
 
         st.start_fast_accept();
@@ -106,6 +111,7 @@ impl Status {
         let iid = self.instance.instance_id.unwrap();
         let rid = iid.replica_id;
         self.accept_replied.insert(rid, true);
+        self.accept_oks.insert(rid, true);
 
         self
     }

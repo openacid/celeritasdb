@@ -107,5 +107,7 @@ pub async fn handle_accept_reply(
         ));
     }
 
+    st.accept_oks.insert(from_rid, true);
+
     Ok(())
 }

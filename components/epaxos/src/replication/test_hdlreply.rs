@@ -239,6 +239,8 @@ fn test_handle_accept_reply() {
         assert!(r.is_err());
 
         assert_eq!(st.get_accept_deps(&rp.group_replica_ids), None);
+        assert_eq!(2, st.accept_replied.len());
+        assert_eq!(1, st.accept_oks.len());
     }
 
     {
@@ -252,6 +254,9 @@ fn test_handle_accept_reply() {
         assert!(r.is_err());
 
         assert_eq!(st.get_accept_deps(&rp.group_replica_ids), None);
+
+        assert_eq!(2, st.accept_replied.len());
+        assert_eq!(1, st.accept_oks.len());
     }
 
     {
@@ -264,5 +269,6 @@ fn test_handle_accept_reply() {
         assert!(r.is_ok());
 
         assert_eq!(2, st.accept_replied.len());
+        assert_eq!(2, st.accept_oks.len());
     }
 }

@@ -43,6 +43,32 @@ fn test_status_new() {
 
     get!(st.accept_replied, &1, None);
     get!(st.accept_replied, &2, None);
+
+    get!(st.accept_oks, &1, None);
+    get!(st.accept_oks, &2, None);
+}
+
+#[test]
+fn test_status_start_accept() {
+    let inst = inst!(
+        (1, 2),
+        (3, 4, _),
+        [("Set", "x", "1")],
+        [(1, 1), (2, 0)],
+        "withdeps"
+    );
+    let mut st = Status::new(7, inst.clone());
+
+    get!(st.accept_replied, &1, None);
+    get!(st.accept_oks, &1, None);
+
+    st.start_accept();
+
+    get!(st.accept_replied, &1, true);
+    get!(st.accept_replied, &2, None);
+
+    get!(st.accept_oks, &1, true);
+    get!(st.accept_oks, &2, None);
 }
 
 #[test]
