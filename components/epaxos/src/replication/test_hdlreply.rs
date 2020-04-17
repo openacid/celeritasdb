@@ -42,6 +42,16 @@ macro_rules! replcmn {
     };
 }
 
+macro_rules! get {
+    ($container:expr, $key:expr, None) => {
+        assert_eq!($container.get($key), None);
+    };
+
+    ($container:expr, $key:expr, $want:expr) => {
+        assert_eq!($container.get($key), Some(&$want));
+    };
+}
+
 /// deps makes a Some(InstanceIdVec) or None
 /// Supported pattern:
 /// deps!(None)
@@ -144,6 +154,8 @@ fn test_handle_fast_accept_reply() {
         let r = handle_fast_accept_reply(&mut st, from_rid, &repl);
         assert_eq!(r.unwrap(), ());
         assert_eq!(st.fast_replied[&from_rid], true);
+        get!(st.fast_oks, &from_rid, true);
+
         assert_eq!(st.fast_deps[&1], vec![(1, 2).into()]);
         assert_eq!(st.fast_deps[&2], vec![(2, 3).into()]);
         assert!(st.fast_committed[&instid!(2, 3)]);
@@ -164,6 +176,9 @@ fn test_handle_fast_accept_reply() {
             st.fast_replied.contains_key(&from_rid),
             "reply with higher ballot is still be recorded"
         );
+
+        get!(st.fast_oks, &from_rid, None);
+
         assert_eq!(false, st.fast_deps.contains_key(&3));
         assert_eq!(false, st.fast_committed.contains_key(&instid!(3, 4)));
     }
@@ -175,6 +190,9 @@ fn test_handle_fast_accept_reply() {
         let r = handle_fast_accept_reply(&mut st, from_rid, &repl);
         assert_eq!(r.err().unwrap(), HandlerError::Dup(from_rid));
         assert_eq!(true, st.fast_replied.contains_key(&from_rid));
+
+        get!(st.fast_oks, &from_rid, None);
+
         assert_eq!(false, st.fast_deps.contains_key(&3));
         assert_eq!(false, st.fast_committed.contains_key(&instid!(3, 4)));
     }
@@ -197,6 +215,9 @@ fn test_handle_fast_accept_reply() {
             st.fast_replied.contains_key(&from_rid),
             "error reply should be recorded"
         );
+
+        get!(st.fast_oks, &from_rid, None);
+
         assert_eq!(false, st.fast_deps.contains_key(&3));
         assert_eq!(false, st.fast_committed.contains_key(&instid!(3, 4)));
     }

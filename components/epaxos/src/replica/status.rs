@@ -46,6 +46,10 @@ pub struct Status {
     /// It is used to de-dup duplicated messages.
     pub fast_replied: HashMap<ReplicaID, bool>,
 
+    /// fast_oks tracks positive fast-accept-replies.
+    /// AcceptReply with error, delayed, or with lower ballot does not count.
+    pub fast_oks: HashMap<ReplicaID, bool>,
+
     /// fast_deps collects `deps` received in fast-accept phase.
     /// They are stored by dependency instance leader.
     pub fast_deps: HashMap<ReplicaID, Vec<InstanceId>>,
@@ -73,6 +77,7 @@ impl Status {
             instance,
 
             fast_replied: HashMap::new(),
+            fast_oks: HashMap::new(),
             fast_deps: HashMap::new(),
             fast_committed: HashMap::new(),
 
@@ -91,6 +96,7 @@ impl Status {
         let rid = iid.replica_id;
 
         self.fast_replied.insert(rid, true);
+        self.fast_oks.insert(rid, true);
 
         let deps = self.instance.deps.as_ref().unwrap();
         for d in deps.iter() {

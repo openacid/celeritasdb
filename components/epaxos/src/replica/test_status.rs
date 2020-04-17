@@ -36,6 +36,9 @@ fn test_status_new() {
     assert_eq!(st.instance, inst);
 
     get!(st.fast_replied, &replica_id, true);
+    get!(st.fast_oks, &replica_id, true);
+    get!(st.fast_replied, &2, None);
+    get!(st.fast_oks, &2, None);
 
     get!(st.fast_deps, &1, vec![instid!(1, 1)]);
     get!(st.fast_deps, &2, vec![instid!(2, 0)]);

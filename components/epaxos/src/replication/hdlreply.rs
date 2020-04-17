@@ -71,6 +71,8 @@ pub fn handle_fast_accept_reply(
         }
     }
 
+    st.fast_oks.insert(from_rid, true);
+
     Ok(())
 }
 
