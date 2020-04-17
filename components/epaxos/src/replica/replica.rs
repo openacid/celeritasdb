@@ -100,6 +100,7 @@ impl Replica {
 
     /// new_instance creates a new instance with initial_deps and deps initialized and stores it in
     /// replica storage.
+    /// initial_deps and deps could contains (x, -1) if a leader has not yet propose any instance.
     pub fn new_instance(&self, cmds: &[Command]) -> Result<Instance, ReplicaError> {
         // TODO locking
         // TODO do not need to store max instance id, store it in replica and when starting, scan
@@ -114,14 +115,7 @@ impl Replica {
         let this_iid = maxs.get(rid).unwrap();
         let iid = (rid, this_iid.idx + 1).into();
 
-        let mut deps = vec![];
-        for d in maxs.iter() {
-            if d.idx >= 0 {
-                deps.push(*d);
-            }
-        }
-
-        let mut inst = Instance::of(cmds, (0, 0, rid).into(), &deps);
+        let mut inst = Instance::of(cmds, (0, 0, rid).into(), &maxs);
         inst.deps = inst.initial_deps.clone();
         inst.instance_id = Some(iid);
 

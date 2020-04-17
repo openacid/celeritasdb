@@ -146,7 +146,7 @@ fn test_new_instance() {
 
     // (1, 0) -> []
     let i10 = r1.new_instance(&cmds).unwrap();
-    assert_eq!(i10, init_inst!((rid1, 0), [("Set", "x", "1")], []));
+    assert_eq!(i10, init_inst!((rid1, 0), [("Set", "x", "1")], [(0, -1), (1, -1), (2, -1)]));
     assert_eq!(
         i10,
         r1.storage.get_instance((rid1, 0).into()).unwrap().unwrap()
@@ -154,7 +154,7 @@ fn test_new_instance() {
 
     // (2, 0) -> [(1, 0)]
     let i20 = r2.new_instance(&cmds).unwrap();
-    assert_eq!(i20, init_inst!((rid2, 0), [("Set", "x", "1")], [(rid1, 0)]));
+    assert_eq!(i20, init_inst!((rid2, 0), [("Set", "x", "1")], [(0, -1), (1, 0), (2, -1)]));
     assert_eq!(
         i20,
         r1.storage.get_instance((rid2, 0).into()).unwrap().unwrap()
@@ -164,7 +164,7 @@ fn test_new_instance() {
     let i21 = r2.new_instance(&cmds).unwrap();
     assert_eq!(
         i21,
-        init_inst!((rid2, 1), [("Set", "x", "1")], [(rid1, 0), (rid2, 0)])
+        init_inst!((rid2, 1), [("Set", "x", "1")], [(0, -1), (1, 0), (2, 0)])
     );
     assert_eq!(
         i21,
