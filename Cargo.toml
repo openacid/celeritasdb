@@ -40,6 +40,3 @@ members = [
   "components/cele_threads",
   "components/storage",
 ]
-exclude = [
-    "components/protobuf-gen-rust",
-]
