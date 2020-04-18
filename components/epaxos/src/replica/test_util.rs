@@ -13,8 +13,8 @@ use tokio::time::delay_for;
 use tonic::transport::Server;
 
 pub fn new_replica(
-    rid: ReplicaID,
-    group: Vec<ReplicaID>,
+    rid: ReplicaId,
+    group: Vec<ReplicaId>,
     peers: Vec<ReplicaPeer>,
     sto: Storage,
 ) -> Replica {
@@ -40,10 +40,10 @@ impl TestCluster {
         let mut addrs = HashMap::new();
         for i in 0..replica_cnt {
             let url = format!("http://127.0.0.1:555{}", i);
-            addrs.insert(i as ReplicaID, url);
+            addrs.insert(i as ReplicaId, url);
         }
 
-        let group: Vec<ReplicaID> = addrs.iter().map(|(k, _)| k.clone()).collect();
+        let group: Vec<ReplicaId> = addrs.iter().map(|(k, _)| k.clone()).collect();
 
         let mut replicas = vec![];
         for (k, _) in addrs.iter() {

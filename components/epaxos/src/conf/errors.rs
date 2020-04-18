@@ -1,5 +1,5 @@
 use crate::conf::NodeId;
-use crate::qpaxos::ReplicaID;
+use crate::qpaxos::ReplicaId;
 use std::net::AddrParseError;
 
 quick_error! {
@@ -17,9 +17,9 @@ quick_error! {
             from(e: AddrParseError) -> (e)
         }
 
-        OrphanReplica(rid: ReplicaID, nid: NodeId) {}
+        OrphanReplica(rid: ReplicaId, nid: NodeId) {}
 
-        DupReplica(rid: ReplicaID) {}
+        DupReplica(rid: ReplicaId) {}
 
         GroupOutOfOrder(a: String, b: String) {}
     }

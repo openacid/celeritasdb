@@ -1,7 +1,7 @@
 use crate::qpaxos::BallotNum;
 use crate::qpaxos::ProtocolError;
 use crate::qpaxos::QError;
-use crate::qpaxos::ReplicaID;
+use crate::qpaxos::ReplicaId;
 use crate::replica::Error as ReplicaError;
 use crate::replica::InstanceStatus;
 use parse::Response;
@@ -12,8 +12,8 @@ quick_error! {
     #[derive(Debug, Eq, PartialEq)]
     pub enum HandlerError {
         /// A duplicated request/reply is received.
-        Dup(rid: ReplicaID) {
-            from(rid: ReplicaID) -> (rid)
+        Dup(rid: ReplicaId) {
+            from(rid: ReplicaId) -> (rid)
         }
 
         /// There is an error occured on remote peer.

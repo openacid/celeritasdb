@@ -44,15 +44,15 @@ pub struct Status {
 
     /// fast_replied tracks what replica has sent back FastAcceptReply.
     /// It is used to de-dup duplicated messages.
-    pub fast_replied: HashMap<ReplicaID, bool>,
+    pub fast_replied: HashMap<ReplicaId, bool>,
 
     /// fast_oks tracks positive fast-accept-replies.
     /// AcceptReply with error, delayed, or with lower ballot does not count.
-    pub fast_oks: HashMap<ReplicaID, bool>,
+    pub fast_oks: HashMap<ReplicaId, bool>,
 
     /// fast_deps collects `deps` received in fast-accept phase.
     /// They are stored by dependency instance leader.
-    pub fast_deps: HashMap<ReplicaID, Vec<InstanceId>>,
+    pub fast_deps: HashMap<ReplicaId, Vec<InstanceId>>,
 
     /// fast_committed tracks what updated dep instance is committed.
     pub fast_committed: HashMap<InstanceId, bool>,
@@ -60,11 +60,11 @@ pub struct Status {
     /// accept_replie tracks what replica has sent back AcceptReply.
     /// It does include the leader itself, although the leader update instance status
     /// to "accept" locally.
-    pub accept_replied: HashMap<ReplicaID, bool>,
+    pub accept_replied: HashMap<ReplicaId, bool>,
 
     /// accept_oks tracks positive accept-replies.
     /// AcceptReply with error, delayed, or with lower ballot does not count.
-    pub accept_oks: HashMap<ReplicaID, bool>,
+    pub accept_oks: HashMap<ReplicaId, bool>,
 }
 
 impl Status {
@@ -124,7 +124,7 @@ impl Status {
 
     /// get_fast_commit_deps returns a InstanceId Vec if current status satisfies fast-commit
     /// condition. Otherwise it returns None.
-    pub fn get_fast_commit_deps(&mut self, cluster: &[ReplicaID]) -> Option<Vec<InstanceId>> {
+    pub fn get_fast_commit_deps(&mut self, cluster: &[ReplicaId]) -> Option<Vec<InstanceId>> {
         let mut rst: Vec<InstanceId> = Vec::with_capacity(cluster.len());
         for rid in cluster.iter() {
             let deps = self.fast_deps.get_mut(rid)?;
@@ -140,7 +140,7 @@ impl Status {
 
     /// get_accept_deps returns a InstanceId Vec for accept request.
     /// If current status accumulated enough fast-accept-replies. Otherwise it returns None.
-    pub fn get_accept_deps(&mut self, cluster: &[ReplicaID]) -> Option<Vec<InstanceId>> {
+    pub fn get_accept_deps(&mut self, cluster: &[ReplicaId]) -> Option<Vec<InstanceId>> {
         let mut rst: Vec<InstanceId> = Vec::with_capacity(cluster.len());
         for rid in cluster.iter() {
             let deps = self.fast_deps.get_mut(rid)?;

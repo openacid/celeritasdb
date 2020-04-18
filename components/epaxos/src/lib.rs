@@ -25,7 +25,7 @@ pub use iters::*;
 use qpaxos::*;
 use std::sync::Arc;
 use storage::Engine;
-pub type Storage = Arc<dyn Engine<ReplicaID, InstanceId, InstanceId, Instance>>;
+pub type Storage = Arc<dyn Engine<ReplicaId, InstanceId, InstanceId, Instance>>;
 
 use prost::Message;
 use storage::*;

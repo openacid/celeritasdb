@@ -215,7 +215,7 @@ fn test_status_get_fast_commit_deps() {
 
     let mut cases: Vec<(
         i32,
-        HashMap<ReplicaID, Vec<InstanceId>>,
+        HashMap<ReplicaId, Vec<InstanceId>>,
         HashMap<InstanceId, bool>,
         Option<Vec<InstanceId>>,
     )> = vec![
@@ -310,7 +310,7 @@ fn test_status_get_accept_deps() {
 
     let mut cases: Vec<(
         i32,
-        HashMap<ReplicaID, Vec<InstanceId>>,
+        HashMap<ReplicaId, Vec<InstanceId>>,
         Option<Vec<InstanceId>>,
     )> = vec![
         case!(1, { [2] }, Some(instids![(1, 2)])),

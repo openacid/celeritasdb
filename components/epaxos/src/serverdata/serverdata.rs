@@ -2,7 +2,7 @@ use crate::conf::ClusterInfo;
 use crate::conf::GroupInfo;
 use crate::conf::Node;
 use crate::conf::NodeId;
-use crate::qpaxos::ReplicaID;
+use crate::qpaxos::ReplicaId;
 use crate::replica::Replica;
 use crate::RangeLookupError;
 use crate::Storage;
@@ -17,7 +17,7 @@ pub struct ServerData {
     pub cluster: ClusterInfo,
     pub node_id: NodeId,
     pub node: Node,
-    pub local_replicas: BTreeMap<ReplicaID, Replica>,
+    pub local_replicas: BTreeMap<ReplicaId, Replica>,
     pub storage: Storage,
 }
 

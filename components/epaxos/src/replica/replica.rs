@@ -30,13 +30,13 @@ macro_rules! ref_or_bug {
 /// information of communication peer
 #[derive(Debug, PartialEq, Eq)]
 pub struct ReplicaPeer {
-    pub replica_id: ReplicaID,
+    pub replica_id: ReplicaId,
     pub addr: String, // ip: port pairs of each replica
     pub alive: bool,  // if peer is alive or not
 }
 
 impl ReplicaPeer {
-    pub fn new(rid: ReplicaID, addr: String, alive: bool) -> Self {
+    pub fn new(rid: ReplicaId, addr: String, alive: bool) -> Self {
         Self {
             replica_id: rid,
             addr,
@@ -45,22 +45,22 @@ impl ReplicaPeer {
     }
 }
 
-impl From<(ReplicaID, &str, bool)> for ReplicaPeer {
-    fn from(t: (ReplicaID, &str, bool)) -> ReplicaPeer {
+impl From<(ReplicaId, &str, bool)> for ReplicaPeer {
+    fn from(t: (ReplicaId, &str, bool)) -> ReplicaPeer {
         ReplicaPeer::new(t.0, t.1.to_string(), t.2)
     }
 }
 
-impl From<(ReplicaID, String, bool)> for ReplicaPeer {
-    fn from(t: (ReplicaID, String, bool)) -> ReplicaPeer {
+impl From<(ReplicaId, String, bool)> for ReplicaPeer {
+    fn from(t: (ReplicaId, String, bool)) -> ReplicaPeer {
         ReplicaPeer::new(t.0, t.1, t.2)
     }
 }
 
 /// structure to represent a replica
 pub struct Replica {
-    pub replica_id: ReplicaID,
-    pub group_replica_ids: Vec<ReplicaID>,
+    pub replica_id: ReplicaId,
+    pub group_replica_ids: Vec<ReplicaId>,
     pub peers: Vec<ReplicaPeer>,
     pub storage: Storage,
     pub committed_timeout: i32,
@@ -68,7 +68,7 @@ pub struct Replica {
 
 impl Replica {
     /// create a new Replica
-    pub fn new(rid: ReplicaID, cinfo: &ClusterInfo, sto: Storage) -> Result<Replica, ReplicaError> {
+    pub fn new(rid: ReplicaId, cinfo: &ClusterInfo, sto: Storage) -> Result<Replica, ReplicaError> {
         let group = cinfo
             .get_group(rid)
             .ok_or(ReplicaError::ReplicaNotFound(rid))?;
@@ -126,7 +126,7 @@ impl Replica {
 
     /// get_max_instance_ids returns the max instance-id for every specified replica.
     /// If there is no instance at all by a replica, a `(rid, -1)` is filled.
-    pub fn get_max_instance_ids(&self, rids: &[ReplicaID]) -> InstanceIdVec {
+    pub fn get_max_instance_ids(&self, rids: &[ReplicaId]) -> InstanceIdVec {
         // TODO move the max-ids into replica. it does not need to be in storage.
         // This way, every time the server starts, a replica need to load the max ids from storage.
 
@@ -314,7 +314,7 @@ impl Replica {
 }
 
 fn check_req_common(
-    myrid: ReplicaID,
+    myrid: ReplicaId,
     cm: &Option<RequestCommon>,
 ) -> Result<(BallotNum, InstanceId), ProtocolError> {
     let cm = cm.as_ref().ok_or(ProtocolError::LackOf("cmn".into()))?;
@@ -369,7 +369,7 @@ pub async fn bcast_fast_accept(
     peers: &Vec<ReplicaPeer>,
     inst: &Instance,
     deps_committed: &[bool],
-) -> Vec<(ReplicaID, Response<FastAcceptReply>)> {
+) -> Vec<(ReplicaId, Response<FastAcceptReply>)> {
     bcast_msg!(
         peers,
         |rid| MakeRequest::fast_accept(rid, inst, deps_committed),
@@ -380,20 +380,20 @@ pub async fn bcast_fast_accept(
 pub async fn bcast_accept(
     peers: &Vec<ReplicaPeer>,
     inst: &Instance,
-) -> Vec<(ReplicaID, Response<AcceptReply>)> {
+) -> Vec<(ReplicaId, Response<AcceptReply>)> {
     bcast_msg!(peers, |rid| MakeRequest::accept(rid, inst), accept);
 }
 
 pub async fn bcast_commit(
     peers: &Vec<ReplicaPeer>,
     inst: &Instance,
-) -> Vec<(ReplicaID, Response<CommitReply>)> {
+) -> Vec<(ReplicaId, Response<CommitReply>)> {
     bcast_msg!(peers, |rid| MakeRequest::commit(rid, inst), commit);
 }
 
 pub async fn bcast_prepare(
     peers: &Vec<ReplicaPeer>,
     inst: &Instance,
-) -> Vec<(ReplicaID, Response<PrepareReply>)> {
+) -> Vec<(ReplicaId, Response<PrepareReply>)> {
     bcast_msg!(peers, |rid| MakeRequest::prepare(rid, inst), prepare);
 }

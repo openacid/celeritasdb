@@ -6,7 +6,7 @@ use std::ops::{Deref, DerefMut};
 use std::path::Path;
 
 use crate::conf::ConfError;
-use crate::qpaxos::ReplicaID;
+use crate::qpaxos::ReplicaId;
 
 use serde::{Deserialize, Serialize};
 
@@ -36,7 +36,7 @@ pub struct GroupInfo {
     /// range defines the starting and ending key this group serves.
     /// It is a left-close right-open range.
     pub range: (String, String),
-    pub replicas: BTreeMap<ReplicaID, NodeId>,
+    pub replicas: BTreeMap<ReplicaId, NodeId>,
 }
 
 #[derive(Serialize, Deserialize, Debug, PartialEq, Clone)]
@@ -55,7 +55,7 @@ pub struct ClusterInfo {
     pub groups: Vec<GroupInfo>,
 
     #[serde(skip)]
-    pub replicas: BTreeMap<ReplicaID, ReplicaInfo>,
+    pub replicas: BTreeMap<ReplicaId, ReplicaInfo>,
 }
 
 // let user to use c.get() just like c.nodes.get()
@@ -97,13 +97,13 @@ impl ClusterInfo {
     }
 
     /// get_replica returns the ReplicaInfo by specified replica-id.
-    pub fn get_replica(&self, rid: ReplicaID) -> Option<&ReplicaInfo> {
+    pub fn get_replica(&self, rid: ReplicaId) -> Option<&ReplicaInfo> {
         let rinfo = self.replicas.get(&rid)?;
         Some(rinfo)
     }
 
     /// get_replica_node returns the Node where the specified replica is.
-    pub fn get_replica_node(&self, rid: ReplicaID) -> Option<&Node> {
+    pub fn get_replica_node(&self, rid: ReplicaId) -> Option<&Node> {
         let rinfo = self.replicas.get(&rid)?;
         let nid = &rinfo.node_id;
         self.nodes.get(nid)
@@ -121,7 +121,7 @@ impl ClusterInfo {
     }
 
     /// get_group returns the GroupInfo where the specified replica in.
-    pub fn get_group(&self, rid: ReplicaID) -> Option<&GroupInfo> {
+    pub fn get_group(&self, rid: ReplicaId) -> Option<&GroupInfo> {
         let rinfo = self.replicas.get(&rid)?;
         Some(&self.groups[rinfo.group_idx])
     }

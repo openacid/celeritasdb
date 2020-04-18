@@ -12,7 +12,7 @@ include!(concat!(env!("OUT_DIR"), "/qpaxos.rs"));
 pub mod macros;
 
 pub type InstanceIdx = i64;
-pub type ReplicaID = i64;
+pub type ReplicaId = i64;
 
 pub use q_paxos_client::*;
 pub use q_paxos_server::*;
@@ -122,7 +122,7 @@ impl ToKey for InstanceId {
     }
 }
 
-impl<A: Into<ReplicaID> + Copy, B: Into<i64> + Copy> From<(A, B)> for InstanceId {
+impl<A: Into<ReplicaId> + Copy, B: Into<i64> + Copy> From<(A, B)> for InstanceId {
     fn from(t: (A, B)) -> InstanceId {
         InstanceId {
             replica_id: t.0.into(),
@@ -131,7 +131,7 @@ impl<A: Into<ReplicaID> + Copy, B: Into<i64> + Copy> From<(A, B)> for InstanceId
     }
 }
 
-impl<A: Into<ReplicaID> + Copy, B: Into<i64> + Copy> From<&(A, B)> for InstanceId {
+impl<A: Into<ReplicaId> + Copy, B: Into<i64> + Copy> From<&(A, B)> for InstanceId {
     fn from(t: &(A, B)) -> InstanceId {
         InstanceId {
             replica_id: t.0.into(),
@@ -179,9 +179,9 @@ impl DerefMut for InstanceIdVec {
 /// Let user use instance_id_vec[replic_id] to retreive an instance_id.
 /// It panics if replica_id not found.
 /// It returns the first match.
-impl Index<ReplicaID> for InstanceIdVec {
+impl Index<ReplicaId> for InstanceIdVec {
     type Output = InstanceId;
-    fn index(&self, rid: ReplicaID) -> &Self::Output {
+    fn index(&self, rid: ReplicaId) -> &Self::Output {
         for inst in self.ids.iter() {
             if inst.replica_id == rid {
                 return inst;
@@ -210,7 +210,7 @@ impl PartialOrd<InstanceId> for InstanceIdVec {
 impl InstanceIdVec {
     /// get retreive an instance_id with specified replica_id.
     /// It returns the first match.
-    pub fn get(&self, rid: ReplicaID) -> Option<InstanceId> {
+    pub fn get(&self, rid: ReplicaId) -> Option<InstanceId> {
         for iid in self.ids.iter() {
             if iid.replica_id == rid {
                 return Some(*iid);
@@ -248,7 +248,7 @@ impl From<&[InstanceId]> for InstanceIdVec {
     }
 }
 
-impl<A: Into<ReplicaID> + Copy, B: Into<i64> + Copy> From<&[(A, B)]> for InstanceIdVec {
+impl<A: Into<ReplicaId> + Copy, B: Into<i64> + Copy> From<&[(A, B)]> for InstanceIdVec {
     fn from(v: &[(A, B)]) -> InstanceIdVec {
         v.iter()
             .map(|x| x.into())
@@ -271,14 +271,14 @@ impl<A> From<[A; 0]> for InstanceIdVec {
 
 macro_rules! impl_instance_id_vec {
     ($n:expr) => {
-        impl<A: Into<ReplicaID> + Copy, B: Into<i64> + Copy> From<&[(A, B); $n]> for InstanceIdVec {
+        impl<A: Into<ReplicaId> + Copy, B: Into<i64> + Copy> From<&[(A, B); $n]> for InstanceIdVec {
             fn from(v: &[(A, B); $n]) -> InstanceIdVec {
                 let q: &[_] = v;
                 q.into()
             }
         }
 
-        impl<A: Into<ReplicaID> + Copy, B: Into<i64> + Copy> From<[(A, B); $n]> for InstanceIdVec {
+        impl<A: Into<ReplicaId> + Copy, B: Into<i64> + Copy> From<[(A, B); $n]> for InstanceIdVec {
             fn from(v: [(A, B); $n]) -> InstanceIdVec {
                 let q: &[_] = &v;
                 q.into()
