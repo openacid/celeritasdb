@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use crate::qpaxos::{Command, Instance, InstanceId};
 use crate::replica::*;
+use crate::testutil;
 use storage::MemEngine;
 
 #[allow(unused_macros)]
@@ -62,7 +63,7 @@ macro_rules! test_inst {
 }
 
 fn new_replica() -> Replica {
-    test_util::new_replica(
+    testutil::new_replica(
         1,
         vec![1, 2, 3],
         vec![],

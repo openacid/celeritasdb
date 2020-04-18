@@ -3,6 +3,7 @@ use std::sync::Arc;
 use crate::conf::ClusterInfo;
 use crate::qpaxos::*;
 use crate::replica::*;
+use crate::testutil;
 use crate::Storage;
 use storage::DBColumnFamily;
 use storage::MemEngine;
@@ -10,69 +11,6 @@ use storage::ToKey;
 
 use pretty_assertions::assert_eq;
 use prost::Message;
-
-/// Create an instance with command "set x=y".
-/// Use this when only deps are concerned.
-/// The initial_deps and deps are all set to the second arg.
-/// supported pattern:
-/// foo_inst!(iid, cmds, initial_deps)
-/// foo_inst!(iid, key, initial_deps) // an instance with a single cmd: Set `key`
-/// foo_inst!(iid, initial_deps)
-/// foo_inst!(None, initial_deps)
-/// foo_inst!(iid)
-macro_rules! foo_inst {
-    ($id:expr,
-     [$( ($op:expr, $key:expr, $val:expr)),*],
-     [$(($dep_rid:expr, $dep_idx:expr)),* $(,)*]
-    ) => {
-        inst!($id, (0, 0, _),
-              [$( ($op, $key, $val)),*],
-              [$(($dep_rid, $dep_idx)),*],
-              "withdeps"
-        )
-    };
-
-    ($id:expr,
-     $key:expr,
-     [$(($dep_rid:expr, $dep_idx:expr)),* $(,)*]
-    ) => {
-        inst!($id, (0, 0, _),
-              [("Set", $key, $key)],
-              [$(($dep_rid, $dep_idx)),*],
-              "withdeps"
-        )
-    };
-
-    (None,
-     [$(($dep_rid:expr, $dep_idx:expr)),* $(,)*]
-    ) => {
-        Instance {
-            instance_id: None,
-            ..inst!((0, 0), (0, 0, _),
-                      [("Set", "x", "y")],
-                      [$(($dep_rid, $dep_idx)),*],
-                      "withdeps"
-                     )
-        }
-    };
-
-    ($id:expr,
-     [$(($dep_rid:expr, $dep_idx:expr)),* $(,)*]
-    ) => {
-        inst!($id, (0, 0, _),
-              [("Set", "x", "y")],
-              [$(($dep_rid, $dep_idx)),*],
-              "withdeps"
-        )
-    };
-
-    ($id:expr
-    ) => {
-        inst!($id, (0, 0, _),
-              [("Set", "x", "y")],
-        )
-    };
-}
 
 fn new_foo_inst(leader_id: i64) -> Instance {
     let mut ii = inst!(
@@ -98,7 +36,7 @@ fn new_foo_replica(
     storage: Storage,
     insts: &[((i64, i64), &Instance)],
 ) -> Replica {
-    let r = test_util::new_replica(replica_id, vec![0, 1, 2], vec![], storage);
+    let r = testutil::new_replica(replica_id, vec![0, 1, 2], vec![], storage);
 
     for (iid, inst) in insts.iter() {
         let mut value = vec![];
@@ -498,74 +436,6 @@ fn test_handle_commit_request() {
     }
 
     // TODO test storage error
-}
-
-#[tokio::main]
-async fn _bcast_fast_accept() {
-    let mut tc = test_util::TestCluster::new(3);
-    tc.start().await;
-    let inst = foo_inst!((0, 1), "key_x", [(0, 0), (1, 0), (2, 0)]);
-    let r = bcast_fast_accept(&tc.replicas[0].peers, &inst, &[true, true, true]).await;
-
-    println!("receive fast accept replys: {:?}", r);
-    // not contain self
-    assert_eq!(2, r.len());
-}
-
-#[test]
-fn test_bcast_fast_accept() {
-    _bcast_fast_accept();
-}
-
-#[tokio::main]
-async fn _bcast_accept() {
-    let mut tc = test_util::TestCluster::new(3);
-    tc.start().await;
-    let inst = foo_inst!((0, 1), "key_x", [(0, 0), (1, 0), (2, 0)]);
-    let r = bcast_accept(&tc.replicas[0].peers, &inst).await;
-
-    println!("receive accept replys: {:?}", r);
-    // not contain self
-    assert_eq!(2, r.len());
-}
-
-#[test]
-fn test_bcast_accept() {
-    _bcast_accept();
-}
-
-#[tokio::main]
-async fn _bcast_commit() {
-    let mut tc = test_util::TestCluster::new(3);
-    tc.start().await;
-    let inst = foo_inst!((0, 1), "key_x", [(0, 0), (1, 0), (2, 0)]);
-    let r = bcast_commit(&tc.replicas[0].peers, &inst).await;
-
-    println!("receive commit replys: {:?}", r);
-    // not contain self
-    assert_eq!(2, r.len());
-}
-
-#[test]
-fn test_bcast_commit() {
-    _bcast_commit();
-}
-
-#[tokio::main]
-async fn _bcast_prepare() {
-    let mut tc = test_util::TestCluster::new(3);
-    tc.start().await;
-    let inst = foo_inst!((0, 1), "key_x", [(0, 0), (1, 0), (2, 0)]);
-    let r = bcast_prepare(&tc.replicas[0].peers, &inst).await;
-
-    println!("receive prepare replys: {:?}", r);
-    // not contain self
-    assert_eq!(2, r.len());
-}
-
-#[test]
-fn test_bcast_prepare() {
-    _bcast_prepare();
 }
 
 fn _test_repl_cmn_ok(cmn: &ReplyCommon, iid: InstanceId, last: Option<BallotNum>) {

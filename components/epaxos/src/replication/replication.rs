@@ -1,10 +1,10 @@
 use crate::conf::GroupInfo;
 use crate::qpaxos::Command;
-use crate::replica::bcast_accept;
-use crate::replica::bcast_fast_accept;
 use crate::replica::InstanceStatus;
 use crate::replica::Replica;
 use crate::replica::Status;
+use crate::replication::bcast_accept;
+use crate::replication::bcast_fast_accept;
 use crate::replication::handle_accept_reply;
 use crate::replication::handle_fast_accept_reply;
 use crate::ReplicationError;

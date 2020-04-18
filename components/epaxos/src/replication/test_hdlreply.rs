@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
 use crate::qpaxos::*;
-use crate::replica::test_util;
 use crate::replica::*;
 use crate::replication::*;
+use crate::testutil;
 use storage::MemEngine;
 
 #[cfg(test)]
@@ -226,7 +226,7 @@ fn test_handle_fast_accept_reply() {
 #[test]
 fn test_handle_accept_reply() {
     let replica_id = 2;
-    let rp = test_util::new_replica(
+    let rp = testutil::new_replica(
         replica_id,
         vec![0, 1, 2],
         vec![],

@@ -76,6 +76,7 @@ impl Server {
 
         println!("serving: {}", api_addr);
 
+        // TODO load cluster conf
         let qp = MyQPaxos::default();
         let s = tonic::transport::Server::builder().add_service(QPaxosServer::new(qp));
 

@@ -4,7 +4,7 @@
 extern crate quick_error;
 
 #[macro_use]
-mod testutil;
+pub mod testutil;
 
 pub mod conf;
 mod serverdata;

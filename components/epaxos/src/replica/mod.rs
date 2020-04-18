@@ -14,9 +14,6 @@ pub use status::*;
 mod test_status;
 
 #[cfg(test)]
-pub mod test_util;
-
-#[cfg(test)]
 mod test_replica;
 
 #[cfg(test)]
