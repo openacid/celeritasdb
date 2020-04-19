@@ -1,4 +1,4 @@
-use crate::qpaxos::{ProtocolError, ReplicaId};
+use crate::qpaxos::ReplicaId;
 use crate::qpaxos::{QError, StorageFailure};
 use storage::StorageError;
 
@@ -10,10 +10,6 @@ quick_error! {
         }
 
         Existed{}
-
-        Protocol(e: ProtocolError) {
-            from(e: ProtocolError) -> (e)
-        }
 
         ReplicaNotFound(rid: ReplicaId) {
             display("replica {:?} not found in cluster", rid)
@@ -33,8 +29,6 @@ impl Into<QError> for ReplicaError {
                 sto: Some(StorageFailure {}),
                 ..Default::default()
             },
-
-            Self::Protocol(e) => e.into(),
 
             // TODO impl
             Self::ReplicaNotFound(_) => QError {
