@@ -85,7 +85,7 @@ pub async fn replicate(
     let repls = bcast_accept(&r.peers, &st.instance).await;
 
     for (from_rid, repl) in repls.iter() {
-        handle_accept_reply(&mut st, *from_rid, &r, repl.get_ref())?;
+        handle_accept_reply(&mut st, *from_rid, repl.get_ref())?;
         if st.accept_oks.len() as i32 >= st.quorum {
             // instance is safe to commit.
             return Ok(st);

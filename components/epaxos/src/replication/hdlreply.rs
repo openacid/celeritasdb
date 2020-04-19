@@ -79,7 +79,6 @@ pub fn handle_fast_accept_reply(
 pub fn handle_accept_reply(
     st: &mut Status,
     from_rid: ReplicaId,
-    ra: &Replica,
     repl: &AcceptReply,
 ) -> Result<(), HandlerError> {
     // TODO test duplicated message
@@ -93,9 +92,10 @@ pub fn handle_accept_reply(
         return Err(HandlerError::RemoteError(e.clone()));
     }
 
-    let (last_ballot, iid) = check_repl_common(&repl.cmn)?;
-    let inst = ra.get_instance(iid)?;
+    let (last_ballot, _iid) = check_repl_common(&repl.cmn)?;
+    let inst = &st.instance;
 
+    // TODO is it necessary to check status?
     // ignore delay reply
     let status = inst.status();
     if status != InstanceStatus::Accepted {
