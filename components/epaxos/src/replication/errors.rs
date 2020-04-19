@@ -2,8 +2,8 @@ use crate::qpaxos::BallotNum;
 use crate::qpaxos::ProtocolError;
 use crate::qpaxos::QError;
 use crate::qpaxos::ReplicaId;
-use crate::replica::Error as ReplicaError;
 use crate::replica::InstanceStatus;
+use crate::replica::ReplicaError;
 use parse::Response;
 use storage::StorageError;
 

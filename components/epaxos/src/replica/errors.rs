@@ -4,7 +4,7 @@ use storage::StorageError;
 
 quick_error! {
     #[derive(Debug, Eq, PartialEq)]
-    pub enum Error {
+    pub enum ReplicaError {
         EngineError(s: StorageError) {
             from(err: StorageError) -> (err)
         }
@@ -27,7 +27,7 @@ quick_error! {
     }
 }
 
-impl Into<QError> for Error {
+impl Into<QError> for ReplicaError {
     fn into(self) -> QError {
         match self {
             Self::EngineError(_) => QError {

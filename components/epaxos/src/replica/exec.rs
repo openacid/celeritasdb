@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::time::SystemTime;
 
 use crate::qpaxos::{Instance, InstanceId, InstanceIdVec, OpCode};
-use crate::replica::{errors::Error, Replica};
+use crate::replica::{Replica, ReplicaError};
 use storage::WriteEntry;
 
 thread_local! {
@@ -69,7 +69,10 @@ impl Replica {
         None
     }
 
-    pub fn execute_commands(&self, mut insts: Vec<Instance>) -> Result<Vec<InstanceId>, Error> {
+    pub fn execute_commands(
+        &self,
+        mut insts: Vec<Instance>,
+    ) -> Result<Vec<InstanceId>, ReplicaError> {
         let mut rst = Vec::with_capacity(insts.len());
         let mut entrys: Vec<WriteEntry> = Vec::with_capacity(insts.len());
         let mut existed = HashMap::new();
@@ -129,7 +132,10 @@ impl Replica {
     /// S = {x | x ∈ S and (∃y: y → x)}
     /// so S = {b, d}
     /// sort S by instance_id and execute
-    pub fn execute_instances(&self, mut insts: Vec<Instance>) -> Result<Vec<InstanceId>, Error> {
+    pub fn execute_instances(
+        &self,
+        mut insts: Vec<Instance>,
+    ) -> Result<Vec<InstanceId>, ReplicaError> {
         let mut early = vec![false; insts.len()];
         let mut late = vec![false; insts.len()];
         let mut can_exec = Vec::with_capacity(insts.len());
@@ -187,7 +193,7 @@ impl Replica {
     pub fn get_insts_if_committed(
         &self,
         inst_ids: &Vec<InstanceId>,
-    ) -> Result<Vec<Instance>, Error> {
+    ) -> Result<Vec<Instance>, ReplicaError> {
         let mut rst = Vec::new();
         let mut recover_iids = InstanceIdVec::from([0; 0]);
 
@@ -213,7 +219,7 @@ impl Replica {
         Ok(rst)
     }
 
-    pub fn execute(&self) -> Result<Vec<InstanceId>, Error> {
+    pub fn execute(&self) -> Result<Vec<InstanceId>, ReplicaError> {
         let mut exec_up_to = InstanceIdVec::from([0; 0]);
         let mut smallest_inst_ids = InstanceIdVec::from([0; 0]);
         for rid in self.group_replica_ids.iter() {

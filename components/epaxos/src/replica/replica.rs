@@ -2,7 +2,7 @@ use std::i64;
 
 use crate::conf::ClusterInfo;
 use crate::qpaxos::*;
-use crate::replica::Error as ReplicaError;
+use crate::replica::ReplicaError;
 use crate::Iter;
 use crate::Storage;
 
