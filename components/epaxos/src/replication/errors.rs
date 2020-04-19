@@ -93,10 +93,7 @@ quick_error! {
         NotEnoughQuorum(phase: InstanceStatus, want: i32, got: i32) {
             display("{:?}: want at least {} replies, but:{}", phase, want, got)
         }
-        Replica(re: ReplicaError) {
-            from(re: ReplicaError) -> (re)
-        }
-        Handler(e: RpcHandlerError) {
+        RpcHandler(e: RpcHandlerError) {
             from(e: RpcHandlerError) -> (e)
         }
         Storage(e: StorageError) {

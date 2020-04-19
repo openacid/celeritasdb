@@ -6,6 +6,7 @@ use crate::replica::ReplicaError;
 use crate::replication::RpcHandlerError;
 use crate::Iter;
 use crate::Storage;
+use storage::StorageError;
 
 /// ref_or_bug extracts a immutable ref from an Option.
 /// If the Option is None a bug handler is triggered.
@@ -101,7 +102,7 @@ impl Replica {
     /// new_instance creates a new instance with initial_deps and deps initialized and stores it in
     /// replica storage.
     /// initial_deps and deps could contains (x, -1) if a leader has not yet propose any instance.
-    pub fn new_instance(&self, cmds: &[Command]) -> Result<Instance, ReplicaError> {
+    pub fn new_instance(&self, cmds: &[Command]) -> Result<Instance, StorageError> {
         // TODO locking
         // TODO do not need to store max instance id, store it in replica and when starting, scan
         // backward to find the max
