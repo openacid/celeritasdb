@@ -11,6 +11,9 @@ include!(concat!(env!("OUT_DIR"), "/qpaxos.rs"));
 #[macro_use]
 pub mod macros;
 
+// impl Display for qpaxos data types.
+mod display;
+
 pub type InstanceIdx = i64;
 pub type ReplicaId = i64;
 
@@ -28,6 +31,9 @@ pub use quorums::*;
 
 #[cfg(test)]
 mod t;
+
+#[cfg(test)]
+mod test_display;
 
 #[cfg(test)]
 mod test_macros;
