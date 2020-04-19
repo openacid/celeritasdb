@@ -8,9 +8,9 @@ use parse::Response;
 use storage::StorageError;
 
 quick_error! {
-    /// HandlerError is an error encountered when handle-xx-request or handle-xx-reply.
+    /// RpcHandlerError is an error encountered when handle-xx-request or handle-xx-reply.
     #[derive(Debug, Eq, PartialEq)]
-    pub enum HandlerError {
+    pub enum RpcHandlerError {
         /// A duplicated request/reply is received.
         Dup(rid: ReplicaId) {
             from(rid: ReplicaId) -> (rid)
@@ -34,7 +34,10 @@ quick_error! {
         /// A malformed replica error.
         Replica(r: ReplicaError) {
             from(r: ReplicaError) -> (r)
-            from(e: StorageError) -> (e.into())
+        }
+
+        Storage(s: StorageError) {
+            from(s: StorageError) -> (s)
         }
 
         /// A delay reply is received
@@ -54,8 +57,8 @@ quick_error! {
         Replica(re: ReplicaError) {
             from(re: ReplicaError) -> (re)
         }
-        Handler(e: HandlerError) {
-            from(e: HandlerError) -> (e)
+        Handler(e: RpcHandlerError) {
+            from(e: RpcHandlerError) -> (e)
         }
         Storage(e: StorageError) {
             from(e: StorageError) -> (e)

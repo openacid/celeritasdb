@@ -1,6 +1,6 @@
 use crate::qpaxos::*;
 use crate::replica::*;
-use crate::replication::HandlerError;
+use crate::replication::RpcHandlerError;
 
 pub fn check_repl_common(
     cm: &Option<ReplyCommon>,
@@ -20,16 +20,16 @@ pub fn handle_fast_accept_reply(
     st: &mut Status,
     from_rid: ReplicaId,
     repl: &FastAcceptReply,
-) -> Result<(), HandlerError> {
+) -> Result<(), RpcHandlerError> {
     // A duplicated message is received. Just ignore.
     if st.fast_replied.contains_key(&from_rid) {
-        return Err(HandlerError::Dup(from_rid));
+        return Err(RpcHandlerError::Dup(from_rid));
     }
 
     st.fast_replied.insert(from_rid, true);
 
     if let Some(ref e) = repl.err {
-        return Err(HandlerError::RemoteError(e.clone()));
+        return Err(RpcHandlerError::RemoteError(e.clone()));
     }
 
     // TODO check iid matches
@@ -52,7 +52,7 @@ pub fn handle_fast_accept_reply(
     }
 
     if inst.ballot < Some(last_ballot) {
-        return Err(HandlerError::StaleBallot(
+        return Err(RpcHandlerError::StaleBallot(
             inst.ballot.or(Some((0, 0, 0).into())).unwrap(),
             last_ballot,
         ));
@@ -80,16 +80,16 @@ pub fn handle_accept_reply(
     st: &mut Status,
     from_rid: ReplicaId,
     repl: &AcceptReply,
-) -> Result<(), HandlerError> {
+) -> Result<(), RpcHandlerError> {
     // TODO test duplicated message
     // A duplicated message is received. Just ignore.
     if st.accept_replied.contains_key(&from_rid) {
-        return Err(HandlerError::Dup(from_rid));
+        return Err(RpcHandlerError::Dup(from_rid));
     }
     st.accept_replied.insert(from_rid, true);
 
     if let Some(ref e) = repl.err {
-        return Err(HandlerError::RemoteError(e.clone()));
+        return Err(RpcHandlerError::RemoteError(e.clone()));
     }
 
     let (last_ballot, _iid) = check_repl_common(&repl.cmn)?;
@@ -99,11 +99,14 @@ pub fn handle_accept_reply(
     // ignore delay reply
     let status = inst.status();
     if status != InstanceStatus::Accepted {
-        return Err(HandlerError::DelayedReply(InstanceStatus::Accepted, status));
+        return Err(RpcHandlerError::DelayedReply(
+            InstanceStatus::Accepted,
+            status,
+        ));
     }
 
     if inst.ballot < Some(last_ballot) {
-        return Err(HandlerError::StaleBallot(
+        return Err(RpcHandlerError::StaleBallot(
             inst.ballot.or(Some((0, 0, 0).into())).unwrap(),
             last_ballot,
         ));

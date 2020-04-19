@@ -98,7 +98,7 @@ fn test_handle_fast_accept_reply_err() {
 
     let inst = init_inst!((1, 2), [("Set", "x", "1")], [(1, 1)]);
 
-    let cases: Vec<(FastAcceptReply, HandlerError)> = vec![
+    let cases: Vec<(FastAcceptReply, RpcHandlerError)> = vec![
         (frepl!(), ProtocolError::LackOf("cmn".into()).into()),
         (
             frepl!((None, None)),
@@ -169,7 +169,7 @@ fn test_handle_fast_accept_reply() {
         let r = handle_fast_accept_reply(&mut st, from_rid, &repl);
         assert_eq!(
             r.err().unwrap(),
-            HandlerError::StaleBallot((0, 0, 1).into(), (100, 0, 1).into())
+            RpcHandlerError::StaleBallot((0, 0, 1).into(), (100, 0, 1).into())
         );
         assert_eq!(
             true,
@@ -188,7 +188,7 @@ fn test_handle_fast_accept_reply() {
         let from_rid = 4;
 
         let r = handle_fast_accept_reply(&mut st, from_rid, &repl);
-        assert_eq!(r.err().unwrap(), HandlerError::Dup(from_rid));
+        assert_eq!(r.err().unwrap(), RpcHandlerError::Dup(from_rid));
         assert_eq!(true, st.fast_replied.contains_key(&from_rid));
 
         get!(st.fast_oks, &from_rid, None);
@@ -208,7 +208,7 @@ fn test_handle_fast_accept_reply() {
         let r = handle_fast_accept_reply(&mut st, from_rid, &repl);
         assert_eq!(
             r.err().unwrap(),
-            HandlerError::RemoteError(repl.err.unwrap())
+            RpcHandlerError::RemoteError(repl.err.unwrap())
         );
         assert_eq!(
             true,
