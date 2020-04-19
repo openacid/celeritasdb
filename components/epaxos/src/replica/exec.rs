@@ -3,7 +3,8 @@ use std::collections::HashMap;
 use std::time::SystemTime;
 
 use crate::qpaxos::{Instance, InstanceId, InstanceIdVec, OpCode};
-use crate::replica::{Replica, ReplicaError};
+use crate::replica::Replica;
+use storage::StorageError;
 use storage::WriteEntry;
 
 thread_local! {
@@ -72,7 +73,7 @@ impl Replica {
     pub fn execute_commands(
         &self,
         mut insts: Vec<Instance>,
-    ) -> Result<Vec<InstanceId>, ReplicaError> {
+    ) -> Result<Vec<InstanceId>, StorageError> {
         let mut rst = Vec::with_capacity(insts.len());
         let mut entrys: Vec<WriteEntry> = Vec::with_capacity(insts.len());
         let mut existed = HashMap::new();
@@ -135,7 +136,7 @@ impl Replica {
     pub fn execute_instances(
         &self,
         mut insts: Vec<Instance>,
-    ) -> Result<Vec<InstanceId>, ReplicaError> {
+    ) -> Result<Vec<InstanceId>, StorageError> {
         let mut early = vec![false; insts.len()];
         let mut late = vec![false; insts.len()];
         let mut can_exec = Vec::with_capacity(insts.len());
@@ -193,7 +194,7 @@ impl Replica {
     pub fn get_insts_if_committed(
         &self,
         inst_ids: &Vec<InstanceId>,
-    ) -> Result<Vec<Instance>, ReplicaError> {
+    ) -> Result<Vec<Instance>, StorageError> {
         let mut rst = Vec::new();
         let mut recover_iids = InstanceIdVec::from([0; 0]);
 
@@ -219,7 +220,7 @@ impl Replica {
         Ok(rst)
     }
 
-    pub fn execute(&self) -> Result<Vec<InstanceId>, ReplicaError> {
+    pub fn execute(&self) -> Result<Vec<InstanceId>, StorageError> {
         let mut exec_up_to = InstanceIdVec::from([0; 0]);
         let mut smallest_inst_ids = InstanceIdVec::from([0; 0]);
         for rid in self.group_replica_ids.iter() {
