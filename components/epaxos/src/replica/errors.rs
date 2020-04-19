@@ -5,14 +5,8 @@ use storage::StorageError;
 quick_error! {
     #[derive(Debug, Eq, PartialEq)]
     pub enum ReplicaError {
-        EngineError(s: StorageError) {
+        Storage(s: StorageError) {
             from(err: StorageError) -> (err)
-        }
-
-        CmdNotSupport(s: String)
-
-        SystemError(s: String) {
-            from(err: std::time::SystemTimeError) -> (format!("{:?}", err))
         }
 
         Existed{}
@@ -30,24 +24,12 @@ quick_error! {
 impl Into<QError> for ReplicaError {
     fn into(self) -> QError {
         match self {
-            Self::EngineError(_) => QError {
+            Self::Storage(_) => QError {
                 sto: Some(StorageFailure {}),
                 ..Default::default()
             },
 
             Self::Existed {} => QError {
-                sto: Some(StorageFailure {}),
-                ..Default::default()
-            },
-
-            // TODO impl
-            Self::CmdNotSupport(_) => QError {
-                sto: Some(StorageFailure {}),
-                ..Default::default()
-            },
-
-            // TODO impl
-            Self::SystemError(_) => QError {
                 sto: Some(StorageFailure {}),
                 ..Default::default()
             },
