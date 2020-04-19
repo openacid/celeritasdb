@@ -53,6 +53,12 @@ mod test_instance;
 pub struct MakeRequest {}
 pub struct MakeReply {}
 
+#[derive(Debug, Eq, PartialEq, enum_utils::FromStr)]
+pub enum Direction {
+    Request,
+    Reply,
+}
+
 impl From<(&str, &str, &str)> for InvalidRequest {
     fn from(t: (&str, &str, &str)) -> InvalidRequest {
         InvalidRequest {

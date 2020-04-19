@@ -1,3 +1,4 @@
+use crate::qpaxos::Direction;
 use crate::qpaxos::*;
 use crate::replica::*;
 use crate::replication::RpcHandlerError;
@@ -23,7 +24,12 @@ pub fn handle_fast_accept_reply(
 ) -> Result<(), RpcHandlerError> {
     // A duplicated message is received. Just ignore.
     if st.fast_replied.contains_key(&from_rid) {
-        return Err(RpcHandlerError::Dup(from_rid));
+        return Err(RpcHandlerError::DupRpc(
+            InstanceStatus::FastAccepted,
+            Direction::Reply,
+            from_rid,
+            st.instance.instance_id.unwrap(),
+        ));
     }
 
     st.fast_replied.insert(from_rid, true);
@@ -84,7 +90,12 @@ pub fn handle_accept_reply(
     // TODO test duplicated message
     // A duplicated message is received. Just ignore.
     if st.accept_replied.contains_key(&from_rid) {
-        return Err(RpcHandlerError::Dup(from_rid));
+        return Err(RpcHandlerError::DupRpc(
+            InstanceStatus::Accepted,
+            Direction::Reply,
+            from_rid,
+            st.instance.instance_id.unwrap(),
+        ));
     }
     st.accept_replied.insert(from_rid, true);
 

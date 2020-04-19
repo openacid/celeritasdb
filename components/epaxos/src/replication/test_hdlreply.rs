@@ -1,5 +1,6 @@
 use std::sync::Arc;
 
+use crate::qpaxos::Direction;
 use crate::qpaxos::*;
 use crate::replica::*;
 use crate::replication::*;
@@ -188,7 +189,15 @@ fn test_handle_fast_accept_reply() {
         let from_rid = 4;
 
         let r = handle_fast_accept_reply(&mut st, from_rid, &repl);
-        assert_eq!(r.err().unwrap(), RpcHandlerError::Dup(from_rid));
+        assert_eq!(
+            r.err().unwrap(),
+            RpcHandlerError::DupRpc(
+                InstanceStatus::FastAccepted,
+                Direction::Reply,
+                from_rid,
+                st.instance.instance_id.unwrap()
+            )
+        );
         assert_eq!(true, st.fast_replied.contains_key(&from_rid));
 
         get!(st.fast_oks, &from_rid, None);

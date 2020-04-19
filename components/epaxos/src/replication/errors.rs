@@ -1,4 +1,6 @@
 use crate::qpaxos::BallotNum;
+use crate::qpaxos::Direction;
+use crate::qpaxos::InstanceId;
 use crate::qpaxos::ProtocolError;
 use crate::qpaxos::QError;
 use crate::qpaxos::ReplicaId;
@@ -13,8 +15,9 @@ quick_error! {
     #[derive(Debug, Eq, PartialEq)]
     pub enum RpcHandlerError {
         /// A duplicated request/reply is received.
-        Dup(rid: ReplicaId) {
-            from(rid: ReplicaId) -> (rid)
+        DupRpc(phase: InstanceStatus, dir: Direction, from_rid: ReplicaId, inst_id: InstanceId) {
+            from(f:(InstanceStatus, &str, ReplicaId, InstanceId)) -> (f.0, f.1.parse().unwrap(), f.2, f.3)
+            display("dup {:?} {:?} from replica:{}, instance-id:{}", phase, dir, from_rid, inst_id)
         }
 
         /// There is an error occured on remote peer.
@@ -52,7 +55,7 @@ impl Into<QError> for RpcHandlerError {
     fn into(self) -> QError {
         match self {
             // TODO impl
-            Self::Dup(_rid) => QError {
+            Self::DupRpc(_, _, _, _) => QError {
                 sto: Some(StorageFailure {}),
                 ..Default::default()
             },
