@@ -2,6 +2,7 @@ use crate::qpaxos::BallotNum;
 use crate::qpaxos::ProtocolError;
 use crate::qpaxos::QError;
 use crate::qpaxos::ReplicaId;
+use crate::qpaxos::StorageFailure;
 use crate::replica::InstanceStatus;
 use crate::replica::ReplicaError;
 use parse::Response;
@@ -27,7 +28,7 @@ quick_error! {
         }
 
         /// A malformed protocol error.
-        Protocal(p: ProtocolError) {
+        Protocol(p: ProtocolError) {
             from(p: ProtocolError) -> (p)
         }
 
@@ -43,6 +44,41 @@ quick_error! {
         /// A delay reply is received
         DelayedReply(inst_phase: InstanceStatus, reply_phase: InstanceStatus) {
             display("instance phase:{:?} while recv reply of phase: {:?}", inst_phase, reply_phase)
+        }
+    }
+}
+
+impl Into<QError> for RpcHandlerError {
+    fn into(self) -> QError {
+        match self {
+            // TODO impl
+            Self::Dup(_rid) => QError {
+                sto: Some(StorageFailure {}),
+                ..Default::default()
+            },
+
+            Self::RemoteError(qerr) => qerr.clone(),
+
+            // TODO impl
+            Self::StaleBallot(_stale, _last) => QError {
+                sto: Some(StorageFailure {}),
+                ..Default::default()
+            },
+
+            Self::Protocol(e) => e.into(),
+
+            Self::Replica(e) => e.into(),
+
+            Self::Storage(_) => QError {
+                sto: Some(StorageFailure {}),
+                ..Default::default()
+            },
+
+            // TODO impl
+            Self::DelayedReply(_ip, _rp) => QError {
+                sto: Some(StorageFailure {}),
+                ..Default::default()
+            },
         }
     }
 }

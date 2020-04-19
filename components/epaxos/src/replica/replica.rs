@@ -3,6 +3,7 @@ use std::i64;
 use crate::conf::ClusterInfo;
 use crate::qpaxos::*;
 use crate::replica::ReplicaError;
+use crate::replication::RpcHandlerError;
 use crate::Iter;
 use crate::Storage;
 
@@ -159,13 +160,16 @@ impl Replica {
         }
     }
 
-    fn _fast_accept(&self, req: &FastAcceptRequest) -> Result<(Instance, Vec<bool>), ReplicaError> {
+    fn _fast_accept(
+        &self,
+        req: &FastAcceptRequest,
+    ) -> Result<(Instance, Vec<bool>), RpcHandlerError> {
         let (ballot, iid) = check_req_common(self.replica_id, &req.cmn)?;
 
         let mut inst = match self.storage.get_instance(iid)? {
             Some(v) => {
                 if v.ballot.is_none() || v.ballot.unwrap().num != 0 {
-                    return Err(ReplicaError::Existed {});
+                    return Err((ReplicaError::Existed {}).into());
                 }
                 v
             }
@@ -240,7 +244,7 @@ impl Replica {
         }
     }
 
-    fn _accept(&self, req: &AcceptRequest) -> Result<Instance, ReplicaError> {
+    fn _accept(&self, req: &AcceptRequest) -> Result<Instance, RpcHandlerError> {
         // TODO locking
         let (ballot, iid) = check_req_common(self.replica_id, &req.cmn)?;
 
@@ -272,7 +276,7 @@ impl Replica {
         }
     }
 
-    fn _commit(&self, req: &CommitRequest) -> Result<Instance, ReplicaError> {
+    fn _commit(&self, req: &CommitRequest) -> Result<Instance, RpcHandlerError> {
         let (ballot, iid) = check_req_common(self.replica_id, &req.cmn)?;
 
         // TODO locking
