@@ -1,10 +1,11 @@
 use std::mem::replace;
 use std::sync::Arc;
+use std::time::Duration;
 
 use futures::Future;
 
 use tokio;
-use tokio::sync::oneshot::Sender;
+use tokio::sync::oneshot::{error::TryRecvError, Receiver, Sender};
 use tokio::task::JoinHandle;
 
 use tonic;
@@ -23,7 +24,7 @@ use crate::ServerError;
 pub struct Server {
     server_data: Arc<ServerData>,
     stop_txs: Vec<(&'static str, Sender<()>)>,
-    join_handle: Option<JoinHandle<()>>,
+    join_handle: Vec<JoinHandle<()>>,
 }
 
 impl Server {
@@ -31,7 +32,7 @@ impl Server {
         Server {
             server_data: Arc::new(ServerData::new(sto, cluster, node_id)),
             stop_txs: Vec::new(),
-            join_handle: None,
+            join_handle: Vec::new(),
         }
     }
 
@@ -47,14 +48,58 @@ impl Server {
     pub fn start(&mut self) {
         let (tx1, rx1) = tokio::sync::oneshot::channel::<()>();
         let (tx2, rx2) = tokio::sync::oneshot::channel::<()>();
+        let (tx3, rx3) = tokio::sync::oneshot::channel::<()>();
 
         let fut = Server::_start_servers(self.server_data.clone(), rx1, rx2);
         let j = tokio::spawn(fut);
+        self.join_handle.push(j);
 
-        self.join_handle = Some(j);
+        let fut = Server::_start_replica_exec(self.server_data.clone(), rx3);
+        let j = tokio::spawn(fut);
+        self.join_handle.push(j);
 
         self.stop_txs.push(("api", tx1));
         self.stop_txs.push(("replication", tx2));
+        self.stop_txs.push(("exec", tx3));
+    }
+
+    async fn _start_replica_exec(sd: Arc<ServerData>, mut rx: Receiver<()>) {
+        loop {
+            let mut exec_count = 0;
+            for r in sd.local_replicas.values() {
+                match r.execute() {
+                    Ok(iids) => {
+                        println!(
+                            "success to execute instances {:?} for {:?}",
+                            iids, r.replica_id
+                        );
+                        exec_count += iids.len();
+                    }
+                    Err(e) => {
+                        println!("{:?} while execute instances for {:?}", e, r.replica_id);
+                        continue;
+                    }
+                }
+            }
+
+            if exec_count == 0 {
+                tokio::time::delay_for(Duration::from_millis(10)).await;
+            }
+
+            match rx.try_recv() {
+                Ok(_) => {
+                    println!("exit replcia exec thread with recv stop signal");
+                    break;
+                }
+                Err(e) => match e {
+                    TryRecvError::Empty => {}
+                    TryRecvError::Closed => {
+                        println!("exit replcia exec thread with the sender had been dropped");
+                        break;
+                    }
+                },
+            }
+        }
     }
 
     async fn _start_servers<F: Future + Send + 'static>(
@@ -105,8 +150,10 @@ impl Server {
     }
 
     pub async fn join(&mut self) -> Result<(), ServerError> {
-        let j = replace(&mut self.join_handle, None);
-        j.ok_or(ServerError::NotStarted)?.await.unwrap();
+        let js = replace(&mut self.join_handle, Vec::new());
+        for j in js {
+            j.await.unwrap();
+        }
         Ok(())
     }
 }

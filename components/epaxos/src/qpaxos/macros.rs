@@ -1,3 +1,4 @@
+#[macro_export]
 #[allow(unused_macros)]
 macro_rules! cmds {
     [$(($op:expr, $key:expr, $val:expr)),*] => {
@@ -5,6 +6,7 @@ macro_rules! cmds {
     }
 }
 
+#[macro_export]
 #[allow(unused_macros)]
 macro_rules! instid {
     ($replica_id:expr, $idx:expr) => {
@@ -12,6 +14,7 @@ macro_rules! instid {
     };
 }
 
+#[macro_export]
 #[allow(unused_macros)]
 macro_rules! instids {
     [$(($replica_id:expr, $idx:expr)),*] => {
@@ -19,6 +22,7 @@ macro_rules! instids {
     }
 }
 
+#[macro_export]
 #[allow(unused_macros)]
 macro_rules! ballot {
     ($epoch:expr, $num:expr, $replica_id:expr) => {
@@ -36,10 +40,15 @@ macro_rules! ballot {
 ///
 /// Example:
 /// ```
-/// init_inst!((0, 1),
+/// #[macro_use] extern crate epaxos;
+/// use epaxos::qpaxos::*;
+///
+/// let inst = init_inst!((0, 1),
 ///            [("Set", "x", "1"), ("Set", "y", "2")],
 ///            [(1, 0), (2, 0), (3, 0)]);
+/// println!("{:?}", inst);
 /// ```
+#[macro_export]
 #[allow(unused_macros)]
 macro_rules! init_inst {
     ($id:expr,
@@ -67,6 +76,7 @@ macro_rules! init_inst {
 /// inst!(instance_id, ballot, cmds, initial_deps, "withdeps")
 /// inst!(instance_id, ballot, cmds, initial_deps)
 /// inst!(instance_id, ballot, cmds)
+#[macro_export]
 #[allow(unused_macros)]
 macro_rules! inst {
     // instance_id, ballot, cmds, initial_deps=None
