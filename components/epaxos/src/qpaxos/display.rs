@@ -82,9 +82,8 @@ impl_tostr_ext!(InstanceId, "({}, {})", replica_id, idx);
 impl_tostr_ext!(BallotNum, "({}, {}, {})", epoch, num, replica_id);
 impl_tostr_ext!(
     Instance,
-    "{{id:{}, blt:{}->{}, cmds:{}, deps:{}{}{}, c/e:{}/{}}}",
+    "{{id:{}, blt:{}, cmds:{}, deps:{}{}{}, c/e:{}/{}}}",
     instance_id,
-    last_ballot,
     ballot,
     cmds,
     initial_deps,

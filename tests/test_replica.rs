@@ -25,7 +25,6 @@ async fn _test_replica_exec_thread() {
         (
             inst!(
                 (1, 0),
-                (4, 5, 2),
                 (3, 4, 2),
                 [("Set", "x", "y")],
                 [(1, 0)],
@@ -39,7 +38,6 @@ async fn _test_replica_exec_thread() {
         (
             inst!(
                 (1, 1),
-                (4, 5, 2),
                 (3, 4, 2),
                 [("Set", "z", "a")],
                 [(1, 0)],

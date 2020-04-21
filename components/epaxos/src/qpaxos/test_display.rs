@@ -87,7 +87,6 @@ fn test_display_instance() {
     let inst = inst!(
         (1, 2),
         (2, 3, 4),
-        (4, 5, 6),
         [("Set", "a", "b"), ("Get", "c", "d")],
         [(2, 3), (3, 4)],
         [(3, 4), (4, 5)],
@@ -95,6 +94,6 @@ fn test_display_instance() {
         false,
         true,
     );
-    assert_eq!("{id:(1, 2), blt:(2, 3, 4)->(4, 5, 6), cmds:[Set:a=b, Get:c], deps:[(2, 3), (3, 4)][(3, 4), (4, 5)][(4, 5), (5, 6)], c/e:false/true}",
+    assert_eq!("{id:(1, 2), blt:(2, 3, 4), cmds:[Set:a=b, Get:c], deps:[(2, 3), (3, 4)][(3, 4), (4, 5)][(4, 5), (5, 6)], c/e:false/true}",
     format!("{}", inst));
 }

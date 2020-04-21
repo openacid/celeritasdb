@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use crate::qpaxos::Direction;
+use crate::qpaxos::ReplicateReply;
 use crate::qpaxos::*;
 use crate::replica::*;
 use crate::replication::*;
@@ -10,36 +11,21 @@ use storage::MemEngine;
 #[cfg(test)]
 use pretty_assertions::assert_eq;
 
-/// replcmn makes a ReplyCommon.
-/// Supported pattern:
-/// replcmn!(None, None)
-/// replcmn!(None, instid)
-/// replcmn!(ballot, None)
-/// replcmn!(ballot, instid)
-macro_rules! replcmn {
-    (None, None) => {
-        ReplyCommon {
-            last_ballot: None,
-            instance_id: None,
-        }
+macro_rules! blt {
+    (None) => {
+        None
     };
-    (None, $id:expr) => {
-        ReplyCommon {
-            last_ballot: None,
-            instance_id: Some($id.into()),
-        }
+    ($blt:expr) => {
+        Some($blt.into())
     };
-    ($blt:expr, None) => {
-        ReplyCommon {
-            last_ballot: Some($blt.into()),
-            instance_id: None,
-        }
+}
+
+macro_rules! iid {
+    (None) => {
+        None
     };
-    ($blt:expr, $id:expr) => {
-        ReplyCommon {
-            last_ballot: Some($blt.into()),
-            instance_id: Some($id.into()),
-        }
+    ($id:expr) => {
+        Some($id.into())
     };
 }
 
@@ -66,93 +52,134 @@ macro_rules! deps {
     };
 }
 
+macro_rules! frepl {
+    () => {
+        ReplicateReply {
+            phase: Some(
+                FastAcceptReply {
+                    ..Default::default()
+                }
+                .into(),
+            ),
+            ..Default::default()
+        }
+    };
+    (($blt:tt, $id:tt)) => {
+        ReplicateReply {
+            last_ballot: blt!($blt),
+            instance_id: iid!($id),
+            phase: Some(
+                FastAcceptReply {
+                    ..Default::default()
+                }
+                .into(),
+            ),
+            ..Default::default()
+        }
+    };
+    (($blt:tt, $id:tt), None) => {
+        ReplicateReply {
+            last_ballot: blt!($blt),
+            instance_id: iid!($id),
+            phase: None,
+            ..Default::default()
+        }
+    };
+    (($blt:tt, $id:tt), ($deps:tt)) => {
+        ReplicateReply {
+            last_ballot: blt!($blt),
+            instance_id: iid!($id),
+            phase: Some(
+                FastAcceptReply {
+                    deps: deps!($deps),
+                    ..Default::default()
+                }
+                .into(),
+            ),
+            ..Default::default()
+        }
+    };
+    (($blt:tt, $id:tt), ($deps:tt, $cmts:expr)) => {
+        ReplicateReply {
+            last_ballot: blt!($blt),
+            instance_id: iid!($id),
+            phase: Some(
+                FastAcceptReply {
+                    deps: deps!($deps),
+                    deps_committed: $cmts,
+                    ..Default::default()
+                }
+                .into(),
+            ),
+            ..Default::default()
+        }
+    };
+}
+
 #[test]
 fn test_handle_fast_accept_reply_err() {
-    macro_rules! frepl {
-        () => {
-            FastAcceptReply {
-                ..Default::default()
-            }
-        };
-        (($blt:tt, $id:tt)) => {
-            FastAcceptReply {
-                cmn: Some(replcmn!($blt, $id)),
-                ..Default::default()
-            }
-        };
-        (($blt:tt, $id:tt), $deps:tt) => {
-            FastAcceptReply {
-                cmn: Some(replcmn!($blt, $id)),
-                deps: deps!($deps),
-                ..Default::default()
-            }
-        };
-        (($blt:tt, $id:tt), $deps:tt, $cmts:expr) => {
-            FastAcceptReply {
-                cmn: Some(replcmn!($blt, $id)),
-                deps: deps!($deps),
-                deps_committed: $cmts,
-                ..Default::default()
-            }
-        };
-    }
-
     let inst = init_inst!((1, 2), [("Set", "x", "1")], [(1, 1)]);
 
-    let cases: Vec<(FastAcceptReply, RpcHandlerError)> = vec![
-        (frepl!(), ProtocolError::LackOf("cmn".into()).into()),
+    let cases: Vec<(ReplicateReply, RpcHandlerError)> = vec![
         (
             frepl!((None, None)),
-            ProtocolError::LackOf("cmn.last_ballot".into()).into(),
+            ProtocolError::LackOf("last_ballot".into()).into(),
         ),
         (
             frepl!((None, (1, 2))),
-            ProtocolError::LackOf("cmn.last_ballot".into()).into(),
+            ProtocolError::LackOf("last_ballot".into()).into(),
         ),
         (
             frepl!(((1, 2, 3), None)),
-            ProtocolError::LackOf("cmn.instance_id".into()).into(),
+            ProtocolError::LackOf("instance_id".into()).into(),
         ),
         (
             frepl!(((1, 2, 3), (1, 2)), None),
-            ProtocolError::LackOf("deps".into()).into(),
+            ProtocolError::LackOf("phase".into()).into(),
         ),
         (
-            frepl!(((1, 2, 3), (1, 2)), [(1, 2), (2, 3)], vec![true]),
-            ProtocolError::Incomplete("deps_committed".into(), 2, 1).into(),
+            ReplicateReply {
+                last_ballot: blt!((1, 2, 3)),
+                instance_id: iid!((1, 2)),
+                phase: Some(
+                    CommitReply {
+                        ..Default::default()
+                    }
+                    .into(),
+                ),
+                ..Default::default()
+            },
+            ProtocolError::LackOf("phase::Fast".into()).into(),
+        ),
+        (
+            frepl!(((1, 2, 3), (1, 2)), (None)),
+            ProtocolError::LackOf("phase::Fast.deps".into()).into(),
+        ),
+        (
+            frepl!(((1, 2, 3), (1, 2)), ([(1, 2), (2, 3)], vec![true])),
+            ProtocolError::Incomplete("phase::Fast.deps_committed".into(), 2, 1).into(),
         ),
     ];
 
     for (repl, want) in cases.iter() {
         let mut st = Status::new(3, inst.clone());
-        let r = handle_fast_accept_reply(&mut st, 3, repl);
+        let r = handle_fast_accept_reply(&mut st, 3, repl.clone());
         assert_eq!(r.err().unwrap(), *want, "fast-reply: {:?}", repl);
     }
 }
 
 #[test]
 fn test_handle_fast_accept_reply() {
-    macro_rules! frepl {
-        (($blt:tt, $id:tt), $deps:tt, $cmts:expr) => {
-            FastAcceptReply {
-                cmn: Some(replcmn!($blt, $id)),
-                deps: deps!($deps),
-                deps_committed: $cmts,
-                ..Default::default()
-            }
-        };
-    }
-
     let inst = init_inst!((1, 2), [("Set", "x", "1")], []);
     let mut st = Status::new(3, inst.clone());
 
     {
         // positive reply updates the Status.
-        let repl: FastAcceptReply =
-            frepl!(((0, 0, 1), (1, 2)), [(1, 2), (2, 3)], vec![false, true]);
+        let repl: ReplicateReply =
+            frepl!(((0, 0, 1), (1, 2)), ([(1, 2), (2, 3)], vec![false, true]));
         let from_rid = 5;
 
-        let r = handle_fast_accept_reply(&mut st, from_rid, &repl);
+        let r = handle_fast_accept_reply(&mut st, from_rid, repl.clone());
         assert_eq!(r.unwrap(), ());
         assert_eq!(st.fast_replied[&from_rid], true);
         get!(st.fast_oks, &from_rid, true);
@@ -164,10 +191,10 @@ fn test_handle_fast_accept_reply() {
     }
     {
         // greater ballot should be ignored
-        let repl: FastAcceptReply = frepl!(((100, 0, 1), (1, 2)), [(3, 4)], vec![true]);
+        let repl: ReplicateReply = frepl!(((100, 0, 1), (1, 2)), ([(3, 4)], vec![true]));
         let from_rid = 4;
 
-        let r = handle_fast_accept_reply(&mut st, from_rid, &repl);
+        let r = handle_fast_accept_reply(&mut st, from_rid, repl.clone());
         assert_eq!(
             r.err().unwrap(),
             RpcHandlerError::StaleBallot((0, 0, 1).into(), (100, 0, 1).into())
@@ -185,10 +212,10 @@ fn test_handle_fast_accept_reply() {
     }
     {
         // duplicated message
-        let repl: FastAcceptReply = frepl!(((0, 0, 1), (1, 2)), [(3, 4)], vec![true]);
+        let repl: ReplicateReply = frepl!(((0, 0, 1), (1, 2)), ([(3, 4)], vec![true]));
         let from_rid = 4;
 
-        let r = handle_fast_accept_reply(&mut st, from_rid, &repl);
+        let r = handle_fast_accept_reply(&mut st, from_rid, repl.clone());
         assert_eq!(
             r.err().unwrap(),
             RpcHandlerError::DupRpc(
@@ -208,13 +235,13 @@ fn test_handle_fast_accept_reply() {
 
     {
         // reply contains `err` is ignored
-        let mut repl: FastAcceptReply = frepl!(((0, 0, 1), (1, 2)), [(3, 4)], vec![true]);
+        let mut repl: ReplicateReply = frepl!(((0, 0, 1), (1, 2)), ([(3, 4)], vec![true]));
         repl.err = Some(QError {
             ..Default::default()
         });
         let from_rid = 6;
 
-        let r = handle_fast_accept_reply(&mut st, from_rid, &repl);
+        let r = handle_fast_accept_reply(&mut st, from_rid, repl.clone());
         assert_eq!(
             r.err().unwrap(),
             RpcHandlerError::RemoteError(repl.err.unwrap())
@@ -244,7 +271,6 @@ fn test_handle_accept_reply() {
 
     let mut inst = init_inst!((1, 2), [("Set", "x", "1")], []);
     inst.final_deps = Some(instids![].into());
-    inst.last_ballot = Some((0, 0, 0).into());
     rp.storage.set_instance(&inst).unwrap();
     let n = rp.group_replica_ids.len() as i32;
 
@@ -252,8 +278,10 @@ fn test_handle_accept_reply() {
         // with high ballot num
         let mut st = Status::new(n, inst.clone());
         st.start_accept();
-        let mut repl = MakeReply::accept(&inst);
-        repl.cmn.as_mut().unwrap().last_ballot = Some((10, 2, replica_id).into());
+        let repl = ReplicateReply {
+            last_ballot: Some((10, 2, replica_id).into()),
+            ..Default::default()
+        };
         let r = handle_accept_reply(&mut st, 0, &repl);
         println!("{:?}", r);
         assert!(r.is_err());
@@ -267,8 +295,10 @@ fn test_handle_accept_reply() {
         // with reply err
         let mut st = Status::new(n, inst.clone());
         st.start_accept();
-        let mut repl = MakeReply::accept(&inst);
-        repl.err = Some(ProtocolError::LackOf("test".to_string()).into());
+        let repl = ReplicateReply {
+            err: Some(ProtocolError::LackOf("test".to_string()).into()),
+            ..Default::default()
+        };
         let r = handle_accept_reply(&mut st, 0, &repl);
         println!("{:?}", r);
         assert!(r.is_err());
@@ -283,7 +313,12 @@ fn test_handle_accept_reply() {
         // success
         let mut st = Status::new(n, inst.clone());
         st.start_accept();
-        let repl = MakeReply::accept(&inst);
+        let repl = ReplicateReply {
+            err: None,
+            last_ballot: Some((0, 0, 0).into()),
+            instance_id: inst.instance_id,
+            phase: Some(AcceptReply {}.into()),
+        };
         let r = handle_accept_reply(&mut st, 0, &repl);
         println!("{:?}", r);
         assert!(r.is_ok());

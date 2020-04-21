@@ -22,7 +22,6 @@ message BallotNum {
 // Instance is the internal representation of a client request.
 message Instance {
 
-    BallotNum last_ballot  = 11;
     BallotNum ballot       = 12;
     InstanceId instance_id = 13;
     repeated Command cmds  = 21;

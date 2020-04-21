@@ -37,7 +37,6 @@ fn test_macro_ballot() {
 fn test_macro_inst_all_arg() {
     let want = Instance {
         instance_id: Some((1, 2).into()),
-        last_ballot: Some((4, 5, 2).into()),
         ballot: Some((3, 4, 2).into()),
         cmds: vec![("Set", "x", "y").into(), ("Get", "a", "b").into()],
         initial_deps: Some(InstanceIdVec {
@@ -57,7 +56,6 @@ fn test_macro_inst_all_arg() {
         want,
         inst!(
             (1, 2),
-            (4, 5, 2),
             (3, 4, 2),
             [("Set", "x", "y"), ("Get", "a", "b")],
             [(11, 12), (13, 14)],
@@ -73,7 +71,6 @@ fn test_macro_inst_all_arg() {
         want,
         inst!(
             InstanceId::from((1, 2)),
-            (4, 5, 2),
             (3, 4, 2),
             [("Set", "x", "y"), ("Get", "a", "b")],
             [(11, 12), (13, 14)],
@@ -89,7 +86,6 @@ fn test_macro_inst_all_arg() {
 fn test_macro_inst() {
     let mut want = Instance {
         instance_id: Some((1, 2).into()),
-        last_ballot: None,
         ballot: Some((3, 4, 1).into()),
         cmds: vec![("Set", "x", "y").into(), ("Get", "a", "b").into()],
         initial_deps: Some(InstanceIdVec {

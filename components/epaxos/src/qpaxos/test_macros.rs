@@ -9,7 +9,6 @@ use crate::qpaxos::*;
 fn test_macro_init_inst() {
     let want = Instance {
         instance_id: Some((1, 2).into()),
-        last_ballot: None,
         ballot: Some((0, 0, 1).into()),
         cmds: vec![("Set", "x", "y").into(), ("Get", "a", "b").into()],
         initial_deps: Some(InstanceIdVec {

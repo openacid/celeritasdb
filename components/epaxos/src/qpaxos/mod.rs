@@ -2,6 +2,9 @@ pub use std::cmp::Ordering;
 use std::ops::Index;
 use std::ops::{Deref, DerefMut};
 
+// to let user be able to call Phase::try_into() without use this trait
+pub use std::convert::TryInto;
+
 use derive_more;
 use enum_utils;
 use storage::ToKey;
@@ -51,7 +54,6 @@ mod test_errors;
 mod test_instance;
 
 pub struct MakeRequest {}
-pub struct MakeReply {}
 
 #[derive(Debug, Eq, PartialEq, enum_utils::FromStr)]
 pub enum Direction {
@@ -363,104 +365,55 @@ impl Instance {
     }
 }
 
+macro_rules! make_req {
+    ($to_replica_id:expr, $inst:expr, $phase:expr) => {
+        ReplicateRequest {
+            to_replica_id: $to_replica_id,
+            ballot: $inst.ballot,
+            instance_id: $inst.instance_id,
+            phase: Some($phase.into()),
+        }
+    };
+}
+
 /// MakeRequest is a protobuf message for all kinds of replication request.
 /// See: https://github.com/openacid/celeritasdb/wiki/replication-algo#messages;
 ///
 /// ```ignore
 /// // create a `prepare` request for an instance:
-/// let req = MakeRequest::prepare(some_instance);
+/// let req = MakeRequest::prepare(1, some_instance);
 /// ```
 impl MakeRequest {
-    pub fn common(to_replica_id: i64, inst: &Instance) -> Option<RequestCommon> {
-        // TODO need filling to_replica_id
-        Some(RequestCommon {
-            to_replica_id,
-            ballot: inst.ballot,
-            instance_id: inst.instance_id,
-        })
-    }
-
     pub fn fast_accept(
         to_replica_id: i64,
         inst: &Instance,
         deps_committed: &[bool],
-    ) -> FastAcceptRequest {
-        FastAcceptRequest {
-            cmn: Self::common(to_replica_id, inst),
+    ) -> ReplicateRequest {
+        let p = FastAcceptRequest {
             cmds: inst.cmds.clone(),
             initial_deps: inst.initial_deps.clone(),
             deps_committed: deps_committed.into(),
-        }
+        };
+        make_req!(to_replica_id, inst, p)
     }
 
-    pub fn accept(to_replica_id: i64, inst: &Instance) -> AcceptRequest {
-        AcceptRequest {
-            cmn: Self::common(to_replica_id, inst),
+    pub fn accept(to_replica_id: i64, inst: &Instance) -> ReplicateRequest {
+        let p = AcceptRequest {
             final_deps: inst.final_deps.clone(),
-        }
+        };
+        make_req!(to_replica_id, inst, p)
     }
 
-    pub fn commit(to_replica_id: i64, inst: &Instance) -> CommitRequest {
-        CommitRequest {
-            cmn: Self::common(to_replica_id, inst),
+    pub fn commit(to_replica_id: i64, inst: &Instance) -> ReplicateRequest {
+        let p = CommitRequest {
             cmds: inst.cmds.clone(),
             final_deps: inst.final_deps.clone(),
-        }
+        };
+        make_req!(to_replica_id, inst, p)
     }
 
-    pub fn prepare(to_replica_id: i64, inst: &Instance) -> PrepareRequest {
-        PrepareRequest {
-            cmn: Self::common(to_replica_id, inst),
-        }
-    }
-}
-
-/// MakeReply is a protobuf message for all kinds of replication replies.
-/// See: https://github.com/openacid/celeritasdb/wiki/replication-algo#messages;
-///
-/// ```ignore
-/// // create a `prepare` request for an instance:
-/// let rep = MakeReply::prepare(some_instance);
-/// ```
-impl MakeReply {
-    pub fn common(inst: &Instance) -> Option<ReplyCommon> {
-        Some(ReplyCommon {
-            last_ballot: inst.last_ballot,
-            instance_id: inst.instance_id,
-            // err: None,
-        })
-    }
-
-    pub fn fast_accept(inst: &Instance, deps_committed: &[bool]) -> FastAcceptReply {
-        FastAcceptReply {
-            cmn: Self::common(inst),
-            err: None,
-            deps: inst.deps.clone(),
-            deps_committed: deps_committed.into(),
-        }
-    }
-
-    pub fn accept(inst: &Instance) -> AcceptReply {
-        AcceptReply {
-            cmn: Self::common(inst),
-            err: None,
-        }
-    }
-
-    pub fn commit(inst: &Instance) -> CommitReply {
-        CommitReply {
-            cmn: Self::common(inst),
-            err: None,
-        }
-    }
-
-    pub fn prepare(inst: &Instance) -> PrepareReply {
-        PrepareReply {
-            cmn: Self::common(inst),
-            err: None,
-            deps: inst.deps.clone(),
-            final_deps: inst.final_deps.clone(),
-            committed: inst.committed,
-        }
+    pub fn prepare(to_replica_id: i64, inst: &Instance) -> ReplicateRequest {
+        let p = PrepareRequest {};
+        make_req!(to_replica_id, inst, p)
     }
 }

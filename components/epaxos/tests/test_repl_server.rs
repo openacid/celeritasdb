@@ -56,7 +56,7 @@ async fn _repl_server() {
     // let request = message::Request::accept().into();
     let request = qp::MakeRequest::accept(0, &inst);
 
-    let response = client.accept(request).await.unwrap();
+    let response = client.replicate(request).await.unwrap();
 
     println!("RESPONSE={:?}", response);
 

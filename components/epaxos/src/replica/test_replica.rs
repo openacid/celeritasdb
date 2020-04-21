@@ -18,9 +18,8 @@ fn new_foo_inst(leader_id: i64) -> Instance {
         (2, 2, _),
         [("NoOp", "k1", "v1"), ("Get", "k2", "v2")],
         [(1, 10), (2, 20), (3, 30)],
-        [(2, 20)]
+        "withdeps"
     );
-    ii.last_ballot = Some((1, 2, leader_id).into());
     ii.final_deps = Some(instids![(3, 30)].into());
 
     ii
@@ -49,26 +48,6 @@ fn new_foo_replica(
     }
 
     r
-}
-
-macro_rules! test_invalid_req {
-    ($replica:expr, $req_t:ident, $handle:path, $cases: expr) => {
-        for (cmn, etuple) in $cases.clone() {
-            let req = $req_t {
-                cmn,
-                ..Default::default()
-            };
-            let repl = $handle($replica, &req);
-            let err = repl.err.unwrap();
-            assert_eq!(
-                QError {
-                    req: Some(etuple.into()),
-                    ..Default::default()
-                },
-                err
-            );
-        }
-    };
 }
 
 #[test]
@@ -128,44 +107,93 @@ fn test_get_max_instance_ids() {
 }
 
 #[test]
-fn test_handle_xxx_request_invalid() {
+fn test_handle_replicate_request_invalid() {
     let replica_id = 2;
-    let mut replica = new_foo_replica(replica_id, new_mem_sto(), &vec![]);
+    let replica = new_foo_replica(replica_id, new_mem_sto(), &vec![]);
 
-    let cases: Vec<(Option<RequestCommon>, (&str, &str, &str))> = vec![
-        (None, ("cmn", "LackOf", "")),
+    let cases: Vec<(ReplicateRequest, &str)> = vec![
         (
-            Some(RequestCommon {
-                to_replica_id: 0,
-                ballot: None,
-                instance_id: None,
-            }),
-            ("cmn.to_replica_id", "NotFound", "0; my replica_id: 2"),
-        ),
-        (
-            Some(RequestCommon {
+            ReplicateRequest {
                 to_replica_id: replica_id,
                 ballot: None,
                 instance_id: None,
-            }),
-            ("cmn.ballot", "LackOf", ""),
+                ..Default::default()
+            },
+            "ballot",
         ),
         (
-            Some(RequestCommon {
+            ReplicateRequest {
                 to_replica_id: replica_id,
                 ballot: Some((0, 0, 1).into()),
                 instance_id: None,
-            }),
-            ("cmn.instance_id", "LackOf", ""),
+                ..Default::default()
+            },
+            "instance_id",
+        ),
+        (
+            ReplicateRequest {
+                to_replica_id: replica_id,
+                ballot: Some((0, 0, 1).into()),
+                instance_id: Some((1, 2).into()),
+                ..Default::default()
+            },
+            "phase",
         ),
     ];
 
-    test_invalid_req!(&mut replica, AcceptRequest, Replica::handle_accept, cases);
-    test_invalid_req!(&mut replica, CommitRequest, Replica::handle_commit, cases);
+    for (req, estr) in cases.clone() {
+        let repl = replica.handle_replicate(req);
+        let err = repl.err().unwrap();
+        assert_eq!(err, ProtocolError::LackOf(estr.into()).into());
+    }
 }
 
 #[test]
-#[should_panic(expected = "local_inst.deps is unexpected to be None")]
+fn test_handle_replicate_ballot_check() {
+    let replica_id = 2;
+    let replica = new_foo_replica(replica_id, new_mem_sto(), &vec![]);
+
+    let local_inst = inst!((3, 4), (2, 2, _), [("Set", "x", "0")]);
+    replica.storage.set_instance(&local_inst).unwrap();
+
+    let inst = inst!((3, 4), (1, 2, _), [("Set", "x", "1")],);
+
+    let reqs = vec![
+        MakeRequest::fast_accept(0, &inst, &[]),
+        MakeRequest::accept(0, &inst),
+        MakeRequest::prepare(0, &inst),
+    ];
+
+    for req in reqs {
+        let repl = replica.handle_replicate(req);
+        assert!(repl.is_ok());
+
+        let repl = repl.unwrap();
+        assert!(repl.err.is_none());
+        assert_eq!(repl.last_ballot.unwrap(), BallotNum::from((2, 2, 3)));
+        assert_eq!(repl.instance_id.unwrap(), InstanceId::from((3, 4)));
+
+        let notupdated = replica.get_instance((3, 4).into()).unwrap();
+        assert_eq!(local_inst, notupdated, "not updated");
+    }
+
+    {
+        // commit does not check ballot
+        let req = MakeRequest::commit(0, &inst);
+
+        let repl = replica.handle_replicate(req);
+        assert!(repl.is_ok());
+
+        let repl = repl.unwrap();
+        assert!(repl.err.is_none());
+
+        let updated = replica.get_instance((3, 4).into()).unwrap();
+        assert!(updated.committed);
+    }
+}
+
+#[test]
+#[should_panic(expected = "inst.deps is unexpected to be None")]
 fn test_handle_fast_accept_request_panic_local_deps_none() {
     let inst = foo_inst!((0, 0));
     let req_inst = foo_inst!((1, 0), [(0, 0)]);
@@ -174,7 +202,7 @@ fn test_handle_fast_accept_request_panic_local_deps_none() {
 }
 
 #[test]
-#[should_panic(expected = "local_inst.instance_id is unexpected to be None")]
+#[should_panic(expected = "inst.instance_id is unexpected to be None")]
 fn test_handle_fast_accept_request_panic_local_instance_id_none() {
     let inst = foo_inst!(None, [(2, 0)]);
     let req_inst = foo_inst!((1, 0), [(0, 0)]);
@@ -182,40 +210,42 @@ fn test_handle_fast_accept_request_panic_local_instance_id_none() {
     _handle_fast_accept_request((0, 0), inst, req_inst);
 }
 
-fn _handle_fast_accept_request(iid: (i64, i64), inst: Instance, req_inst: Instance) {
+fn _handle_fast_accept_request(iid: (i64, i64), mut inst: Instance, req_inst: Instance) {
     let replica = new_foo_replica(1, new_mem_sto(), &[(iid, &inst)]);
 
     let req = MakeRequest::fast_accept(1, &req_inst, &vec![false]);
-    replica.handle_fast_accept(&req);
+    let req: FastAcceptRequest = req.phase.unwrap().try_into().unwrap();
+    let _ = replica.handle_fast_accept(&req, &mut inst);
 }
 
 #[test]
-fn test_handle_fast_accept_request() {
+fn test_handle_fast_accept_normal() {
     let replica_id = 1;
     let replica = new_foo_replica(replica_id, new_mem_sto(), &vec![]);
 
     {
-        let mut inst = new_foo_inst(replica_id);
+        let inst = new_foo_inst(replica_id);
         let iid = inst.instance_id.unwrap();
-        let blt = inst.ballot;
-
-        let none = replica.storage.get_instance(iid).unwrap();
-        assert_eq!(None, none);
+        let _blt = inst.ballot;
 
         let deps_committed = vec![false, false, false];
         let req = MakeRequest::fast_accept(replica_id, &inst, &deps_committed);
-        let repl = replica.handle_fast_accept(&req);
+        let req: FastAcceptRequest = req.phase.unwrap().try_into().unwrap();
+        let mut local_inst = Instance {
+            instance_id: Some(iid),
+            ..Default::default()
+        };
+        let repl = replica.handle_fast_accept(&req, &mut local_inst);
+        let repl = repl.unwrap();
 
-        inst.deps = inst.initial_deps.clone();
-
-        assert_eq!(None, repl.err);
+        // assert_eq!(None, repl.err);
         assert_eq!(deps_committed, repl.deps_committed);
         assert_eq!(inst.deps, repl.deps);
 
-        _test_repl_cmn_ok(&repl.cmn.unwrap(), iid, blt);
+        assert_eq!(inst.deps, local_inst.deps);
+        assert_eq!(inst.initial_deps, local_inst.initial_deps);
 
-        // get the written instance.
-        _test_get_inst(&replica, iid, blt, blt, inst.cmds, None, false, false);
+        _test_updated_inst(&local_inst, inst.cmds, None, false, false);
     }
 
     {
@@ -247,7 +277,7 @@ fn test_handle_fast_accept_request() {
 
         // insta -> {x, y, z}
         let a_iid = instid!(0, 1);
-        let mut insta = foo_inst!(a_iid, "key_a", [(0, 0), (1, 0), (2, 0)]);
+        let insta = foo_inst!(a_iid, "key_a", [(0, 0), (1, 0), (2, 0)]);
 
         // instd -> {a, b, z}
         let d_iid = instid!(0, 2);
@@ -272,27 +302,28 @@ fn test_handle_fast_accept_request() {
 
         let deps_committed = vec![false, true, false];
         let req = MakeRequest::fast_accept(replica_id, &insta, &deps_committed);
-        let repl = replica.handle_fast_accept(&req);
+        let req: FastAcceptRequest = req.phase.unwrap().try_into().unwrap();
 
-        insta.deps = Some(vec![x_iid, b_iid, z_iid].into());
+        let mut local_inst = Instance {
+            instance_id: Some(a_iid),
+            ..Default::default()
+        };
 
-        assert_eq!(None, repl.err);
+        let repl = replica.handle_fast_accept(&req, &mut local_inst);
+        let repl = repl.unwrap();
+
+        let wantdeps: InstanceIdVec = vec![x_iid, b_iid, z_iid].into();
+        let wantdeps = Some(wantdeps);
+
+        // TODO test updated deps_committed
+
         assert_eq!(deps_committed, repl.deps_committed);
-        assert_eq!(insta.deps, repl.deps);
+        assert_eq!(wantdeps.clone(), repl.deps);
 
-        _test_repl_cmn_ok(&repl.cmn.unwrap(), insta.instance_id.unwrap(), insta.ballot);
+        assert_eq!(wantdeps.clone(), local_inst.deps);
+        assert_eq!(insta.initial_deps, local_inst.initial_deps);
 
-        // get the written instance.
-        _test_get_inst(
-            &replica,
-            insta.instance_id.unwrap(),
-            insta.ballot,
-            insta.ballot,
-            insta.cmds,
-            None,
-            false,
-            false,
-        );
+        _test_updated_inst(&local_inst, insta.cmds, None, false, false);
     }
 }
 
@@ -311,73 +342,40 @@ fn test_handle_accept_request() {
     {
         // ok reply with none instance.
         let req = MakeRequest::accept(replica_id, &inst);
-        let repl = replica.handle_accept(&req);
-        assert_eq!(None, repl.err);
-        _test_repl_cmn_ok(&repl.cmn.unwrap(), iid, None);
+        let req: AcceptRequest = req.phase.unwrap().try_into().unwrap();
 
-        // get the written instance.
-        _test_get_inst(
-            &replica,
-            iid,
-            blt,
-            None,
-            vec![],
-            fdeps.clone(),
-            false,
-            false,
-        );
+        let mut local_inst = Instance {
+            instance_id: Some(iid),
+            ..Default::default()
+        };
+
+        let repl = replica.handle_accept(&req, &mut local_inst);
+        assert!(repl.is_ok());
+
+        println!("inst:{}", inst);
+        println!("local_inst:{}", local_inst);
+
+        _test_updated_inst(&local_inst, vec![], fdeps.clone(), false, false);
     }
 
     {
         // ok reply when replacing instance. same ballot.
         let req = MakeRequest::accept(replica_id, &inst);
-        assert_eq!(
-            req.cmn.clone().unwrap().ballot,
-            replica.storage.get_instance(iid).unwrap().unwrap().ballot
-        );
+        let req: AcceptRequest = req.phase.unwrap().try_into().unwrap();
 
-        let repl = replica.handle_accept(&req);
-        assert_eq!(None, repl.err);
-        _test_repl_cmn_ok(&repl.cmn.unwrap(), iid, blt);
+        let mut local_inst = Instance {
+            instance_id: Some(iid),
+            ballot: blt,
+            ..Default::default()
+        };
 
-        // get the accepted instance.
-        _test_get_inst(&replica, iid, blt, blt, vec![], fdeps.clone(), false, false);
+        let repl = replica.handle_accept(&req, &mut local_inst);
+        assert!(repl.is_ok());
+
+        _test_updated_inst(&local_inst, vec![], fdeps.clone(), false, false);
     }
 
-    {
-        // ok reply but not written because of a higher ballot.
-        let req = MakeRequest::accept(replica_id, &inst);
-
-        // make an instance with bigger ballot.
-        let mut curr = replica.storage.get_instance(iid).unwrap().unwrap();
-        let mut bigger = blt.unwrap();
-        bigger.num += 1;
-        let bigger = Some(bigger);
-
-        curr.ballot = bigger;
-        curr.final_deps = Some(vec![].into());
-        replica.storage.set_instance(&curr).unwrap();
-
-        let curr = replica.storage.get_instance(iid).unwrap().unwrap();
-        assert!(curr.ballot > blt);
-
-        // accept wont update this instance.
-        let repl = replica.handle_accept(&req);
-        assert_eq!(None, repl.err);
-        _test_repl_cmn_ok(&repl.cmn.unwrap(), iid, bigger);
-
-        // get the intact instance.
-        _test_get_inst(
-            &replica,
-            iid,
-            bigger,
-            blt,
-            vec![],
-            Some(vec![].into()),
-            false,
-            false,
-        );
-    }
+    // TODO test higher ballot
 
     // TODO test storage error
 }
@@ -387,80 +385,33 @@ fn test_handle_commit_request() {
     let replica_id = 2;
     let inst = new_foo_inst(replica_id);
     let iid = inst.instance_id.unwrap();
-    let blt = inst.ballot;
     let cmds = inst.cmds.clone();
     let fdeps = inst.final_deps.clone();
 
     let replica = new_foo_replica(replica_id, new_mem_sto(), &vec![]);
-    let none = replica.storage.get_instance(iid).unwrap();
-    assert_eq!(None, none);
 
     let req = MakeRequest::commit(replica_id, &inst);
+    let req: CommitRequest = req.phase.unwrap().try_into().unwrap();
 
-    {
-        // ok reply with none instance.
-        let repl = replica.handle_commit(&req);
-        assert_eq!(None, repl.err);
-        _test_repl_cmn_ok(&repl.cmn.unwrap(), iid, None);
+    // ok reply when replacing instance.
+    let mut inst = replica.get_instance(iid).unwrap();
+    let repl = replica.handle_commit(&req, &mut inst);
+    assert!(repl.is_ok());
 
-        // get the committed instance.
-        _test_get_inst(
-            &replica,
-            iid,
-            blt,
-            None,
-            cmds.clone(),
-            fdeps.clone(),
-            true,
-            false,
-        );
-    }
-
-    {
-        // ok reply when replacing instance.
-        let repl = replica.handle_commit(&req);
-        assert_eq!(None, repl.err);
-        _test_repl_cmn_ok(&repl.cmn.unwrap(), iid, blt);
-
-        // get the committed instance.
-        _test_get_inst(
-            &replica,
-            iid,
-            blt,
-            blt,
-            cmds.clone(),
-            fdeps.clone(),
-            true,
-            false,
-        );
-    }
-
-    // TODO test storage error
+    _test_updated_inst(&inst, cmds.clone(), fdeps.clone(), true, false);
 }
 
-fn _test_repl_cmn_ok(cmn: &ReplyCommon, iid: InstanceId, last: Option<BallotNum>) {
-    assert_eq!(iid, cmn.instance_id.unwrap());
-    assert_eq!(last, cmn.last_ballot);
-}
-
-fn _test_get_inst(
-    replica: &Replica,
-    iid: InstanceId,
-    blt: Option<BallotNum>,
-    last: Option<BallotNum>,
+fn _test_updated_inst(
+    got: &Instance,
     cmds: Vec<Command>,
     final_deps: Option<InstanceIdVec>,
     committed: bool,
     executed: bool,
 ) {
-    let got = replica.storage.get_instance(iid).unwrap().unwrap();
-    assert_eq!(iid, got.instance_id.unwrap());
-    assert_eq!(blt, got.ballot);
-    assert_eq!(last, got.last_ballot);
-    assert_eq!(cmds, got.cmds);
-    assert_eq!(final_deps, got.final_deps);
-    assert_eq!(committed, got.committed);
-    assert_eq!(executed, got.executed);
+    assert_eq!(cmds, got.cmds, "cmds");
+    assert_eq!(final_deps, got.final_deps, "final_deps");
+    assert_eq!(committed, got.committed, "committed");
+    assert_eq!(executed, got.executed, "executed");
 }
 
 #[test]

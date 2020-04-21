@@ -71,7 +71,7 @@ macro_rules! init_inst {
 /// deps: [(replica_id, idx)...]; `deps` can be "withdeps" as a flag: clone initial_deps as its value.
 ///
 /// Supported pattern:
-/// inst!(instance_id, last_ballot, ballot, cmds, initial_deps, deps, final_deps, committed, executed)
+/// inst!(instance_id, ballot, cmds, initial_deps, deps, final_deps, committed, executed)
 /// inst!(instance_id, ballot, cmds, initial_deps, deps)
 /// inst!(instance_id, ballot, cmds, initial_deps, "withdeps")
 /// inst!(instance_id, ballot, cmds, initial_deps)
@@ -158,7 +158,6 @@ macro_rules! inst {
 
     // all arg
     ($id:expr,
-     ($lepoch:expr, $lnum:expr, $lbrid:expr),
      ($epoch:expr, $num:expr, $brid:expr),
      [$( ($op:expr, $key:expr, $val:expr)),*],
      [$( ($idep_rid:expr, $idep_idx:expr)),*],
@@ -170,7 +169,6 @@ macro_rules! inst {
      ) => {
         Instance {
             instance_id: Some($id.into()),
-            last_ballot: Some(($lepoch, $lnum, $lbrid).into()),
             ballot: Some(($epoch, $num, $brid).into()),
             cmds: cmds![$( ($op, $key, $val)),*].into(),
             initial_deps: Some(

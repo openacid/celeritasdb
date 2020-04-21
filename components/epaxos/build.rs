@@ -20,6 +20,14 @@ fn main() {
         .type_attribute("InvalidRequest", "#[derive(Eq)]")
         .type_attribute("InstanceIdVec", "#[derive(derive_more::From)]")
         .type_attribute(
+            "ReplicateRequest.phase",
+            "#[derive(derive_more::From, derive_more::TryInto)]",
+        )
+        .type_attribute(
+            "ReplicateReply.phase",
+            "#[derive(derive_more::From, derive_more::TryInto)]",
+        )
+        .type_attribute(
             "BallotNum",
             "#[derive(Copy, Eq, Ord, PartialOrd, derive_more::From)]",
         )

@@ -1,7 +1,25 @@
 use std::i64;
 
 use crate::conf::ClusterInfo;
-use crate::qpaxos::*;
+use crate::qpaxos::replicate_reply;
+use crate::qpaxos::replicate_request::Phase;
+use crate::qpaxos::AcceptReply;
+use crate::qpaxos::AcceptRequest;
+use crate::qpaxos::Command;
+use crate::qpaxos::CommitReply;
+use crate::qpaxos::CommitRequest;
+use crate::qpaxos::Conflict;
+use crate::qpaxos::FastAcceptReply;
+use crate::qpaxos::FastAcceptRequest;
+use crate::qpaxos::Instance;
+use crate::qpaxos::InstanceId;
+use crate::qpaxos::InstanceIdVec;
+use crate::qpaxos::PrepareReply;
+use crate::qpaxos::PrepareRequest;
+use crate::qpaxos::ProtocolError;
+use crate::qpaxos::ReplicaId;
+use crate::qpaxos::ReplicateReply;
+use crate::qpaxos::ReplicateRequest;
 use crate::replica::ReplicaError;
 use crate::replication::RpcHandlerError;
 use crate::Iter;
@@ -147,39 +165,77 @@ impl Replica {
         iids.into()
     }
 
-    fn _handle_prepare(&self, _req: &PrepareRequest) -> Result<PrepareReply, String> {
-        Err("not implemented".to_string())
-    }
-
-    pub fn handle_fast_accept(&self, req: &FastAcceptRequest) -> FastAcceptReply {
-        match self._fast_accept(req) {
-            Ok((inst, deps_committed)) => MakeReply::fast_accept(&inst, &deps_committed),
-            Err(e) => FastAcceptReply {
-                err: Some(e.into()),
-                ..Default::default()
-            },
-        }
-    }
-
-    fn _fast_accept(
+    pub fn handle_replicate(
         &self,
-        req: &FastAcceptRequest,
-    ) -> Result<(Instance, Vec<bool>), RpcHandlerError> {
-        let (ballot, iid) = check_req_common(self.replica_id, &req.cmn)?;
+        req: ReplicateRequest,
+    ) -> Result<ReplicateReply, RpcHandlerError> {
+        let ballot = req.ballot;
+        ballot.ok_or(ProtocolError::LackOf("ballot".into()))?;
 
-        let mut inst = match self.storage.get_instance(iid)? {
-            Some(v) => {
-                if v.ballot.is_none() || v.ballot.unwrap().num != 0 {
-                    return Err((ReplicaError::Existed {}).into());
+        let iid = req
+            .instance_id
+            .ok_or(ProtocolError::LackOf("instance_id".into()))?;
+
+        let mut inst = self.get_instance(iid)?;
+        let last_ballot = inst.ballot;
+
+        println!("replica handle replicate for inst:{}", inst);
+
+        let phase = req
+            .phase
+            .as_ref()
+            .ok_or(ProtocolError::LackOf("phase".into()))?;
+
+        match phase {
+            Phase::Fast(_) | Phase::Accept(_) | Phase::Prepare(_) => {
+                if req.ballot < inst.ballot {
+                    return Ok(ReplicateReply {
+                        err: None,
+                        last_ballot,
+                        instance_id: Some(iid),
+                        phase: None,
+                    });
                 }
-                v
+                inst.ballot = req.ballot;
             }
-            None => self._empty_instance(Some(iid)),
+            Phase::Commit(_) => {}
         };
 
-        inst.ballot = Some(ballot);
-        inst.last_ballot = inst.ballot;
+        let reply_phase: replicate_reply::Phase = match phase {
+            Phase::Fast(r) => self.handle_fast_accept(r, &mut inst)?.into(),
+            Phase::Accept(r) => self.handle_accept(r, &mut inst)?.into(),
+            Phase::Commit(r) => self.handle_commit(r, &mut inst)?.into(),
+            Phase::Prepare(r) => self.handle_prepare(r, &mut inst)?.into(),
+        };
 
+        self.storage.set_instance(&inst)?;
+
+        Ok(ReplicateReply {
+            err: None,
+            last_ballot,
+            instance_id: Some(iid),
+            phase: Some(reply_phase),
+        })
+    }
+
+    pub fn handle_prepare(
+        &self,
+        req: &PrepareRequest,
+        inst: &mut Instance,
+    ) -> Result<PrepareReply, RpcHandlerError> {
+        let _ = req;
+        let _ = inst;
+        Ok(PrepareReply {
+            ..Default::default()
+        })
+    }
+
+    pub fn handle_fast_accept(
+        &self,
+        req: &FastAcceptRequest,
+        inst: &mut Instance,
+    ) -> Result<FastAcceptReply, RpcHandlerError> {
+        let iid = ref_or_bug!(inst.instance_id);
         let req_deps = ref_or_bug!(req.initial_deps);
 
         inst.cmds = req.cmds.clone();
@@ -229,72 +285,33 @@ impl Replica {
             }
         }
 
-        self.storage.set_instance(&inst)?;
-
-        Ok((inst, deps_committed))
+        Ok(FastAcceptReply {
+            deps: inst.deps.clone(),
+            deps_committed: deps_committed,
+        })
     }
 
-    pub fn handle_accept(&self, req: &AcceptRequest) -> AcceptReply {
-        let inst = self._accept(req);
-        match inst {
-            Ok(inst) => MakeReply::accept(&inst),
-            Err(e) => AcceptReply {
-                err: Some(e.into()),
-                ..Default::default()
-            },
-        }
-    }
-
-    fn _accept(&self, req: &AcceptRequest) -> Result<Instance, RpcHandlerError> {
+    pub fn handle_accept(
+        &self,
+        req: &AcceptRequest,
+        inst: &mut Instance,
+    ) -> Result<AcceptReply, RpcHandlerError> {
         // TODO locking
-        let (ballot, iid) = check_req_common(self.replica_id, &req.cmn)?;
-
-        let mut inst = self.get_instance(iid)?;
         // TODO check instance status if committed or executed
-
-        inst.last_ballot = inst.ballot;
-
-        // allow inst.ballot to be None
-        if Some(ballot) >= inst.ballot {
-            inst.ballot = Some(ballot);
-
-            inst.final_deps = req.final_deps.clone();
-            self.storage.set_instance(&inst)?;
-        }
-
-        Ok(inst)
+        inst.final_deps = req.final_deps.clone();
+        Ok(AcceptReply {})
     }
 
-    pub fn handle_commit(&self, req: &CommitRequest) -> CommitReply {
-        // TODO protocol wrapping may be better to be in server impl instead of being here
-
-        match self._commit(req) {
-            Ok(inst) => MakeReply::commit(&inst),
-            Err(e) => CommitReply {
-                err: Some(e.into()),
-                ..Default::default()
-            },
-        }
-    }
-
-    fn _commit(&self, req: &CommitRequest) -> Result<Instance, RpcHandlerError> {
-        let (ballot, iid) = check_req_common(self.replica_id, &req.cmn)?;
-
-        // TODO locking
-        let mut inst = self.get_instance(iid)?;
-
-        // TODO issue: after commit, inst.last_ballot might be >= inst.ballot, which might confuse
-        // other procedure.
-        inst.last_ballot = inst.ballot;
-        inst.ballot = Some(ballot);
-
+    pub fn handle_commit(
+        &self,
+        req: &CommitRequest,
+        inst: &mut Instance,
+    ) -> Result<CommitReply, RpcHandlerError> {
         inst.cmds = req.cmds.clone();
         inst.final_deps = req.final_deps.clone();
         inst.committed = true;
 
-        self.storage.set_instance(&inst)?;
-
-        Ok(inst)
+        Ok(CommitReply {})
     }
 
     pub fn get_instance(&self, iid: InstanceId) -> Result<Instance, ReplicaError> {
@@ -315,26 +332,4 @@ impl Replica {
             ..Default::default()
         }
     }
-}
-
-fn check_req_common(
-    myrid: ReplicaId,
-    cm: &Option<RequestCommon>,
-) -> Result<(BallotNum, InstanceId), ProtocolError> {
-    let cm = cm.as_ref().ok_or(ProtocolError::LackOf("cmn".into()))?;
-
-    let replica_id = cm.to_replica_id;
-    if replica_id != myrid {
-        return Err((replica_id, myrid).into());
-    }
-
-    let ballot = cm
-        .ballot
-        .ok_or(ProtocolError::LackOf("cmn.ballot".into()))?;
-
-    let iid = cm
-        .instance_id
-        .ok_or(ProtocolError::LackOf("cmn.instance_id".into()))?;
-
-    Ok((ballot, iid))
 }

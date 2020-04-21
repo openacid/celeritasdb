@@ -1,10 +1,10 @@
 use crate::conf::GroupInfo;
 use crate::qpaxos::Command;
+use crate::qpaxos::MakeRequest;
 use crate::replica::InstanceStatus;
 use crate::replica::Replica;
 use crate::replica::Status;
-use crate::replication::bcast_accept;
-use crate::replication::bcast_fast_accept;
+use crate::replication::bcast_msg;
 use crate::replication::handle_accept_reply;
 use crate::replication::handle_fast_accept_reply;
 use crate::ReplicationError;
@@ -47,12 +47,13 @@ pub async fn replicate(
         deps_committed.push(false);
     }
 
-    let repls = bcast_fast_accept(&r.peers, &st.instance, &deps_committed).await;
+    let req = MakeRequest::fast_accept(0, &st.instance, &deps_committed);
+    let repls = bcast_msg(&r.peers, req).await;
 
     println!("fast-replies:{:?}", repls);
 
     for (from_rid, repl) in repls.iter() {
-        handle_fast_accept_reply(&mut st, *from_rid, repl.get_ref())?;
+        handle_fast_accept_reply(&mut st, *from_rid, repl.get_ref().clone())?;
         let fast = st.get_fast_commit_deps(&grids);
         match fast {
             Some(fdeps) => {
@@ -82,7 +83,8 @@ pub async fn replicate(
     st.start_accept();
     r.storage.set_instance(&st.instance)?;
 
-    let repls = bcast_accept(&r.peers, &st.instance).await;
+    let req = MakeRequest::accept(0, &st.instance);
+    let repls = bcast_msg(&r.peers, req).await;
 
     for (from_rid, repl) in repls.iter() {
         handle_accept_reply(&mut st, *from_rid, repl.get_ref())?;

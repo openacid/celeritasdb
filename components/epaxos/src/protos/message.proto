@@ -23,63 +23,66 @@ enum RequestType {
 // 51~60: for commit.
 
 
-message RequestCommon {
-    int64 to_replica_id = 2;
-
-    // Sender's ballot
-    BallotNum ballot = 12;
-    InstanceId instance_id = 13;
-}
 message FastAcceptRequest {
-    RequestCommon cmn = 1;
     repeated Command     cmds           = 21;
     InstanceIdVec        initial_deps   = 31;
-    repeated bool                deps_committed = 33;
+    repeated bool        deps_committed = 33;
 }
 message AcceptRequest {
-    RequestCommon cmn = 1;
     InstanceIdVec final_deps = 41;
 }
 message CommitRequest {
-    RequestCommon cmn = 1;
     repeated Command     cmds           = 21;
     InstanceIdVec        final_deps     = 41;
 }
 message PrepareRequest {
-    RequestCommon cmn = 1;
     // TODO prepare does not need cmds to find conflicting in our algorithm.
     //      need proof
-    // repeated Command     cmds           = 21;
+    // repeated Command  cmds           = 21;
 }
 
+message ReplicateRequest {
 
-message ReplyCommon {
-    // The ballot stored on acceptor before handling a request.
+    int64 to_replica_id    = 2;
 
-    BallotNum  last_ballot = 11;
+    // Sender's ballot
+    BallotNum ballot       = 12;
     InstanceId instance_id = 13;
+
+    oneof phase {
+        FastAcceptRequest fast    = 100;
+        AcceptRequest     accept  = 101;
+        CommitRequest     commit  = 102;
+        PrepareRequest    prepare = 103;
+    }
 }
+
 message FastAcceptReply {
     // deps_status describe what status a dependent instance is in.
     // Only `deps` needs these information in order to commit on fast-path.
 
-    ReplyCommon         cmn            = 1;
-    QError              err            = 5;
     InstanceIdVec       deps           = 32;
     repeated bool       deps_committed = 33;
 }
-message AcceptReply {
-    ReplyCommon cmn = 1;
-    QError      err = 5;
-}
-message CommitReply {
-    ReplyCommon cmn = 1;
-    QError      err = 5;
-}
+message AcceptReply { }
+message CommitReply { }
 message PrepareReply {
-    ReplyCommon         cmn        = 1;
-    QError              err        = 5;
     InstanceIdVec       deps       = 32;
     InstanceIdVec       final_deps = 41;
     bool                committed  = 51;
+}
+
+message ReplicateReply {
+
+    QError     err         = 5;
+    // The ballot stored on acceptor before handling a request.
+    BallotNum  last_ballot = 11;
+    InstanceId instance_id = 13;
+
+    oneof phase {
+        FastAcceptReply fast    = 100;
+        AcceptReply     accept  = 101;
+        CommitReply     commit  = 102;
+        PrepareReply    prepare = 103;
+    }
 }
