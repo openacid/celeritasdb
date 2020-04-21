@@ -13,7 +13,7 @@ use tonic;
 use epaxos::conf::ClusterInfo;
 use epaxos::conf::NodeId;
 use epaxos::qpaxos::QPaxosServer;
-use epaxos::MyQPaxos;
+use epaxos::QPaxosImpl;
 use epaxos::ServerData;
 use epaxos::Storage;
 
@@ -122,7 +122,7 @@ impl Server {
         println!("serving: {}", api_addr);
 
         // TODO load cluster conf
-        let qp = MyQPaxos::default();
+        let qp = QPaxosImpl::default();
         let s = tonic::transport::Server::builder().add_service(QPaxosServer::new(qp));
 
         let j2 = tokio::spawn(async move {

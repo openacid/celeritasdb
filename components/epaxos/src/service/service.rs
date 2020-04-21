@@ -10,18 +10,18 @@ use tonic;
 use tonic::{Request, Response, Status};
 
 #[derive(Default)]
-pub struct MyQPaxos {
+pub struct QPaxosImpl {
     server_data: Arc<ServerData>,
 }
 
-impl MyQPaxos {
+impl QPaxosImpl {
     pub fn new(server_data: Arc<ServerData>) -> Self {
-        MyQPaxos { server_data }
+        QPaxosImpl { server_data }
     }
 }
 
 #[tonic::async_trait]
-impl QPaxos for MyQPaxos {
+impl QPaxos for QPaxosImpl {
     async fn replicate(
         &self,
         request: Request<ReplicateRequest>,
@@ -43,7 +43,7 @@ impl QPaxos for MyQPaxos {
 }
 
 pub fn handle_replicate_request(
-    sv: &MyQPaxos,
+    sv: &QPaxosImpl,
     req: ReplicateRequest,
 ) -> Result<ReplicateReply, RpcHandlerError> {
     // TODO test replica not found
