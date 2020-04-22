@@ -20,32 +20,32 @@ impl Base for MemEngine {
 
     // TODO concurrent test
 
-    fn set(&self, cf: DBColumnFamily, key: &Vec<u8>, value: &Vec<u8>) -> Result<(), StorageError> {
+    fn set(&self, cf: DBColumnFamily, key: &[u8], value: &[u8]) -> Result<(), StorageError> {
         let mut cfs = self._db.lock().unwrap();
         let bt = cfs.entry(cf.into()).or_insert(BTreeMap::new());
-        bt.insert(key.clone(), value.clone());
+        bt.insert(key.to_vec(), value.to_vec());
         Ok(())
     }
 
-    fn get(&self, cf: DBColumnFamily, key: &Vec<u8>) -> Result<Option<Vec<u8>>, StorageError> {
+    fn get(&self, cf: DBColumnFamily, key: &[u8]) -> Result<Option<Vec<u8>>, StorageError> {
         let mut cfs = self._db.lock().unwrap();
         let bt = cfs.entry(cf.into()).or_insert(BTreeMap::new());
         Ok(bt.get(key).map(|x| x.clone()))
     }
 
-    fn delete(&self, cf: DBColumnFamily, key: &Vec<u8>) -> Result<(), StorageError> {
+    fn delete(&self, cf: DBColumnFamily, key: &[u8]) -> Result<(), StorageError> {
         let mut cfs = self._db.lock().unwrap();
         let bt = cfs.entry(cf.into()).or_insert(BTreeMap::new());
         bt.remove(key);
         Ok(())
     }
 
-    fn next(&self, cf: DBColumnFamily, key: &Vec<u8>, include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
+    fn next(&self, cf: DBColumnFamily, key: &[u8], include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
         let mut cfs = self._db.lock().unwrap();
         let bt = cfs.entry(cf.into()).or_insert(BTreeMap::new());
 
         for (k, v) in bt.range(key.to_vec()..) {
-            if include == false && key == k {
+            if include == false && key == k.as_slice() {
                 continue;
             }
 
@@ -55,12 +55,12 @@ impl Base for MemEngine {
         None
     }
 
-    fn prev(&self, cf: DBColumnFamily, key: &Vec<u8>, include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
+    fn prev(&self, cf: DBColumnFamily, key: &[u8], include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
         let mut cfs = self._db.lock().unwrap();
         let bt = cfs.entry(cf.into()).or_insert(BTreeMap::new());
 
         for (k, v) in bt.range((Unbounded, Included(key.to_vec()))).rev() {
-            if include == false && key == k {
+            if include == false && key == k.as_slice() {
                 continue;
             }
 

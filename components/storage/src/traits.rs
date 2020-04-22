@@ -60,44 +60,44 @@ pub trait ToKey {
 /// Base offer basic key-value access
 pub trait Base: Send + Sync {
     /// set a new key-value
-    fn set(&self, cf: DBColumnFamily, key: &Vec<u8>, value: &Vec<u8>) -> Result<(), StorageError>;
+    fn set(&self, cf: DBColumnFamily, key: &[u8], value: &[u8]) -> Result<(), StorageError>;
 
     /// get an existing value with key
-    fn get(&self, cf: DBColumnFamily, key: &Vec<u8>) -> Result<Option<Vec<u8>>, StorageError>;
+    fn get(&self, cf: DBColumnFamily, key: &[u8]) -> Result<Option<Vec<u8>>, StorageError>;
 
     /// delete a key
-    fn delete(&self, cf: DBColumnFamily, key: &Vec<u8>) -> Result<(), StorageError>;
+    fn delete(&self, cf: DBColumnFamily, key: &[u8]) -> Result<(), StorageError>;
 
     /// next_kv returns a key-value pair greater than the given one(include=false),
     /// or greater or equal the given one(include=true)
-    fn next(&self, cf: DBColumnFamily, key: &Vec<u8>, include: bool) -> Option<(Vec<u8>, Vec<u8>)>;
+    fn next(&self, cf: DBColumnFamily, key: &[u8], include: bool) -> Option<(Vec<u8>, Vec<u8>)>;
 
     /// prev_kv returns a key-value pair smaller than the given one(include=false),
     /// or smaller or equal the given one(include=true)
-    fn prev(&self, cf: DBColumnFamily, key: &Vec<u8>, include: bool) -> Option<(Vec<u8>, Vec<u8>)>;
+    fn prev(&self, cf: DBColumnFamily, key: &[u8], include: bool) -> Option<(Vec<u8>, Vec<u8>)>;
 
     fn write_batch(&self, entrys: &Vec<WriteEntry>) -> Result<(), StorageError>;
 }
 
 /// KV offers functions to store user key/value.
 pub trait KV: Base {
-    fn set_kv(&self, key: &Vec<u8>, value: &Vec<u8>) -> Result<(), StorageError> {
+    fn set_kv(&self, key: &[u8], value: &[u8]) -> Result<(), StorageError> {
         self.set(DBColumnFamily::Default, key, value)
     }
 
-    fn get_kv(&self, key: &Vec<u8>) -> Result<Option<Vec<u8>>, StorageError> {
+    fn get_kv(&self, key: &[u8]) -> Result<Option<Vec<u8>>, StorageError> {
         self.get(DBColumnFamily::Default, key)
     }
 
-    fn delete_kv(&self, key: &Vec<u8>) -> Result<(), StorageError> {
+    fn delete_kv(&self, key: &[u8]) -> Result<(), StorageError> {
         self.delete(DBColumnFamily::Default, key)
     }
 
-    fn next_kv(&self, key: &Vec<u8>, include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
+    fn next_kv(&self, key: &[u8], include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
         self.next(DBColumnFamily::Default, key, include)
     }
 
-    fn prev_kv(&self, key: &Vec<u8>, include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
+    fn prev_kv(&self, key: &[u8], include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
         self.prev(DBColumnFamily::Default, key, include)
     }
 }

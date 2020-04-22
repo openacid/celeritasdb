@@ -38,7 +38,7 @@ impl RocksDBEngine {
     fn _range(
         &self,
         cf: DBColumnFamily,
-        key: &Vec<u8>,
+        key: &[u8],
         include: bool,
         reverse: bool,
     ) -> Option<(Vec<u8>, Vec<u8>)> {
@@ -57,7 +57,7 @@ impl RocksDBEngine {
                     return Some(kv);
                 };
 
-                if &kv.0 != key {
+                if kv.0.as_slice() != key {
                     return Some(kv);
                 };
             }
@@ -79,27 +79,27 @@ impl RocksDBEngine {
 }
 
 impl Base for RocksDBEngine {
-    fn set(&self, cf: DBColumnFamily, key: &Vec<u8>, value: &Vec<u8>) -> Result<(), StorageError> {
+    fn set(&self, cf: DBColumnFamily, key: &[u8], value: &[u8]) -> Result<(), StorageError> {
         let cfh = self._make_cf_handle(cf)?;
         Ok(self.db.put_cf(cfh, key, value)?)
     }
 
-    fn get(&self, cf: DBColumnFamily, key: &Vec<u8>) -> Result<Option<Vec<u8>>, StorageError> {
+    fn get(&self, cf: DBColumnFamily, key: &[u8]) -> Result<Option<Vec<u8>>, StorageError> {
         let cfh = self._make_cf_handle(cf)?;
         let r = self.db.get_cf(cfh, key)?;
         Ok(r.map(|x| x.to_vec()))
     }
 
-    fn delete(&self, cf: DBColumnFamily, key: &Vec<u8>) -> Result<(), StorageError> {
+    fn delete(&self, cf: DBColumnFamily, key: &[u8]) -> Result<(), StorageError> {
         let cfh = self._make_cf_handle(cf)?;
         Ok(self.db.delete_cf(cfh, key)?)
     }
 
-    fn next(&self, cf: DBColumnFamily, key: &Vec<u8>, include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
+    fn next(&self, cf: DBColumnFamily, key: &[u8], include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
         self._range(cf, key, include, false)
     }
 
-    fn prev(&self, cf: DBColumnFamily, key: &Vec<u8>, include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
+    fn prev(&self, cf: DBColumnFamily, key: &[u8], include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
         self._range(cf, key, include, true)
     }
 
