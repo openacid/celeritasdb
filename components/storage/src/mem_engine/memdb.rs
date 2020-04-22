@@ -18,29 +18,31 @@ impl Base for MemEngine {
     // TODO lock().unwrap() need to deal with poisoning
     // https://doc.rust-lang.org/std/sync/struct.Mutex.html#poisoning
 
+    // TODO concurrent test
+
     fn set(&self, cf: DBColumnFamily, key: &Vec<u8>, value: &Vec<u8>) -> Result<(), StorageError> {
-        let mut bt = self._db.lock().unwrap();
-        let bt = bt.entry(cf.into()).or_insert(BTreeMap::new());
+        let mut cfs = self._db.lock().unwrap();
+        let bt = cfs.entry(cf.into()).or_insert(BTreeMap::new());
         bt.insert(key.clone(), value.clone());
         Ok(())
     }
 
     fn get(&self, cf: DBColumnFamily, key: &Vec<u8>) -> Result<Option<Vec<u8>>, StorageError> {
-        let mut bt = self._db.lock().unwrap();
-        let bt = bt.entry(cf.into()).or_insert(BTreeMap::new());
+        let mut cfs = self._db.lock().unwrap();
+        let bt = cfs.entry(cf.into()).or_insert(BTreeMap::new());
         Ok(bt.get(key).map(|x| x.clone()))
     }
 
     fn delete(&self, cf: DBColumnFamily, key: &Vec<u8>) -> Result<(), StorageError> {
-        let mut bt = self._db.lock().unwrap();
-        let bt = bt.entry(cf.into()).or_insert(BTreeMap::new());
+        let mut cfs = self._db.lock().unwrap();
+        let bt = cfs.entry(cf.into()).or_insert(BTreeMap::new());
         bt.remove(key);
         Ok(())
     }
 
     fn next(&self, cf: DBColumnFamily, key: &Vec<u8>, include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
-        let mut bt = self._db.lock().unwrap();
-        let bt = bt.entry(cf.into()).or_insert(BTreeMap::new());
+        let mut cfs = self._db.lock().unwrap();
+        let bt = cfs.entry(cf.into()).or_insert(BTreeMap::new());
 
         for (k, v) in bt.range(key.to_vec()..) {
             if include == false && key == k {
@@ -54,8 +56,8 @@ impl Base for MemEngine {
     }
 
     fn prev(&self, cf: DBColumnFamily, key: &Vec<u8>, include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
-        let mut bt = self._db.lock().unwrap();
-        let bt = bt.entry(cf.into()).or_insert(BTreeMap::new());
+        let mut cfs = self._db.lock().unwrap();
+        let bt = cfs.entry(cf.into()).or_insert(BTreeMap::new());
 
         for (k, v) in bt.range((Unbounded, Included(key.to_vec()))).rev() {
             if include == false && key == k {

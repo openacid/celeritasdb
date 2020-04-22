@@ -49,11 +49,6 @@ async fn _repl_server() {
         ..Default::default()
     };
 
-    // Document said the request should be wrapped by a tonic::Request.
-    // Do not know why. It seems to work fine with a protobuf message.
-
-    // let request = Request::new(message::Request::accept());
-    // let request = message::Request::accept().into();
     let request = qp::MakeRequest::accept(0, &inst);
 
     let response = client.replicate(request).await.unwrap();
