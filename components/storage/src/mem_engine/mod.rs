@@ -15,7 +15,7 @@ pub type MemBT = HashMap<&'static str, BTreeMap<Vec<u8>, Vec<u8>>>;
 /// ```text
 /// Replica-1 → Engine
 ///           ↗
-/// Replica-1
+/// Replica-2
 /// ```
 pub struct MemEngine {
     pub _db: Mutex<MemBT>,

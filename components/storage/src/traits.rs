@@ -42,6 +42,43 @@ pub enum WriteEntry {
     Delete(DBColumnFamily, Vec<u8>),
 }
 
+/// NameSpace wraps a key into another key with namespace.
+/// E.g.: key: "abc" -> key with namespace "my_namespace/abc";
+///
+/// It must guarantee that different namespace never generate identical output.
+pub trait NameSpace {
+    /// wrap_ns wraps a key with namespace string, e.g.:
+    /// key: "foo" with ns:NameSpace = 5i64: "5/foo".
+    fn wrap_ns(&self, key: &[u8]) -> Vec<u8>;
+
+    /// unwrap_ns strip namespace part from key, If the key belongs to another namespace, it
+    /// returns None.
+    fn unwrap_ns(&self, key: &[u8]) -> Option<Vec<u8>>;
+}
+
+/// impl NameSpace for types with ToString:
+/// E.g. for ns:i64=5, it wraps key "foo" to "5/foo"
+impl<T: ToString> NameSpace for T {
+    fn wrap_ns(&self, key: &[u8]) -> Vec<u8> {
+        let mut pref = self.to_string().into_bytes();
+        let mut k: Vec<u8> = Vec::with_capacity(pref.len() + 1 + key.len());
+        k.append(&mut pref);
+        k.push('/' as u8);
+        k.append(&mut key.to_vec());
+        k
+    }
+    fn unwrap_ns(&self, key: &[u8]) -> Option<Vec<u8>> {
+        let mut pref = self.to_string().into_bytes();
+        pref.push('/' as u8);
+        let got = &key[0..pref.len()];
+        if got == pref.as_slice() {
+            Some(key[pref.len()..].to_vec())
+        } else {
+            None
+        }
+    }
+}
+
 pub fn make_ref_key<T>(typ: &str, id: T) -> Vec<u8>
 where
     T: LowerHex,
