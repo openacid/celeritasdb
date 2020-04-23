@@ -14,7 +14,7 @@ mod mem_engine;
 pub use mem_engine::*;
 
 #[cfg(test)]
-mod test_traits;
+mod test_namespace;
 
 #[cfg(test)]
 mod test_engine;

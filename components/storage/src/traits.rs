@@ -2,6 +2,7 @@ use std::fmt::LowerHex;
 
 use crate::StorageError;
 use prost::Message;
+use std::sync::Arc;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum DBColumnFamily {
@@ -76,6 +77,113 @@ impl<T: ToString> NameSpace for T {
         } else {
             None
         }
+    }
+}
+
+/// SharedStorage defines the API to impl a Storage with namespace support.
+pub trait SharedStorage {
+    type NS: NameSpace;
+    type B: Base;
+
+    fn get_ns(&self) -> &Self::NS;
+    fn get_storage(&self) -> &Arc<Self::B>;
+}
+
+/// WithNs is a namespace storage based on a shared storage `Base`.
+/// Write and read operations are wrapped with a namespace.
+pub struct WithNs<B, NS>
+where
+    NS: NameSpace,
+    B: Base,
+{
+    namespace: NS,
+    shared_sto: Arc<B>,
+}
+
+impl<B, NS> SharedStorage for WithNs<B, NS>
+where
+    B: Base,
+    NS: NameSpace,
+{
+    type B = B;
+    type NS = NS;
+
+    fn get_storage(&self) -> &Arc<B> {
+        &self.shared_sto
+    }
+    fn get_ns(&self) -> &NS {
+        &self.namespace
+    }
+}
+
+impl<B, NS> WithNs<B, NS>
+where
+    NS: NameSpace,
+    B: Base,
+{
+    /// new creates a Storage WithNs with `namespace` and a shared underlying storage `shared_sto`.
+    pub fn new(namespace: NS, shared_sto: Arc<B>) -> Self {
+        Self {
+            namespace,
+            shared_sto,
+        }
+    }
+}
+
+/// impl Base storage API for types that impls SharedStorage.
+impl<T, B, NS> Base for T
+where
+    B: Base,
+    NS: NameSpace,
+    T: SharedStorage<B = B, NS = NS> + Send + Sync,
+{
+    fn set(&self, cf: DBColumnFamily, key: &[u8], value: &[u8]) -> Result<(), StorageError> {
+        self.get_storage()
+            .set(cf, &self.get_ns().wrap_ns(key), value)
+    }
+
+    fn get(&self, cf: DBColumnFamily, key: &[u8]) -> Result<Option<Vec<u8>>, StorageError> {
+        self.get_storage().get(cf, &self.get_ns().wrap_ns(key))
+    }
+
+    fn delete(&self, cf: DBColumnFamily, key: &[u8]) -> Result<(), StorageError> {
+        self.get_storage().delete(cf, &self.get_ns().wrap_ns(key))
+    }
+
+    fn next(&self, cf: DBColumnFamily, key: &[u8], include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
+        let (k, v) = self
+            .get_storage()
+            .next(cf, &self.get_ns().wrap_ns(key), include)?;
+        let unwrapped = self.get_ns().unwrap_ns(k.as_slice())?;
+
+        Some((unwrapped, v.to_vec()))
+    }
+
+    fn prev(&self, cf: DBColumnFamily, key: &[u8], include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
+        let (k, v) = self
+            .get_storage()
+            .prev(cf, &self.get_ns().wrap_ns(key), include)?;
+        let unwrapped = self.get_ns().unwrap_ns(k.as_slice())?;
+
+        Some((unwrapped, v.to_vec()))
+    }
+
+    // TODO now just execute these commands in order
+    fn write_batch(&self, entrys: &Vec<WriteEntry>) -> Result<(), StorageError> {
+        let mut es = Vec::with_capacity(entrys.len());
+
+        for en in entrys {
+            let e = match en {
+                WriteEntry::Nil => WriteEntry::Nil,
+                WriteEntry::Set(cf, k, v) => {
+                    WriteEntry::Set(*cf, self.get_ns().wrap_ns(k), v.to_vec())
+                }
+                WriteEntry::Delete(cf, k) => WriteEntry::Delete(*cf, self.get_ns().wrap_ns(k)),
+            };
+            es.push(e);
+        }
+
+        self.get_storage().write_batch(&es)
     }
 }
 
@@ -238,6 +346,7 @@ where
 }
 
 impl<T> KV for T where T: Base {}
+
 impl<T, K, V> ColumnedEngine<K, V> for T
 where
     T: Base,
