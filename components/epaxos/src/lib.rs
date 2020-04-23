@@ -4,6 +4,9 @@
 extern crate quick_error;
 
 #[macro_use]
+extern crate lazy_static;
+
+#[macro_use]
 pub mod testutil;
 
 pub mod conf;
