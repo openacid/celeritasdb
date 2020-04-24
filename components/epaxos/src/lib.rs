@@ -28,10 +28,10 @@ pub use iters::*;
 use qpaxos::*;
 use std::sync::Arc;
 use storage::Engine;
+pub use storage::*;
 pub type Storage = Arc<dyn Engine<ReplicaId, InstanceId, InstanceId, Instance>>;
 
 use prost::Message;
-use storage::*;
 impl From<&Command> for WriteEntry {
     fn from(c: &Command) -> Self {
         if OpCode::Set as i32 == c.op {

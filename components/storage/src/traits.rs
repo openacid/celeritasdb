@@ -83,7 +83,7 @@ impl<T: ToString> NameSpace for T {
 /// SharedStorage defines the API to impl a Storage with namespace support.
 pub trait SharedStorage {
     type NS: NameSpace;
-    type B: Base;
+    type B: Base + ?Sized;
 
     fn get_ns(&self) -> &Self::NS;
     fn get_storage(&self) -> &Arc<Self::B>;
@@ -94,7 +94,7 @@ pub trait SharedStorage {
 pub struct WithNs<B, NS>
 where
     NS: NameSpace,
-    B: Base,
+    B: Base + ?Sized,
 {
     namespace: NS,
     shared_sto: Arc<B>,
@@ -102,7 +102,7 @@ where
 
 impl<B, NS> SharedStorage for WithNs<B, NS>
 where
-    B: Base,
+    B: Base + ?Sized,
     NS: NameSpace,
 {
     type B = B;
@@ -119,7 +119,7 @@ where
 impl<B, NS> WithNs<B, NS>
 where
     NS: NameSpace,
-    B: Base,
+    B: Base + ?Sized,
 {
     /// new creates a Storage WithNs with `namespace` and a shared underlying storage `shared_sto`.
     pub fn new(namespace: NS, shared_sto: Arc<B>) -> Self {
@@ -133,7 +133,7 @@ where
 /// impl Base storage API for types that impls SharedStorage.
 impl<T, B, NS> Base for T
 where
-    B: Base,
+    B: Base + ?Sized,
     NS: NameSpace,
     T: SharedStorage<B = B, NS = NS> + Send + Sync,
 {
@@ -308,13 +308,13 @@ where
 }
 
 /// InstanceEngine offer functions to operate snapshot instances
-pub trait InstanceEngine<K, V>: Base
+pub trait InstanceEngine<IK, IV>: Base
 where
-    K: ToKey,
-    V: Message + ToKey + Default,
+    IK: ToKey,
+    IV: Message + ToKey + Default,
 {
     /// set an instance
-    fn set_instance(&self, v: &V) -> Result<(), StorageError> {
+    fn set_instance(&self, v: &IV) -> Result<(), StorageError> {
         // TODO does not guarantee in a transaction
         let iid = v.to_key();
         let mut value = vec![];
@@ -324,11 +324,11 @@ where
     }
 
     /// get an instance with instance id
-    fn get_instance(&self, k: K) -> Result<Option<V>, StorageError> {
+    fn get_instance(&self, k: IK) -> Result<Option<IV>, StorageError> {
         let key = k.to_key();
         let vbs = self.get(DBColumnFamily::Instance, &key)?;
         let r = match vbs {
-            Some(v) => V::decode(v.as_slice())?,
+            Some(v) => IV::decode(v.as_slice())?,
             None => return Ok(None),
         };
 
@@ -347,19 +347,19 @@ where
 
 impl<T> KV for T where T: Base {}
 
-impl<T, K, V> ColumnedEngine<K, V> for T
+impl<T, CK, CV> ColumnedEngine<CK, CV> for T
 where
     T: Base,
-    K: LowerHex + Copy,
-    V: Message + Default,
+    CK: LowerHex + Copy,
+    CV: Message + Default,
 {
 }
 
-impl<T, K, V> InstanceEngine<K, V> for T
+impl<T, IK, IV> InstanceEngine<IK, IV> for T
 where
     T: Base,
-    K: ToKey,
-    V: Message + ToKey + Default,
+    IK: ToKey,
+    IV: Message + ToKey + Default,
 {
 }
 

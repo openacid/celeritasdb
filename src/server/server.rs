@@ -22,7 +22,7 @@ use crate::ServerError;
 
 /// Server impl some user protocol such as redis protocol and a replication service.
 pub struct Server {
-    server_data: Arc<ServerData>,
+    pub server_data: Arc<ServerData>,
     stop_txs: Vec<(&'static str, Sender<()>)>,
     join_handle: Vec<JoinHandle<()>>,
 }

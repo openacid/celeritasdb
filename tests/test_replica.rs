@@ -50,14 +50,19 @@ async fn _test_replica_exec_thread() {
         ),
     ];
 
+    // there is only replica
+
     for (inst, max) in cases.iter() {
-        ctx.storage.set_instance(&inst).unwrap();
-        ctx.storage.set_ref("max", 1, *max).unwrap();
-        //ctx.storage.set_ref("exec", 1, (1, 1).into()).unwrap();
+        let rid: ReplicaId = 1;
+
+        let sd = &ctx.server.server_data;
+        let r = sd.local_replicas.get(&rid).unwrap();
+        let sto = &r.storage;
+        sto.set_instance(&inst).unwrap();
+        sto.set_ref("max", 1, *max).unwrap();
 
         loop {
-            let inst1 = ctx
-                .storage
+            let inst1 = sto
                 .get_instance(inst.instance_id.unwrap())
                 .unwrap()
                 .unwrap();
@@ -69,7 +74,7 @@ async fn _test_replica_exec_thread() {
         }
 
         for cmd in inst.cmds.iter() {
-            let v = ctx.storage.get_kv(&cmd.key).unwrap().unwrap();
+            let v = sto.get_kv(&cmd.key).unwrap().unwrap();
             assert_eq!(v, cmd.value);
         }
     }

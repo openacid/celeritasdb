@@ -24,7 +24,9 @@ use crate::replica::ReplicaError;
 use crate::replication::RpcHandlerError;
 use crate::Iter;
 use crate::Storage;
+use std::sync::Arc;
 use storage::StorageError;
+use storage::WithNs;
 
 /// ref_or_bug extracts a immutable ref from an Option.
 /// If the Option is None a bug handler is triggered.
@@ -111,7 +113,7 @@ impl Replica {
             replica_id: rid,
             group_replica_ids: group.replicas.keys().cloned().collect(),
             peers,
-            storage: sto,
+            storage: Arc::new(WithNs::new(rid, sto)),
             // TODO get from conf
             committed_timeout: 10000,
         })

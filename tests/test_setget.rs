@@ -33,7 +33,10 @@ async fn _test_set() {
     let mut con = ctx.client.get_connection().unwrap();
     redis::cmd("SET").arg("foo").arg(42).execute(&mut con);
 
-    let sto = ctx.storage;
+    let rid: ReplicaId = 1;
+    let sd = &ctx.server.server_data;
+    let r = sd.local_replicas.get(&rid).unwrap();
+    let sto = &r.storage;
     let inst = sto.get_instance((1, 0).into());
     println!("read inst: {:?}", inst);
 
