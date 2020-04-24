@@ -168,7 +168,6 @@ where
         Some((unwrapped, v.to_vec()))
     }
 
-    // TODO now just execute these commands in order
     fn write_batch(&self, entrys: &Vec<WriteEntry>) -> Result<(), StorageError> {
         let mut es = Vec::with_capacity(entrys.len());
 

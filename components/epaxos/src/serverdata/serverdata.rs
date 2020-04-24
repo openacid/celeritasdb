@@ -80,7 +80,7 @@ impl ServerData {
         let sto = MemEngine::new().unwrap();
         let sto = Arc::new(sto);
 
-        let node_id = "127.0.0.1:4441";
+        let node_id = LOCAL_NODE_ID;
 
         ServerData::new(sto, ci, node_id.into())
     }
