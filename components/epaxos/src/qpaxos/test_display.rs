@@ -6,6 +6,16 @@ use crate::qpaxos::InstanceIdVec;
 use crate::qpaxos::MakeRequest;
 use crate::qpaxos::OpCode;
 
+use crate::qpaxos::replicate_reply;
+use crate::qpaxos::AcceptReply;
+use crate::qpaxos::CommitReply;
+use crate::qpaxos::FastAcceptReply;
+use crate::qpaxos::InvalidRequest;
+use crate::qpaxos::PrepareReply;
+use crate::qpaxos::QError;
+use crate::qpaxos::ReplicateReply;
+use crate::qpaxos::StorageFailure;
+
 #[test]
 fn test_display_instance_id() {
     assert_eq!(
@@ -130,4 +140,93 @@ fn test_display_replicate_request() {
 
     let p = MakeRequest::prepare(10, &inst);
     assert_eq!(format!("{{{}:{}}}", r, prepare), format!("{}", p));
+}
+
+#[test]
+fn test_display_replicate_reply_err() {
+    let cmn = "last:None, iid:None, phase";
+
+    {
+        // storage error
+        let r = ReplicateReply {
+            err: Some(QError {
+                sto: Some(StorageFailure::default()),
+                req: None,
+            }),
+            ..Default::default()
+        };
+        let e = "{sto:StorageFailure, req:None}";
+
+        assert_eq!(
+            format!("{{err:{}, {}:{}}}", e, cmn, "None"),
+            format!("{}", r)
+        );
+    }
+    {
+        // request error
+        let r = ReplicateReply {
+            err: Some(QError {
+                sto: None,
+                req: Some(InvalidRequest {
+                    field: "foo".into(),
+                    problem: "must-have".into(),
+                    ctx: "ctxbar".into(),
+                }),
+            }),
+            ..Default::default()
+        };
+        let e = "{sto:None, req:{must-have: 'foo', ctx:ctxbar}}";
+
+        assert_eq!(
+            format!("{{err:{}, {}:{}}}", e, cmn, "None"),
+            format!("{}", r)
+        );
+    }
+}
+
+#[test]
+fn test_display_replicate_reply_normal() {
+    let cmn = "last:(2, 3, 4), iid:(1, 2), phase";
+
+    let mut r = ReplicateReply {
+        err: None,
+        last_ballot: Some((2, 3, 4).into()),
+        instance_id: Some((1, 2).into()),
+        phase: None,
+    };
+
+    {
+        r.phase = Some(replicate_reply::Phase::Fast(FastAcceptReply {
+            deps: Some(instids![(1, 2), (3, 4)].into()),
+            deps_committed: vec![true, false],
+        }));
+        let ph = "Fast{deps[1]:[(1, 2), (3, 4)], c:[true, false]}";
+
+        assert_eq!(format!("{{err:None, {}:{}}}", cmn, ph), format!("{}", r));
+    }
+
+    {
+        r.phase = Some(replicate_reply::Phase::Accept(AcceptReply {}));
+        let ph = "Accept{}";
+
+        assert_eq!(format!("{{err:None, {}:{}}}", cmn, ph), format!("{}", r));
+    }
+
+    {
+        r.phase = Some(replicate_reply::Phase::Commit(CommitReply {}));
+        let ph = "Commit{}";
+
+        assert_eq!(format!("{{err:None, {}:{}}}", cmn, ph), format!("{}", r));
+    }
+
+    {
+        r.phase = Some(replicate_reply::Phase::Prepare(PrepareReply {
+            deps: Some(instids![(1, 2), (3, 4)].into()),
+            final_deps: Some(instids![(3, 4)].into()),
+            committed: true,
+        }));
+        let ph = "Prepare{deps:-[(1, 2), (3, 4)][(3, 4)], c:true}";
+
+        assert_eq!(format!("{{err:None, {}:{}}}", cmn, ph), format!("{}", r));
+    }
 }

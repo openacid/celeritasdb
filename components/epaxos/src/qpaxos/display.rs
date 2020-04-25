@@ -1,19 +1,34 @@
+use crate::qpaxos::replicate_reply;
 use crate::qpaxos::replicate_request;
+use crate::qpaxos::AcceptReply;
 use crate::qpaxos::AcceptRequest;
 use crate::qpaxos::BallotNum;
 use crate::qpaxos::Command;
+use crate::qpaxos::CommitReply;
 use crate::qpaxos::CommitRequest;
+use crate::qpaxos::FastAcceptReply;
 use crate::qpaxos::FastAcceptRequest;
 use crate::qpaxos::Instance;
 use crate::qpaxos::InstanceId;
 use crate::qpaxos::InstanceIdVec;
+use crate::qpaxos::InvalidRequest;
 use crate::qpaxos::OpCode;
+use crate::qpaxos::PrepareReply;
 use crate::qpaxos::PrepareRequest;
+use crate::qpaxos::QError;
+use crate::qpaxos::ReplicateReply;
 use crate::qpaxos::ReplicateRequest;
+use crate::qpaxos::StorageFailure;
 use std::fmt;
 
 trait ToStringExt {
     fn tostr_ext(&self) -> String;
+}
+
+impl ToStringExt for String {
+    fn tostr_ext(&self) -> String {
+        format!("{}", self)
+    }
 }
 
 impl<T: ToStringExt> ToStringExt for Option<T> {
@@ -74,6 +89,17 @@ impl ToStringExt for replicate_request::Phase {
     }
 }
 
+impl ToStringExt for replicate_reply::Phase {
+    fn tostr_ext(&self) -> String {
+        match self {
+            Self::Fast(v) => format!("Fast{}", v),
+            Self::Accept(v) => format!("Accept{}", v),
+            Self::Commit(v) => format!("Commit{}", v),
+            Self::Prepare(v) => format!("Prepare{}", v),
+        }
+    }
+}
+
 macro_rules! impl_tostr_ext {
     ($typ:path) => {
         impl ToStringExt for $typ {
@@ -110,6 +136,8 @@ impl_tostr_ext!(
     executed
 );
 
+// replication requests
+
 impl_tostr_ext!(
     ReplicateRequest,
     "{{to:{}, blt:{}, iid:{}, phase:{}}}",
@@ -130,6 +158,40 @@ impl_tostr_ext!(
 impl_tostr_ext!(AcceptRequest, "{{deps[2]:{}}}", final_deps);
 impl_tostr_ext!(CommitRequest, "{{cmds:{}, deps[2]:{}}}", cmds, final_deps);
 impl_tostr_ext!(PrepareRequest, "{{}}",);
+
+// replication replies
+
+impl_tostr_ext!(
+    ReplicateReply,
+    "{{err:{}, last:{}, iid:{}, phase:{}}}",
+    err,
+    last_ballot,
+    instance_id,
+    phase
+);
+
+impl_tostr_ext!(
+    FastAcceptReply,
+    "{{deps[1]:{}, c:{}}}",
+    deps,
+    deps_committed
+);
+
+impl_tostr_ext!(AcceptReply, "{{}}",);
+impl_tostr_ext!(CommitReply, "{{}}",);
+impl_tostr_ext!(
+    PrepareReply,
+    "{{deps:-{}{}, c:{}}}",
+    deps,
+    final_deps,
+    committed
+);
+
+// replication errors
+
+impl_tostr_ext!(QError, "{{sto:{}, req:{}}}", sto, req);
+impl_tostr_ext!(StorageFailure, "StorageFailure",);
+impl_tostr_ext!(InvalidRequest, "{{{}: '{}', ctx:{}}}", problem, field, ctx);
 
 macro_rules! impl_display {
     ($typ:path) => {
@@ -152,3 +214,13 @@ impl_display!(FastAcceptRequest);
 impl_display!(AcceptRequest);
 impl_display!(CommitRequest);
 impl_display!(PrepareRequest);
+
+impl_display!(ReplicateReply);
+impl_display!(FastAcceptReply);
+impl_display!(AcceptReply);
+impl_display!(CommitReply);
+impl_display!(PrepareReply);
+
+impl_display!(QError);
+impl_display!(StorageFailure);
+impl_display!(InvalidRequest);
