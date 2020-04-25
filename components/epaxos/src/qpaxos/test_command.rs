@@ -9,6 +9,14 @@ fn test_command_pb() {
 }
 
 #[test]
+fn test_op_code_from() {
+    assert_eq!(OpCode::NoOp, OpCode::from_str("NoOp").unwrap());
+    assert_eq!(OpCode::Get, OpCode::from_str("Get").unwrap());
+    assert_eq!(OpCode::Set, OpCode::from_str("Set").unwrap());
+    assert_eq!(OpCode::Delete, OpCode::from_str("Delete").unwrap());
+}
+
+#[test]
 fn test_command_from() {
     let c = Command {
         op: OpCode::Set as i32,

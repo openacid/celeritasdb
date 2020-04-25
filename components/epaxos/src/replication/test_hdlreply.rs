@@ -118,7 +118,6 @@ macro_rules! frepl {
 
 #[test]
 fn test_handle_fast_accept_reply_err() {
-    // TODO test handle_fast_accept_reply accept None for last_ballot
     let inst = init_inst!((1, 2), [("Set", "x", "1")], [(1, 1)]);
 
     let cases: Vec<(ReplicateReply, RpcHandlerError)> = vec![

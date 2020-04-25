@@ -1,6 +1,8 @@
 pub use std::cmp::Ordering;
 use std::ops::Index;
 use std::ops::{Deref, DerefMut};
+// so that downstream crate does not need use this trait to use FromStr.
+pub use std::str::FromStr;
 
 // to let user be able to call Phase::try_into() without use this trait
 pub use std::convert::TryInto;
