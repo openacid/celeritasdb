@@ -28,6 +28,7 @@ pub mod errors;
 pub mod quorums;
 
 pub use conflict::*;
+pub use display::*;
 pub use errors::*;
 pub use macros::*;
 pub use quorums::*;

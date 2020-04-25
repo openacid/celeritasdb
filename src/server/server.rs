@@ -28,9 +28,18 @@ pub struct Server {
 }
 
 impl Server {
+    /// new_inmem creates a test cluster specified by name with only in-memory storage.
+    pub fn new_inmem(name: &str) -> Self {
+        Self::new_with_server_data(ServerData::new_inmem(name))
+    }
+
     pub fn new(sto: Storage, cluster: ClusterInfo, node_id: NodeId) -> Server {
+        Self::new_with_server_data(ServerData::new(sto, cluster, node_id))
+    }
+
+    pub fn new_with_server_data(sd: ServerData) -> Self {
         Server {
-            server_data: Arc::new(ServerData::new(sto, cluster, node_id)),
+            server_data: Arc::new(sd),
             stop_txs: Vec::new(),
             join_handle: Vec::new(),
         }
@@ -122,7 +131,7 @@ impl Server {
         println!("serving: {}", api_addr);
 
         // TODO load cluster conf
-        let qp = QPaxosImpl::default();
+        let qp = QPaxosImpl::new(sd);
         let s = tonic::transport::Server::builder().add_service(QPaxosServer::new(qp));
 
         let j2 = tokio::spawn(async move {

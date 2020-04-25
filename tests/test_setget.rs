@@ -29,34 +29,57 @@ fn test_set() {
 
 #[tokio::main]
 async fn _test_set() {
-    let ctx = InProcContext::new();
+    // TODO test with az_3
+    let ctx = InProcContext::new("az_3");
     let mut con = ctx.client.get_connection().unwrap();
     redis::cmd("SET").arg("foo").arg(42).execute(&mut con);
 
-    let rid: ReplicaId = 1;
-    let sd = &ctx.server.server_data;
-    let r = sd.local_replicas.get(&rid).unwrap();
-    let sto = &r.storage;
-    let inst = sto.get_instance((1, 0).into());
-    println!("read inst: {:?}", inst);
+    // TODO no replica receives accept because 1, 2 consitutes a fast-quorum
 
-    assert!(inst.is_ok());
-    let inst = inst.unwrap();
+    for rid in 1..=3 {
+        let sto = &ctx.get_replica(rid).storage;
+        let inst = sto.get_instance((1, 0).into());
 
-    assert!(inst.is_some());
-    let inst = inst.unwrap();
+        assert!(inst.is_ok());
+        let inst = inst.unwrap();
 
-    assert_eq!(cmds![("Set", "foo", "42")], inst.cmds);
-    assert_eq!(
-        inst.final_deps.unwrap(),
-        InstanceIdVec::from(instids![(1, -1)])
-    );
-    assert_eq!(inst.deps.unwrap(), InstanceIdVec::from(instids![(1, -1)]));
-    assert_eq!(
-        inst.initial_deps.unwrap(),
-        InstanceIdVec::from(instids![(1, -1)])
-    );
-    assert!(inst.committed);
+        assert!(inst.is_some());
+        let inst = inst.unwrap();
+
+        println!("check inst on replica: {}: {}", rid, inst);
+
+        assert_eq!(cmds![("Set", "foo", "42")], inst.cmds);
+        assert_eq!(
+            inst.initial_deps.unwrap(),
+            InstanceIdVec::from(instids![(1, -1), (2, -1), (3, -1)]),
+            "initial_deps, replica:{}",
+            rid
+        );
+        assert_eq!(
+            inst.deps.unwrap(),
+            InstanceIdVec::from(instids![(1, -1), (2, -1), (3, -1)]),
+            "deps, replica:{}",
+            rid
+        );
+    }
+
+    {
+        // TODO no commit broadcast yet,
+        // only replica 1 is committed.
+
+        let rid = 1;
+        let sto = &ctx.get_replica(rid).storage;
+        let inst = sto.get_instance((1, 0).into());
+        let inst = inst.unwrap().unwrap();
+
+        assert_eq!(
+            inst.final_deps.unwrap(),
+            InstanceIdVec::from(instids![(1, -1), (2, -1), (3, -1)]),
+            "final_deps, replica:{}",
+            rid
+        );
+        assert!(inst.committed);
+    }
 }
 
 #[test]

@@ -101,7 +101,7 @@ impl RedisApi {
                 }
             };
             let r = self.exec_redis_cmd(v).await;
-            println!("r={:?}", r);
+            println!("exec_redis_cmd r={:?}", r);
             println!("response bytes:{:?}", r.as_bytes());
             sock.write_all(&*r.as_bytes())
                 .await

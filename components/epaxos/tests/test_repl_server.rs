@@ -8,6 +8,8 @@ use std::time::Duration;
 
 use epaxos::qpaxos as qp;
 use epaxos::QPaxosImpl;
+use epaxos::ServerData;
+use std::sync::Arc;
 
 #[test]
 fn test_repl_server() {
@@ -23,7 +25,7 @@ async fn _repl_server() {
 
     // start a replication server in a coroutine
 
-    let qp = QPaxosImpl::default();
+    let qp = QPaxosImpl::new(Arc::new(ServerData::new_inmem("az_1")));
     let s = Server::builder().add_service(qp::QPaxosServer::new(qp));
 
     tokio::spawn(async move {

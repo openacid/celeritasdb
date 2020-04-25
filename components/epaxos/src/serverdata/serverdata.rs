@@ -1,3 +1,4 @@
+use crate::conf;
 use crate::conf::ClusterInfo;
 use crate::conf::GroupInfo;
 use crate::conf::Node;
@@ -10,45 +11,6 @@ use std::collections::BTreeMap;
 use std::sync::Arc;
 use storage::MemEngine;
 
-/// LOCAL_NODE_ID is the only node id used in LOCAL_CLUSTERS.
-static LOCAL_NODE_ID: &str = "127.0.0.1:4441";
-
-lazy_static! {
-    /// LOCAL_CLUSTERS predefines several single-node cluster for testing.
-    static ref LOCAL_CLUSTERS: BTreeMap<&'static str, &'static str> = {
-        let mut h = BTreeMap::new();
-        h.insert("1", "
-nodes:
-    127.0.0.1:4441:
-        api_addr: 127.0.0.1:6379
-        replication: 127.0.0.1:4441
-groups:
--   range:
-    -   a
-    -   z
-    replicas:
-        1: 127.0.0.1:4441
-");
-
-        h.insert("3", "
-nodes:
-    127.0.0.1:4441:
-        api_addr: 127.0.0.1:6379
-        replication: 127.0.0.1:4441
-groups:
--   range:
-    -   a
-    -   z
-    replicas:
-        1: 127.0.0.1:4441
-        2: 127.0.0.1:4441
-        3: 127.0.0.1:4441
-");
-
-        h
-    };
-}
-
 /// ServerData is shared between threads or coroutine.
 /// TODO: Storage does not need to be shared with Arc any more.
 // #[derive(Debug)]
@@ -60,27 +22,18 @@ pub struct ServerData {
     pub storage: Storage,
 }
 
-// TODO a Default for ServerData is not appropriated.
-// Remove it in future.
-impl Default for ServerData {
-    /// default creates a damn simple cluster with only one node, one group and one replica.
-    fn default() -> Self {
-        Self::mem_cluster("1")
-    }
-}
-
 impl ServerData {
-    /// mem_cluster creates a ServerData with cluster config specified by `name`.
-    /// Such a cluster is only meant for test because it uses only an in-memory storage.
-    pub fn mem_cluster(name: &str) -> ServerData {
-        let yaml = LOCAL_CLUSTERS[name];
-
-        let ci = ClusterInfo::from_str(yaml).unwrap();
+    /// new_inmem creates a ServerData with predefined config specified by `name`. See
+    /// ClusterInfo::new_predefined.
+    ///
+    /// Such a cluster is only meant for test because it use a in-memory storage.
+    pub fn new_inmem(name: &str) -> ServerData {
+        let ci = ClusterInfo::new_predefined(name);
 
         let sto = MemEngine::new().unwrap();
         let sto = Arc::new(sto);
 
-        let node_id = LOCAL_NODE_ID;
+        let node_id = conf::LOCAL_NODE_ID;
 
         ServerData::new(sto, ci, node_id.into())
     }

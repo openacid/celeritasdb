@@ -50,9 +50,11 @@ pub async fn replicate(
     let req = MakeRequest::fast_accept(0, &st.instance, &deps_committed);
     let repls = bcast_msg(&r.peers, req).await;
 
-    println!("fast-replies:{:?}", repls);
+    println!("got {} replies", repls.len());
 
     for (from_rid, repl) in repls.iter() {
+        println!("fast-reply from:{} {}", from_rid, repl.get_ref());
+        // TODO  consume repl do not clone
         handle_fast_accept_reply(&mut st, *from_rid, repl.get_ref().clone())?;
         let fast = st.get_fast_commit_deps(&grids);
         match fast {
@@ -87,7 +89,7 @@ pub async fn replicate(
     let repls = bcast_msg(&r.peers, req).await;
 
     for (from_rid, repl) in repls.iter() {
-        handle_accept_reply(&mut st, *from_rid, repl.get_ref())?;
+        handle_accept_reply(&mut st, *from_rid, repl.get_ref().clone())?;
         if st.accept_oks.len() as i32 >= st.quorum {
             // instance is safe to commit.
             return Ok(st);

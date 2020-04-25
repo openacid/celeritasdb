@@ -21,7 +21,7 @@ use crate::qpaxos::ReplicateRequest;
 use crate::qpaxos::StorageFailure;
 use std::fmt;
 
-trait ToStringExt {
+pub trait ToStringExt {
     fn tostr_ext(&self) -> String;
 }
 

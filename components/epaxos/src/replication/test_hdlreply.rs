@@ -118,16 +118,13 @@ macro_rules! frepl {
 
 #[test]
 fn test_handle_fast_accept_reply_err() {
+    // TODO test handle_fast_accept_reply accept None for last_ballot
     let inst = init_inst!((1, 2), [("Set", "x", "1")], [(1, 1)]);
 
     let cases: Vec<(ReplicateReply, RpcHandlerError)> = vec![
         (
             frepl!((None, None)),
-            ProtocolError::LackOf("last_ballot".into()).into(),
-        ),
-        (
-            frepl!((None, (1, 2))),
-            ProtocolError::LackOf("last_ballot".into()).into(),
+            ProtocolError::LackOf("instance_id".into()).into(),
         ),
         (
             frepl!(((1, 2, 3), None)),
@@ -139,7 +136,7 @@ fn test_handle_fast_accept_reply_err() {
         ),
         (
             ReplicateReply {
-                last_ballot: blt!((1, 2, 3)),
+                last_ballot: blt!((0, 0, 1)),
                 instance_id: iid!((1, 2)),
                 phase: Some(
                     CommitReply {
@@ -152,11 +149,11 @@ fn test_handle_fast_accept_reply_err() {
             ProtocolError::LackOf("phase::Fast".into()).into(),
         ),
         (
-            frepl!(((1, 2, 3), (1, 2)), (None)),
+            frepl!(((0, 0, 1), (1, 2)), (None)),
             ProtocolError::LackOf("phase::Fast.deps".into()).into(),
         ),
         (
-            frepl!(((1, 2, 3), (1, 2)), ([(1, 2), (2, 3)], vec![true])),
+            frepl!(((0, 0, 1), (1, 2)), ([(1, 2), (2, 3)], vec![true])),
             ProtocolError::Incomplete("phase::Fast.deps_committed".into(), 2, 1).into(),
         ),
     ];
@@ -282,7 +279,7 @@ fn test_handle_accept_reply() {
             last_ballot: Some((10, 2, replica_id).into()),
             ..Default::default()
         };
-        let r = handle_accept_reply(&mut st, 0, &repl);
+        let r = handle_accept_reply(&mut st, 0, repl.clone());
         println!("{:?}", r);
         assert!(r.is_err());
 
@@ -299,7 +296,7 @@ fn test_handle_accept_reply() {
             err: Some(ProtocolError::LackOf("test".to_string()).into()),
             ..Default::default()
         };
-        let r = handle_accept_reply(&mut st, 0, &repl);
+        let r = handle_accept_reply(&mut st, 0, repl.clone());
         println!("{:?}", r);
         assert!(r.is_err());
 
@@ -319,7 +316,7 @@ fn test_handle_accept_reply() {
             instance_id: inst.instance_id,
             phase: Some(AcceptReply {}.into()),
         };
-        let r = handle_accept_reply(&mut st, 0, &repl);
+        let r = handle_accept_reply(&mut st, 0, repl.clone());
         println!("{:?}", r);
         assert!(r.is_ok());
 

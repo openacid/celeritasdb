@@ -4,6 +4,7 @@ use std::time::Duration;
 
 use crate::qpaxos::*;
 use crate::replica::{Replica, ReplicaPeer};
+use crate::serverdata::ServerData;
 use crate::QPaxosImpl;
 use crate::Storage;
 use storage::MemEngine;
@@ -149,7 +150,7 @@ impl TestCluster {
         for addr in self.addrs.iter() {
             let (tx, rx) = oneshot::channel::<()>();
 
-            let qp = QPaxosImpl::default();
+            let qp = QPaxosImpl::new(Arc::new(ServerData::new_inmem("az_1")));
             let s = Server::builder().add_service(QPaxosServer::new(qp));
 
             // remove scheme

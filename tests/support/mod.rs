@@ -1,7 +1,6 @@
 #![allow(dead_code)]
 
 use rand;
-use std::sync::Arc;
 
 use redis;
 
@@ -18,9 +17,9 @@ use std::path::PathBuf;
 use redis::RedisResult;
 
 use cele::Server;
-use epaxos::conf::ClusterInfo;
+use epaxos::qpaxos::ReplicaId;
+use epaxos::replica::Replica;
 use epaxos::Storage;
-use storage::MemEngine;
 
 /// InProcContext setup a small cluster of an in-process server and a client.
 pub struct InProcContext {
@@ -30,26 +29,15 @@ pub struct InProcContext {
 }
 
 impl InProcContext {
-    pub fn new() -> Self {
-        let cluster = "
-nodes:
-    127.0.0.1:6666:
-        api_addr: 127.0.0.1:6379
-        replication: 127.0.0.1:6666
-groups:
--   range:
-    -   a
-    -   z
-    replicas:
-        1: 127.0.0.1:6666
-";
+    pub fn get_replica(&self, rid: ReplicaId) -> &Replica {
+        let sd = &self.server.server_data;
+        let r = sd.local_replicas.get(&rid).unwrap();
+        r
+    }
 
-        let node_id = "127.0.0.1:6666";
-
-        let sto = MemEngine::new().unwrap();
-        let sto = Arc::new(sto);
-        let cluster = ClusterInfo::from_str(cluster).unwrap();
-        let mut server = Server::new(sto.clone(), cluster, node_id.into());
+    pub fn new(conf_name: &str) -> Self {
+        let mut server = Server::new_inmem(conf_name);
+        let sto = server.server_data.storage.clone();
         server.start();
 
         let server_port = 6379;

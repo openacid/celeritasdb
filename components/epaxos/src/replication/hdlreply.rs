@@ -1,18 +1,37 @@
+use crate::qpaxos::replicate_reply::Phase;
 use crate::qpaxos::Direction;
 use crate::qpaxos::ReplicateReply;
 use crate::qpaxos::*;
 use crate::replica::*;
 use crate::replication::RpcHandlerError;
 
-pub fn check_repl_common(cm: &ReplicateReply) -> Result<(BallotNum, InstanceId), ProtocolError> {
-    let ballot = cm
-        .last_ballot
-        .ok_or(ProtocolError::LackOf("last_ballot".into()))?;
-    let iid = cm
+pub fn check_repl_common(inst: &Instance, reply: ReplicateReply) -> Result<Phase, RpcHandlerError> {
+    let iid = reply
         .instance_id
         .ok_or(ProtocolError::LackOf("instance_id".into()))?;
 
-    Ok((ballot, iid))
+    if iid != inst.instance_id.unwrap() {
+        let err = ProtocolError::NotMatch(
+            "instance_id".into(),
+            format!("{}", inst.instance_id.unwrap()),
+            format!("{}", iid),
+        );
+        return Err(err.into());
+    }
+
+    let phase = reply.phase.ok_or(ProtocolError::LackOf("phase".into()))?;
+
+    let last_ballot = reply.last_ballot;
+    if inst.ballot < last_ballot {
+        let zero = Some(BallotNum::default());
+        let err = RpcHandlerError::StaleBallot(
+            inst.ballot.or(zero).unwrap(),
+            last_ballot.or(zero).unwrap(),
+        );
+        return Err(err);
+    }
+
+    Ok(phase)
 }
 
 pub fn handle_fast_accept_reply(
@@ -36,11 +55,8 @@ pub fn handle_fast_accept_reply(
         return Err(RpcHandlerError::RemoteError(e.clone()));
     }
 
-    // TODO check iid matches
-    let (last_ballot, _iid) = check_repl_common(&repl)?;
-    let inst = &st.instance;
+    let phase = check_repl_common(&st.instance, repl)?;
 
-    let phase = repl.phase.ok_or(ProtocolError::LackOf("phase".into()))?;
     let frepl: FastAcceptReply = phase
         .try_into()
         .or(Err(ProtocolError::LackOf("phase::Fast".into())))?;
@@ -58,13 +74,6 @@ pub fn handle_fast_accept_reply(
             frepl.deps_committed.len() as i32,
         )
         .into());
-    }
-
-    if inst.ballot < Some(last_ballot) {
-        return Err(RpcHandlerError::StaleBallot(
-            inst.ballot.or(Some((0, 0, 0).into())).unwrap(),
-            last_ballot,
-        ));
     }
 
     for (i, d) in deps.iter().enumerate() {
@@ -88,7 +97,7 @@ pub fn handle_fast_accept_reply(
 pub fn handle_accept_reply(
     st: &mut Status,
     from_rid: ReplicaId,
-    repl: &ReplicateReply,
+    repl: ReplicateReply,
 ) -> Result<(), RpcHandlerError> {
     // TODO test duplicated message
     // A duplicated message is received. Just ignore.
@@ -106,7 +115,7 @@ pub fn handle_accept_reply(
         return Err(RpcHandlerError::RemoteError(e.clone()));
     }
 
-    let (last_ballot, _iid) = check_repl_common(&repl)?;
+    check_repl_common(&st.instance, repl)?;
     let inst = &st.instance;
 
     // TODO is it necessary to check status?
@@ -116,13 +125,6 @@ pub fn handle_accept_reply(
         return Err(RpcHandlerError::DelayedReply(
             InstanceStatus::Accepted,
             status,
-        ));
-    }
-
-    if inst.ballot < Some(last_ballot) {
-        return Err(RpcHandlerError::StaleBallot(
-            inst.ballot.or(Some((0, 0, 0).into())).unwrap(),
-            last_ballot,
         ));
     }
 

@@ -9,7 +9,6 @@ use std::sync::Arc;
 use tonic;
 use tonic::{Request, Response, Status};
 
-#[derive(Default)]
 pub struct QPaxosImpl {
     server_data: Arc<ServerData>,
 }
@@ -26,9 +25,10 @@ impl QPaxos for QPaxosImpl {
         &self,
         request: Request<ReplicateRequest>,
     ) -> Result<Response<ReplicateReply>, Status> {
-        println!("Got a request: {:?}", request);
-
+        let _meta = request.metadata();
         let req = request.into_inner();
+
+        println!("Got a ReplicateRequest: {}", req);
 
         let reply = handle_replicate_request(self, req);
         let reply = match reply {

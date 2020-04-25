@@ -19,7 +19,7 @@ fn test_replica_exec_thread() {
 
 #[tokio::main]
 async fn _test_replica_exec_thread() {
-    let ctx = InProcContext::new();
+    let ctx = InProcContext::new("az_1");
 
     let cases = [
         (
@@ -53,11 +53,7 @@ async fn _test_replica_exec_thread() {
     // there is only replica
 
     for (inst, max) in cases.iter() {
-        let rid: ReplicaId = 1;
-
-        let sd = &ctx.server.server_data;
-        let r = sd.local_replicas.get(&rid).unwrap();
-        let sto = &r.storage;
+        let sto = &ctx.get_replica(1).storage;
         sto.set_instance(&inst).unwrap();
         sto.set_ref("max", 1, *max).unwrap();
 
