@@ -12,6 +12,10 @@ quick_error! {
             display("lack of required field:{}", field)
         }
 
+        NotMatch(field: String, want: String, got: String) {
+            display("field: {} expect: {} but: {}", field, want, got)
+        }
+
         Incomplete(field: String, want: i32, actual: i32) {
             display("incomplete field:{}, need:{}, but:{}", field, want, actual)
         }
@@ -36,6 +40,16 @@ impl Into<QError> for ProtocolError {
                     field: f.clone(),
                     problem: "LackOf".into(),
                     ctx: "".into(),
+                }),
+                ..Default::default()
+            },
+
+            // TODO not InvalidRequest but InvalidReply
+            Self::NotMatch(f, _want, _got) => QError {
+                req: Some(InvalidRequest {
+                    field: f.clone(),
+                    problem: "NotMatch".into(),
+                    ctx,
                 }),
                 ..Default::default()
             },
