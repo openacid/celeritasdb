@@ -1,5 +1,5 @@
-use crate::qpaxos::InstanceIdVec;
 use crate::qpaxos::InstanceId;
+use crate::qpaxos::InstanceIdVec;
 pub use std::cmp::Ordering;
 
 #[test]

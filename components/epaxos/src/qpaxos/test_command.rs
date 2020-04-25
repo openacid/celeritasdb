@@ -3,7 +3,7 @@ use prost::Message;
 
 #[test]
 fn test_command_pb() {
-    let cmd1 = Command::of(OpCode::NoOp, "key".as_bytes(), "value".as_bytes());
+    let cmd1 = cmd!("NoOp", "key", "value");
 
     test_enc_dec!(cmd1, Command);
 }
@@ -26,6 +26,9 @@ fn test_command_from() {
 
     assert_eq!(c, (OpCode::Set, "key", "value").into());
     assert_eq!(c, ("Set", "key", "value").into());
+    let k = "key".as_bytes();
+    let v = "value".as_bytes();
+    assert_eq!(c, (OpCode::Set, k, v).into());
 }
 
 #[test]
@@ -57,6 +60,12 @@ fn test_command_conflit() {
     assert!(!sy.conflict(&nx));
     assert!(!sy.conflict(&gx));
     assert!(!sy.conflict(&sx));
+}
+
+#[test]
+fn test_macro_cmd() {
+    let cmd = cmd!("Set", "key", "value");
+    assert_eq!(cmd, (OpCode::Set, "key", "value").into());
 }
 
 #[test]

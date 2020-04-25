@@ -15,9 +15,7 @@ fn new_foo_inst() -> Instance {
     let inst_id3 = InstanceId::from((3, 30));
     let initial_deps = vec![inst_id1, inst_id2, inst_id3];
 
-    let cmd1 = Command::of(OpCode::NoOp, "k1".as_bytes(), "v1".as_bytes());
-    let cmd2 = Command::of(OpCode::Get, "k2".as_bytes(), "v2".as_bytes());
-    let cmds = vec![cmd1, cmd2];
+    let cmds = cmds![("NoOp", "k1", "v1"), ("Get", "k2", "v2")];
     let ballot = (0, 0, replica).into();
 
     let mut inst = Instance::of(&cmds[..], ballot, &initial_deps[..]);
@@ -46,9 +44,7 @@ fn test_instance_protobuf() {
     let inst_id3 = (3, 30).into();
     let initial_deps = vec![inst_id1, inst_id2, inst_id3];
 
-    let cmd1 = Command::of(OpCode::NoOp, "k1".as_bytes(), "v1".as_bytes());
-    let cmd2 = Command::of(OpCode::Get, "k2".as_bytes(), "v2".as_bytes());
-    let cmds = vec![cmd1, cmd2];
+    let cmds = cmds![("NoOp", "k1", "v1"), ("Get", "k2", "v2")];
     let ballot = (1, 2, 3).into();
 
     let inst1 = Instance::of(&cmds[..], ballot, &initial_deps[..]);

@@ -14,14 +14,10 @@ include!(concat!(env!("OUT_DIR"), "/qpaxos.rs"));
 pub mod macros;
 
 // impl Display for qpaxos data types.
-mod display;
-mod instance_id_vec;
-
-pub type InstanceIdx = i64;
-pub type ReplicaId = i64;
-
 pub mod conflict;
+mod display;
 pub mod errors;
+mod instance_id_vec;
 pub mod quorums;
 
 pub use conflict::*;
@@ -29,9 +25,9 @@ pub use display::*;
 pub use errors::*;
 pub use instance_id_vec::*;
 pub use macros::*;
-pub use quorums::*;
 pub use q_paxos_client::*;
 pub use q_paxos_server::*;
+pub use quorums::*;
 
 #[cfg(test)]
 mod t;
@@ -56,6 +52,9 @@ mod test_instance;
 
 #[cfg(test)]
 mod test_instance_id_vec;
+
+pub type InstanceIdx = i64;
+pub type ReplicaId = i64;
 
 pub struct MakeRequest {}
 
@@ -85,16 +84,6 @@ impl From<(&str, &str)> for InvalidRequest {
     }
 }
 
-impl Command {
-    pub fn of(op: OpCode, key: &[u8], value: &[u8]) -> Command {
-        Command {
-            op: op as i32,
-            key: key.to_vec(),
-            value: value.to_vec(),
-        }
-    }
-}
-
 impl Conflict for Command {
     /// conflict checks if two commands conflict.
     /// Two commands conflict iff: the execution order exchange, the result might be differnt.
@@ -115,19 +104,33 @@ impl Conflict for Command {
     }
 }
 
+impl From<(OpCode, &[u8], &[u8])> for Command {
+    fn from(t: (OpCode, &[u8], &[u8])) -> Command {
+        Command {
+            op: t.0 as i32,
+            key: t.1.to_vec(),
+            value: t.2.to_vec(),
+        }
+    }
+}
+
 impl From<(OpCode, &str, &str)> for Command {
     fn from(t: (OpCode, &str, &str)) -> Command {
-        Command::of(t.0, &t.1.as_bytes().to_vec(), &t.2.as_bytes().to_vec())
+        Command {
+            op: t.0 as i32,
+            key: t.1.as_bytes().to_vec(),
+            value: t.2.as_bytes().to_vec(),
+        }
     }
 }
 
 impl From<(&str, &str, &str)> for Command {
     fn from(t: (&str, &str, &str)) -> Command {
-        Command::of(
-            t.0.parse().unwrap(),
-            &t.1.as_bytes().to_vec(),
-            &t.2.as_bytes().to_vec(),
-        )
+        Command {
+            op: OpCode::from_str(t.0).unwrap() as i32,
+            key: t.1.as_bytes().to_vec(),
+            value: t.2.as_bytes().to_vec(),
+        }
     }
 }
 

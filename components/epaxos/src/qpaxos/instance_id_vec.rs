@@ -1,9 +1,9 @@
-use std::ops::{Deref, DerefMut};
-use std::ops::Index;
 pub use std::cmp::Ordering;
+use std::ops::Index;
+use std::ops::{Deref, DerefMut};
 
-use crate::qpaxos::InstanceIdVec;
 use crate::qpaxos::InstanceId;
+use crate::qpaxos::InstanceIdVec;
 use crate::qpaxos::ReplicaId;
 
 /// Let user use method of Vec<InstanceId> directly.

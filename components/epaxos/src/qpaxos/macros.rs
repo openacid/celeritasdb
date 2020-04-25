@@ -1,5 +1,13 @@
 #[macro_export]
 #[allow(unused_macros)]
+macro_rules! cmd {
+    ($op:expr, $key:expr, $val:expr) => {
+        Command::from(($op, $key, $val))
+    };
+}
+
+#[macro_export]
+#[allow(unused_macros)]
 macro_rules! cmds {
     [$(($op:expr, $key:expr, $val:expr)),*] => {
         vec![$(Command::from(($op, $key, $val))),*]

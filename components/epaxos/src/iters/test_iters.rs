@@ -56,11 +56,11 @@ fn test_instance_iter() {
         for idx in 0..10 {
             let iid = InstanceId::from((rid, idx));
 
-            let cmds = vec![Command::of(
+            let cmds = vec![Command::from((
                 OpCode::NoOp,
                 format!("k1{:}", rid * idx).as_bytes(),
                 format!("v1{:}", rid * idx).as_bytes(),
-            )];
+            ))];
 
             let ballot = (rid as i32, idx as i32, 0).into();
             let deps = vec![InstanceId::from((rid + 1, idx + 1))];

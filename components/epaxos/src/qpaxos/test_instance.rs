@@ -179,4 +179,3 @@ fn test_instance_conflict() {
 
     assert!(gxsy.conflict(&gxsy));
 }
-
