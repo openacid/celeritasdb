@@ -1,9 +1,15 @@
+use crate::qpaxos::replicate_request;
+use crate::qpaxos::AcceptRequest;
 use crate::qpaxos::BallotNum;
 use crate::qpaxos::Command;
+use crate::qpaxos::CommitRequest;
+use crate::qpaxos::FastAcceptRequest;
 use crate::qpaxos::Instance;
 use crate::qpaxos::InstanceId;
 use crate::qpaxos::InstanceIdVec;
 use crate::qpaxos::OpCode;
+use crate::qpaxos::PrepareRequest;
+use crate::qpaxos::ReplicateRequest;
 use std::fmt;
 
 trait ToStringExt {
@@ -57,6 +63,17 @@ impl ToStringExt for Command {
     }
 }
 
+impl ToStringExt for replicate_request::Phase {
+    fn tostr_ext(&self) -> String {
+        match self {
+            Self::Fast(v) => format!("Fast{}", v),
+            Self::Accept(v) => format!("Accept{}", v),
+            Self::Commit(v) => format!("Commit{}", v),
+            Self::Prepare(v) => format!("Prepare{}", v),
+        }
+    }
+}
+
 macro_rules! impl_tostr_ext {
     ($typ:path) => {
         impl ToStringExt for $typ {
@@ -93,6 +110,27 @@ impl_tostr_ext!(
     executed
 );
 
+impl_tostr_ext!(
+    ReplicateRequest,
+    "{{to:{}, blt:{}, iid:{}, phase:{}}}",
+    to_replica_id,
+    ballot,
+    instance_id,
+    phase
+);
+
+impl_tostr_ext!(
+    FastAcceptRequest,
+    "{{cmds:{}, deps[0]:{}, c:{}}}",
+    cmds,
+    initial_deps,
+    deps_committed
+);
+
+impl_tostr_ext!(AcceptRequest, "{{deps[2]:{}}}", final_deps);
+impl_tostr_ext!(CommitRequest, "{{cmds:{}, deps[2]:{}}}", cmds, final_deps);
+impl_tostr_ext!(PrepareRequest, "{{}}",);
+
 macro_rules! impl_display {
     ($typ:path) => {
         impl fmt::Display for $typ {
@@ -108,3 +146,9 @@ impl_display!(Command);
 impl_display!(InstanceId);
 impl_display!(BallotNum);
 impl_display!(Instance);
+
+impl_display!(ReplicateRequest);
+impl_display!(FastAcceptRequest);
+impl_display!(AcceptRequest);
+impl_display!(CommitRequest);
+impl_display!(PrepareRequest);

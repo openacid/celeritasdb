@@ -3,6 +3,7 @@ use crate::qpaxos::Command;
 use crate::qpaxos::Instance;
 use crate::qpaxos::InstanceId;
 use crate::qpaxos::InstanceIdVec;
+use crate::qpaxos::MakeRequest;
 use crate::qpaxos::OpCode;
 
 #[test]
@@ -96,4 +97,37 @@ fn test_display_instance() {
     );
     assert_eq!("{id:(1, 2), blt:(2, 3, 4), cmds:[Set:a=b, Get:c], deps:[(2, 3), (3, 4)][(3, 4), (4, 5)][(4, 5), (5, 6)], c/e:false/true}",
     format!("{}", inst));
+}
+
+#[test]
+fn test_display_replicate_request() {
+    let inst = inst!(
+        (1, 2),
+        (2, 3, 4),
+        [("Set", "a", "b"), ("Get", "c", "d")],
+        [(2, 3), (3, 4)],
+        [(3, 4), (4, 5)],
+        [(4, 5), (5, 6)],
+        false,
+        true,
+    );
+
+    let r = "to:10, blt:(2, 3, 4), iid:(1, 2), phase";
+
+    let fast = "Fast{cmds:[Set:a=b, Get:c], deps[0]:[(2, 3), (3, 4)], c:[true, false]}";
+    let accept = "Accept{deps[2]:[(4, 5), (5, 6)]}";
+    let commit = "Commit{cmds:[Set:a=b, Get:c], deps[2]:[(4, 5), (5, 6)]}";
+    let prepare = "Prepare{}";
+
+    let f = MakeRequest::fast_accept(10, &inst, &[true, false]);
+    assert_eq!(format!("{{{}:{}}}", r, fast), format!("{}", f));
+
+    let a = MakeRequest::accept(10, &inst);
+    assert_eq!(format!("{{{}:{}}}", r, accept), format!("{}", a));
+
+    let c = MakeRequest::commit(10, &inst);
+    assert_eq!(format!("{{{}:{}}}", r, commit), format!("{}", c));
+
+    let p = MakeRequest::prepare(10, &inst);
+    assert_eq!(format!("{{{}:{}}}", r, prepare), format!("{}", p));
 }
