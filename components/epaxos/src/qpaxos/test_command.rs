@@ -36,30 +36,47 @@ fn test_command_conflit() {
     let nx = Command::from(("NoOp", "x", "1"));
     let gx = Command::from(("Get", "x", "1"));
     let sx = Command::from(("Set", "x", "1"));
+    let dx = Command::from(("Delete", "x", "1"));
 
     let ny = Command::from(("NoOp", "y", "1"));
     let gy = Command::from(("Get", "y", "1"));
     let sy = Command::from(("Set", "y", "1"));
+    let dy = Command::from(("Delete", "y", "1"));
 
-    assert!(!nx.conflict(&nx));
-    assert!(!nx.conflict(&gx));
-    assert!(!nx.conflict(&sx));
+    let xs = vec![nx, gx, sx, dx];
+    let ys = vec![ny, gy, sy, dy];
 
-    assert!(!gx.conflict(&nx));
-    assert!(!gx.conflict(&gx));
-    assert!(gx.conflict(&sx));
+    // conflicts[i, j] indicates whether xs[i] and xs[j] conflict.
+    let conflicts = vec![
+        vec![0, 0, 0, 0],
+        vec![0, 0, 1, 1],
+        vec![0, 1, 1, 1],
+        vec![0, 1, 1, 1],
+    ];
 
-    assert!(!sx.conflict(&nx));
-    assert!(sx.conflict(&gx));
-    assert!(sx.conflict(&sx));
+    for (i, v) in conflicts.iter().enumerate() {
+        for (j, c) in v.iter().enumerate() {
+            let want = *c == 1;
 
-    assert!(!sx.conflict(&ny));
-    assert!(!sx.conflict(&gy));
-    assert!(!sx.conflict(&sy));
+            assert_eq!(
+                want,
+                xs[i].conflict(&xs[j]),
+                "x x check conflict: {} {}",
+                i,
+                j
+            );
+            assert_eq!(
+                want,
+                ys[i].conflict(&ys[j]),
+                "y y check conflict: {} {}",
+                i,
+                j
+            );
 
-    assert!(!sy.conflict(&nx));
-    assert!(!sy.conflict(&gx));
-    assert!(!sy.conflict(&sx));
+            assert!(!xs[i].conflict(&ys[j]), "x y never conflict: {} {}", i, j);
+            assert!(!ys[i].conflict(&xs[j]), "y x never conflict: {} {}", i, j);
+        }
+    }
 }
 
 #[test]

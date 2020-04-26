@@ -84,23 +84,30 @@ impl From<(&str, &str)> for InvalidRequest {
     }
 }
 
+impl Command {
+    /// kind returns one of there kinds of command: NoOp, Get, Set.
+    /// In this way `Delete` is a `Set` kind command because it set the value to NULL.
+    pub fn kind(&self) -> OpCode {
+        if self.op == OpCode::NoOp as i32 {
+            OpCode::NoOp
+        } else if self.op == OpCode::Get as i32 {
+            OpCode::Get
+        } else {
+            OpCode::Set
+        }
+    }
+}
+
 impl Conflict for Command {
     /// conflict checks if two commands conflict.
     /// Two commands conflict iff: the execution order exchange, the result might be differnt.
     fn conflict(&self, with: &Self) -> bool {
-        if self.op == OpCode::NoOp as i32 {
-            return false;
+        match (self.kind(), with.kind()) {
+            (OpCode::NoOp, _) => false,
+            (_, OpCode::NoOp) => false,
+            (OpCode::Get, OpCode::Get) => false,
+            _ => self.key == with.key,
         }
-
-        if with.op == OpCode::NoOp as i32 {
-            return false;
-        }
-
-        if self.op == OpCode::Set as i32 || with.op == OpCode::Set as i32 {
-            return self.key == with.key;
-        }
-
-        false
     }
 }
 
