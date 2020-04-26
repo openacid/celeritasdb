@@ -28,11 +28,6 @@ pub struct Server {
 }
 
 impl Server {
-    /// new_inmem creates a test cluster specified by name with only in-memory storage.
-    pub fn new_inmem(name: &str) -> Self {
-        Self::new_with_server_data(ServerData::new_inmem(name))
-    }
-
     pub fn new(sto: Storage, cluster: ClusterInfo, node_id: NodeId) -> Server {
         Self::new_with_server_data(ServerData::new(sto, cluster, node_id))
     }

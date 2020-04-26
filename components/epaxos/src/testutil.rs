@@ -4,7 +4,6 @@ use std::time::Duration;
 
 use crate::qpaxos::*;
 use crate::replica::{Replica, ReplicaPeer};
-use crate::serverdata::ServerData;
 use crate::QPaxosImpl;
 use crate::Storage;
 use storage::MemEngine;
@@ -12,6 +11,11 @@ use storage::MemEngine;
 use tokio::sync::oneshot;
 use tokio::time::delay_for;
 use tonic::transport::Server;
+
+#[path = "testutil_cluster.rs"]
+mod testutil_cluster;
+
+pub use testutil_cluster::*;
 
 /// Create an instance with command "set x=y".
 /// Use this when only deps are concerned.
@@ -150,7 +154,7 @@ impl TestCluster {
         for addr in self.addrs.iter() {
             let (tx, rx) = oneshot::channel::<()>();
 
-            let qp = QPaxosImpl::new(Arc::new(ServerData::new_inmem("az_1")));
+            let qp = QPaxosImpl::new(Arc::new(new_inmem_server_data("az_1")));
             let s = Server::builder().add_service(QPaxosServer::new(qp));
 
             // remove scheme

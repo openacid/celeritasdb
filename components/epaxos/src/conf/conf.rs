@@ -10,45 +10,6 @@ use crate::qpaxos::ReplicaId;
 
 use serde::{Deserialize, Serialize};
 
-/// LOCAL_NODE_ID is the only node id used in LOCAL_CLUSTERS.
-pub static LOCAL_NODE_ID: &str = "127.0.0.1:4441";
-
-lazy_static! {
-    /// LOCAL_CLUSTERS predefines several single-node cluster for testing.
-    static ref LOCAL_CLUSTERS: BTreeMap<&'static str, &'static str> = {
-        let mut h = BTreeMap::new();
-        h.insert("az_1", "
-nodes:
-    127.0.0.1:4441:
-        api_addr: 127.0.0.1:6379
-        replication: 127.0.0.1:4441
-groups:
--   range:
-    -   a
-    -   z
-    replicas:
-        1: 127.0.0.1:4441
-");
-
-        h.insert("az_3", "
-nodes:
-    127.0.0.1:4441:
-        api_addr: 127.0.0.1:6379
-        replication: 127.0.0.1:4441
-groups:
--   range:
-    -   a
-    -   z
-    replicas:
-        1: 127.0.0.1:4441
-        2: 127.0.0.1:4441
-        3: 127.0.0.1:4441
-");
-
-        h
-    };
-}
-
 /// NodeId is the global identity of a service.
 /// A physical server could have several node on it.
 /// A node has one or more Replica it serves for.
@@ -113,16 +74,6 @@ impl DerefMut for ClusterInfo {
 }
 
 impl ClusterInfo {
-    /// new_predefined creates a ClusterInfo with predefined config specified by `name`.
-    /// Such a cluster is only meant for test.
-    /// Available names are:
-    /// az_1: to create a cluster with 1 group of replica 1 covers key from `[a, z)`.
-    /// az_3: to create a cluster with 1 group of replica 1, 2, 3 covers key from `[a, z)`.
-    pub fn new_predefined(name: &str) -> Self {
-        let yaml = LOCAL_CLUSTERS[name];
-        ClusterInfo::from_str(yaml).unwrap()
-    }
-
     /// from_file read cluster conf yaml from a local file.
     pub fn from_file<P: AsRef<Path>>(path: P) -> Result<ClusterInfo, ConfError> {
         let content = fs::read_to_string(path)?;

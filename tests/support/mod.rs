@@ -19,6 +19,7 @@ use redis::RedisResult;
 use cele::Server;
 use epaxos::qpaxos::ReplicaId;
 use epaxos::replica::Replica;
+use epaxos::testutil;
 use epaxos::Storage;
 
 /// InProcContext setup a small cluster of an in-process server and a client.
@@ -36,7 +37,8 @@ impl InProcContext {
     }
 
     pub fn new(conf_name: &str) -> Self {
-        let mut server = Server::new_inmem(conf_name);
+        let sd = testutil::new_inmem_server_data(conf_name);
+        let mut server = Server::new_with_server_data(sd);
         let sto = server.server_data.storage.clone();
         server.start();
 

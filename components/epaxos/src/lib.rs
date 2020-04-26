@@ -10,6 +10,7 @@ extern crate lazy_static;
 pub mod testutil;
 
 pub mod conf;
+mod iters;
 mod serverdata;
 mod service;
 
@@ -18,12 +19,11 @@ pub mod qpaxos;
 pub mod replica;
 pub mod replication;
 
+pub use conf::*;
+pub use iters::*;
 pub use replication::*;
 pub use serverdata::*;
 pub use service::*;
-
-mod iters;
-pub use iters::*;
 
 use qpaxos::*;
 use std::sync::Arc;

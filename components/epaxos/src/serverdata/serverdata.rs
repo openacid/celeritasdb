@@ -1,4 +1,3 @@
-use crate::conf;
 use crate::conf::ClusterInfo;
 use crate::conf::GroupInfo;
 use crate::conf::Node;
@@ -8,8 +7,6 @@ use crate::replica::Replica;
 use crate::RangeLookupError;
 use crate::Storage;
 use std::collections::BTreeMap;
-use std::sync::Arc;
-use storage::MemEngine;
 
 /// ServerData is shared between threads or coroutine.
 /// TODO: Storage does not need to be shared with Arc any more.
@@ -23,21 +20,6 @@ pub struct ServerData {
 }
 
 impl ServerData {
-    /// new_inmem creates a ServerData with predefined config specified by `name`. See
-    /// ClusterInfo::new_predefined.
-    ///
-    /// Such a cluster is only meant for test because it use a in-memory storage.
-    pub fn new_inmem(name: &str) -> ServerData {
-        let ci = ClusterInfo::new_predefined(name);
-
-        let sto = MemEngine::new().unwrap();
-        let sto = Arc::new(sto);
-
-        let node_id = conf::LOCAL_NODE_ID;
-
-        ServerData::new(sto, ci, node_id.into())
-    }
-
     pub fn new(sto: Storage, cluster: ClusterInfo, node_id: NodeId) -> ServerData {
         let n = cluster.get(&node_id).unwrap().clone();
 
