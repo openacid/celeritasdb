@@ -167,7 +167,7 @@ impl RedisApi {
             }
         };
 
-        let cmd = Command::of(cmd, key, value);
+        let cmd = Command::from((cmd, key as &[u8], value as &[u8]));
         let cmds = vec![cmd];
 
         let (g, r) = self.server_data.get_local_replica_for_key(key)?;
