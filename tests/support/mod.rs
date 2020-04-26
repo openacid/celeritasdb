@@ -30,12 +30,14 @@ pub struct InProcContext {
 }
 
 impl InProcContext {
+    /// get_replica returns the specified `Replica` in the testing cluster.
     pub fn get_replica(&self, rid: ReplicaId) -> &Replica {
         let sd = &self.server.server_data;
         let r = sd.local_replicas.get(&rid).unwrap();
         r
     }
 
+    /// new creates a cluster with a named predefined ClusterInfo.
     pub fn new(conf_name: &str) -> Self {
         let sd = testutil::new_inmem_server_data(conf_name);
         let mut server = Server::new_with_server_data(sd);
@@ -51,22 +53,10 @@ impl InProcContext {
         })
         .unwrap();
 
-        // wait until connected.
-        let millisecond = Duration::from_millis(50);
-        loop {
-            match client.get_connection() {
-                Err(err) => {
-                    if err.is_connection_refusal() {
-                        sleep(millisecond);
-                    } else {
-                        panic!("Could not connect: {}", err);
-                    }
-                }
-                Ok(_x) => {
-                    break;
-                }
-            }
-        }
+        testutil::wait_for(
+            || client.get_connection(),
+            |err| err.is_connection_refusal(),
+        );
 
         InProcContext {
             server,
@@ -195,24 +185,12 @@ impl TestContext {
             passwd: None,
         })
         .unwrap();
-        let mut con;
 
-        let millisecond = Duration::from_millis(1);
-        loop {
-            match client.get_connection() {
-                Err(err) => {
-                    if err.is_connection_refusal() {
-                        sleep(millisecond);
-                    } else {
-                        panic!("Could not connect: {}", err);
-                    }
-                }
-                Ok(x) => {
-                    con = x;
-                    break;
-                }
-            }
-        }
+        let mut con = testutil::wait_for(
+            || client.get_connection(),
+            |err| err.is_connection_refusal(),
+        );
+
         redis::cmd("FLUSHDB").execute(&mut con);
 
         // TODO temp impl, remove these
@@ -223,20 +201,11 @@ impl TestContext {
             passwd: None,
         })
         .unwrap();
-        loop {
-            match repl_client.get_connection() {
-                Err(err) => {
-                    if err.is_connection_refusal() {
-                        sleep(millisecond);
-                    } else {
-                        panic!("Could not connect: {}", err);
-                    }
-                }
-                Ok(_) => {
-                    break;
-                }
-            }
-        }
+
+        testutil::wait_for(
+            || repl_client.get_connection(),
+            |err| err.is_connection_refusal(),
+        );
 
         TestContext {
             server,

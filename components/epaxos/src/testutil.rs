@@ -1,5 +1,7 @@
 use std::collections::HashMap;
+use std::fmt;
 use std::sync::Arc;
+use std::thread::sleep;
 use std::time::Duration;
 
 use crate::qpaxos::*;
@@ -187,5 +189,38 @@ impl TestCluster {
 impl Drop for TestCluster {
     fn drop(&mut self) {
         self.stop()
+    }
+}
+
+/// wait_for wait for some state becomes valid.
+/// wait_for stops is `get_state` returns Ok().
+/// wait_for goes on to get new state if `get_state` returns error and
+/// `is_retriable_err(err)` is `true`.
+pub fn wait_for<GET, T, E, ERETRY>(mut get_state: GET, is_retriable_err: ERETRY) -> T
+where
+    E: fmt::Debug,
+    GET: FnMut() -> Result<T, E>,
+    ERETRY: Fn(&E) -> bool,
+{
+    let millisecond = Duration::from_millis(50);
+    loop {
+        let r = get_state();
+        match r {
+            Err(err) => {
+                if is_retriable_err(&err) {
+                    println!(
+                        "err: {:?} while waiting. retry after {:?}",
+                        err, millisecond
+                    );
+                    sleep(millisecond);
+                } else {
+                    panic!("Unexpected error: {:?}", err);
+                }
+            }
+            Ok(x) => {
+                println!("waiting done");
+                return x;
+            }
+        }
     }
 }
