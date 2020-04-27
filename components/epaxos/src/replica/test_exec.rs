@@ -4,6 +4,8 @@ use crate::qpaxos::{Command, Instance, InstanceId};
 use crate::replica::*;
 use crate::testutil;
 use storage::MemEngine;
+use storage::StorageError;
+use tokio::sync::oneshot;
 
 #[allow(unused_macros)]
 macro_rules! test_inst {
@@ -148,6 +150,14 @@ fn test_find_missing_instances() {
     }
 }
 
+#[tokio::main]
+async fn execute_commands(
+    rp: &Replica,
+    insts: Vec<Instance>,
+) -> Result<Vec<InstanceId>, StorageError> {
+    rp.execute_commands(insts).await
+}
+
 #[test]
 fn test_execute_commands() {
     let rp = new_replica();
@@ -170,11 +180,19 @@ fn test_execute_commands() {
     ];
 
     for inst in cases.iter() {
-        match rp.execute_commands(vec![inst.clone()]) {
+        match execute_commands(&rp, vec![inst.clone()]) {
             Ok(r) => assert_eq!(vec![inst.instance_id.unwrap()], r),
             Err(_) => assert!(false),
         }
     }
+}
+
+#[tokio::main]
+async fn execute_instances(
+    rp: &Replica,
+    insts: Vec<Instance>,
+) -> Result<Vec<InstanceId>, StorageError> {
+    rp.execute_instances(insts).await
 }
 
 #[test]
@@ -188,7 +206,7 @@ fn test_execute_instances() {
         test_inst!((3, 1), [("Set", "y", "vy")], [(1, 1), (2, 1), (3, 0)]),
     ];
 
-    match rp.execute_instances(min_insts) {
+    match execute_instances(&rp, min_insts) {
         Ok(iids) => assert_eq!(vec![InstanceId::from((1, 1))], iids),
         Err(_) => assert!(false),
     };
@@ -200,7 +218,7 @@ fn test_execute_instances() {
         test_inst!((3, 1), [("Set", "y", "vy")], [(1, 1), (2, 0), (3, 0)]),
     ];
 
-    match rp.execute_instances(min_insts) {
+    match execute_instances(&rp, min_insts) {
         Ok(iids) => assert_eq!(
             vec![InstanceId::from((1, 1)), (2, 1).into(), (3, 1).into()],
             iids
@@ -217,10 +235,15 @@ fn test_execute_instances() {
         test_inst!((3, 1), [("Set", "y", "vy")], [(1, 1), (2, 1), (3, 0)]),
     ];
 
-    match rp.execute_instances(min_insts) {
+    match execute_instances(&rp, min_insts) {
         Ok(iids) => assert_eq!(vec![InstanceId::from((1, 1)), (2, 1).into()], iids),
         Err(_) => assert!(false),
     };
+}
+
+#[tokio::main]
+async fn execute(rp: &Replica) -> Result<Vec<InstanceId>, StorageError> {
+    rp.execute().await
 }
 
 #[test]
@@ -296,7 +319,7 @@ fn test_replica_execute() {
                 .unwrap();
         }
 
-        match rp.execute() {
+        match execute(&rp) {
             Ok(r) => {
                 assert_eq!(rst, &r);
                 for iid in r.iter() {
@@ -315,4 +338,45 @@ fn test_replica_execute() {
             }
         }
     }
+}
+
+#[tokio::main]
+async fn _test_send_reply() {
+    let rp = new_replica();
+    let (tx, rx) = oneshot::channel();
+    // (1, 1) ~ (2, 1)
+    let min_insts = vec![
+        test_inst!((1, 1), [("Set", "x", "vx")], [(1, 0), (2, 1), (3, 0)]),
+        test_inst!((2, 1), [("Get", "x", "")], [(1, 1), (2, 0), (3, 0)]),
+    ];
+
+    rp.insert_tx((2, 1).into(), tx).await;
+    let insts = min_insts.clone();
+    tokio::spawn(async move { rp.execute_instances(insts).await });
+
+    match rx.await {
+        Ok(v) => {
+            println!("got = {:?}", v);
+            match &v[0] {
+                ExecuteResult::SuccessWithVal(r) => {
+                    assert_eq!("vx".as_bytes().to_vec(), r.clone().unwrap());
+                }
+                _ => assert!(false, "invalid reply"),
+            }
+        }
+        Err(_) => assert!(false, "the sender dropped"),
+    }
+
+    // test no panic when rx has been dropped
+    let rp = new_replica();
+    let (tx, rx) = oneshot::channel();
+    rp.insert_tx((2, 1).into(), tx).await;
+    let insts = min_insts.clone();
+    drop(rx);
+    rp.execute_instances(insts.clone()).await.unwrap();
+}
+
+#[test]
+fn test_send_reply() {
+    _test_send_reply();
 }

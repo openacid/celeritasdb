@@ -24,9 +24,12 @@ use crate::replica::ReplicaError;
 use crate::replication::RpcHandlerError;
 use crate::Iter;
 use crate::Storage;
+use std::collections::HashMap;
 use std::sync::Arc;
 use storage::StorageError;
 use storage::WithNs;
+use tokio::sync::oneshot::Sender;
+use tokio::sync::Mutex;
 
 /// ref_or_bug extracts a immutable ref from an Option.
 /// If the Option is None a bug handler is triggered.
@@ -78,6 +81,12 @@ impl From<(ReplicaId, String, bool)> for ReplicaPeer {
     }
 }
 
+#[derive(Clone, Debug, Eq, PartialEq)]
+pub enum ExecuteResult {
+    Success,
+    SuccessWithVal(Option<Vec<u8>>),
+}
+
 /// structure to represent a replica
 pub struct Replica {
     pub replica_id: ReplicaId,
@@ -85,6 +94,7 @@ pub struct Replica {
     pub peers: Vec<ReplicaPeer>,
     pub storage: Storage,
     pub committed_timeout: i32,
+    pub waiting_replies: Mutex<HashMap<InstanceId, Sender<Vec<ExecuteResult>>>>,
 }
 
 impl Replica {
@@ -116,6 +126,7 @@ impl Replica {
             storage: Arc::new(WithNs::new(rid, sto)),
             // TODO get from conf
             committed_timeout: 10000,
+            waiting_replies: Mutex::new(HashMap::new()),
         })
     }
 

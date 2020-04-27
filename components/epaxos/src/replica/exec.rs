@@ -3,18 +3,14 @@ use std::collections::HashMap;
 use std::time::SystemTime;
 
 use crate::qpaxos::{Instance, InstanceId, InstanceIdVec, OpCode};
+use crate::replica::ExecuteResult;
 use crate::replica::Replica;
 use storage::StorageError;
 use storage::WriteEntry;
+use tokio::sync::oneshot::Sender;
 
 thread_local! {
     static PROBLEM_INSTS: RefCell<Vec<(InstanceId, SystemTime)>> = RefCell::new(vec![]);
-}
-
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum ExecuteResult {
-    Success,
-    SuccessWithVal { value: Option<Vec<u8>> },
 }
 
 impl Replica {
@@ -70,14 +66,32 @@ impl Replica {
         None
     }
 
-    pub fn execute_commands(
+    async fn send_replies(&self, mut replies: Vec<(InstanceId, Vec<ExecuteResult>)>) {
+        let mut wrpls = self.waiting_replies.lock().await;
+        while let Some((iid, r)) = replies.pop() {
+            let tx = match wrpls.remove(&iid) {
+                Some(t) => t,
+                None => continue,
+            };
+            if let Err(_) = tx.send(r) {
+                println!("the receiver dropped for {:?}", iid);
+            }
+        }
+    }
+
+    pub async fn insert_tx(&self, iid: InstanceId, tx: Sender<Vec<ExecuteResult>>) {
+        let mut wrpls = self.waiting_replies.lock().await;
+        wrpls.insert(iid, tx);
+    }
+
+    pub async fn execute_commands(
         &self,
         mut insts: Vec<Instance>,
     ) -> Result<Vec<InstanceId>, StorageError> {
         let mut rst = Vec::with_capacity(insts.len());
         let mut entrys: Vec<WriteEntry> = Vec::with_capacity(insts.len());
         let mut existed = HashMap::new();
-        let mut replys = Vec::with_capacity(insts.len());
+        let mut replies = Vec::with_capacity(insts.len());
 
         for inst in insts.iter() {
             let iid = inst.instance_id.unwrap();
@@ -92,9 +106,7 @@ impl Replica {
                         let v = self.storage.get_kv(&cmd.key)?;
                         existed.insert(&cmd.key, v);
                     }
-                    repl.push(ExecuteResult::SuccessWithVal {
-                        value: existed[&cmd.key].clone(),
-                    });
+                    repl.push(ExecuteResult::SuccessWithVal(existed[&cmd.key].clone()));
                 } else if cmd.op == OpCode::NoOp as i32 {
                     repl.push(ExecuteResult::Success);
                 } else {
@@ -109,7 +121,7 @@ impl Replica {
             }
 
             entrys.push(iid.into());
-            replys.push(repl);
+            replies.push((iid, repl));
         }
 
         while let Some(mut inst) = insts.pop() {
@@ -117,8 +129,8 @@ impl Replica {
             entrys.push(inst.into());
         }
 
-        // TODO send replys to client
         self.storage.write_batch(&entrys)?;
+        self.send_replies(replies).await;
         Ok(rst)
     }
 
@@ -133,7 +145,7 @@ impl Replica {
     /// S = {x | x ∈ S and (∃y: y → x)}
     /// so S = {b, d}
     /// sort S by instance_id and execute
-    pub fn execute_instances(
+    pub async fn execute_instances(
         &self,
         mut insts: Vec<Instance>,
     ) -> Result<Vec<InstanceId>, StorageError> {
@@ -160,7 +172,7 @@ impl Replica {
         }
 
         can_exec.sort_by(|a, b| a.instance_id.cmp(&b.instance_id));
-        self.execute_commands(can_exec)
+        self.execute_commands(can_exec).await
     }
 
     // only save one smallest problem instance of every replica with problem_inst_ids.
@@ -220,7 +232,7 @@ impl Replica {
         Ok(rst)
     }
 
-    pub fn execute(&self) -> Result<Vec<InstanceId>, StorageError> {
+    pub async fn execute(&self) -> Result<Vec<InstanceId>, StorageError> {
         let mut exec_up_to = InstanceIdVec::from([0; 0]);
         let mut smallest_inst_ids = InstanceIdVec::from([0; 0]);
         for rid in self.group_replica_ids.iter() {
@@ -251,6 +263,6 @@ impl Replica {
             }
         }
 
-        return self.execute_instances(instances);
+        self.execute_instances(instances).await
     }
 }

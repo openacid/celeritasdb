@@ -11,6 +11,7 @@ use crate::Storage;
 use storage::MemEngine;
 
 use tokio::sync::oneshot;
+use tokio::sync::Mutex;
 use tokio::time::delay_for;
 use tonic::transport::Server;
 
@@ -110,6 +111,7 @@ pub fn new_replica(
         peers,
         storage: sto,
         committed_timeout: 1000,
+        waiting_replies: Mutex::new(HashMap::new()),
     }
 }
 

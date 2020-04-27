@@ -71,7 +71,7 @@ impl Server {
         loop {
             let mut exec_count = 0;
             for r in sd.local_replicas.values() {
-                match r.execute() {
+                match r.execute().await {
                     Ok(iids) => {
                         println!(
                             "success to execute instances {:?} for {:?}",
