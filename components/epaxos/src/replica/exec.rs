@@ -237,18 +237,11 @@ impl Replica {
         let mut smallest_inst_ids = InstanceIdVec::from([0; 0]);
         for rid in self.group_replica_ids.iter() {
             let exec_iid = self.storage.get_ref("exec", *rid)?;
-            let max_iid = self.storage.get_ref("max", *rid)?;
-            if let None = max_iid {
-                continue;
-            }
-
             let exec_iid = exec_iid.unwrap_or((*rid, -1).into());
-            let max_iid = max_iid.unwrap();
 
             exec_up_to.push(exec_iid);
-            if exec_iid < max_iid {
-                smallest_inst_ids.push((*rid, exec_iid.idx + 1).into());
-            }
+
+            smallest_inst_ids.push((*rid, exec_iid.idx + 1).into());
         }
 
         let instances = self.get_insts_if_committed(&smallest_inst_ids)?;

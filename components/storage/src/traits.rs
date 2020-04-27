@@ -191,9 +191,8 @@ where
     T: LowerHex,
 {
     match typ {
-        "max" => format!("/status/max_instance_id/{:016x}", id).into_bytes(),
         "exec" => format!("/status/max_exec_instance_id/{:016x}", id).into_bytes(),
-        _ => panic!("unknown type ref"),
+        _ => panic!("unknown type ref: {}", typ),
     }
 }
 

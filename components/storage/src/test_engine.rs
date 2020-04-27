@@ -188,11 +188,6 @@ where
     for (k, v) in cases {
         let v = TestId { id: v };
 
-        eng.set_ref("max", k, v).unwrap();
-        let act = eng.get_ref("max", k).unwrap().unwrap();
-
-        assert_eq!(act, v);
-
         eng.set_ref("exec", k, v).unwrap();
         let act = eng.get_ref("exec", k).unwrap().unwrap();
 

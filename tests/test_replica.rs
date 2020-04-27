@@ -22,40 +22,33 @@ async fn _test_replica_exec_thread() {
     let ctx = InProcContext::new("az_1");
 
     let cases = [
-        (
-            inst!(
-                (1, 0),
-                (3, 4, 2),
-                [("Set", "x", "y")],
-                [(1, 0)],
-                [(1, 0)],
-                [(1, 0)],
-                true,
-                false,
-            ),
-            InstanceId::from((1, 0)),
+        inst!(
+            (1, 0),
+            (3, 4, 2),
+            [("Set", "x", "y")],
+            [(1, 0)],
+            [(1, 0)],
+            [(1, 0)],
+            true,
+            false,
         ),
-        (
-            inst!(
-                (1, 1),
-                (3, 4, 2),
-                [("Set", "z", "a")],
-                [(1, 0)],
-                [(1, 0)],
-                [(1, 0)],
-                true,
-                false,
-            ),
-            InstanceId::from((1, 1)),
+        inst!(
+            (1, 1),
+            (3, 4, 2),
+            [("Set", "z", "a")],
+            [(1, 0)],
+            [(1, 0)],
+            [(1, 0)],
+            true,
+            false,
         ),
     ];
 
     // there is only replica
 
-    for (inst, max) in cases.iter() {
+    for inst in cases.iter() {
         let sto = &ctx.get_replica(1).storage;
         sto.set_instance(&inst).unwrap();
-        sto.set_ref("max", 1, *max).unwrap();
 
         loop {
             let inst1 = sto

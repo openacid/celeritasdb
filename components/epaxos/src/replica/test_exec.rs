@@ -254,7 +254,6 @@ fn test_replica_execute() {
         // (1, 1)
         (
             vec![test_inst!((1, 1), [(1, 0), (2, 0), (3, 0)], true)],
-            vec![(1, 1), (2, 0), (3, 0)],
             vec![(1, 0), (2, 0), (3, 0)],
             vec![InstanceId::from((1, 1))],
         ),
@@ -265,7 +264,6 @@ fn test_replica_execute() {
                 test_inst!((2, 2), [(1, 2), (2, 1), (3, 1)], true),
                 test_inst!((3, 2), [(1, 2), (2, 2), (3, 1)], true),
             ],
-            vec![(1, 2), (2, 2), (3, 2)],
             vec![(1, 1), (2, 1), (3, 1)],
             vec![InstanceId::from((1, 2))],
         ),
@@ -276,7 +274,6 @@ fn test_replica_execute() {
                 test_inst!((2, 3), [(1, 3), (2, 2), (3, 2)], true),
                 test_inst!((3, 3), [(1, 3), (2, 2), (3, 2)], true),
             ],
-            vec![(1, 3), (2, 3), (3, 3)],
             vec![(1, 2), (2, 2), (3, 2)],
             vec![InstanceId::from((1, 3)), (2, 3).into(), (3, 3).into()],
         ),
@@ -287,7 +284,6 @@ fn test_replica_execute() {
                 test_inst!((2, 4), [(1, 3), (2, 3), (3, 4)], true),
                 test_inst!((3, 4), [(1, 4), (2, 4), (3, 3)], true),
             ],
-            vec![(1, 4), (2, 4), (3, 4)],
             vec![(1, 3), (2, 3), (3, 3)],
             vec![InstanceId::from((2, 4))],
         ),
@@ -297,22 +293,16 @@ fn test_replica_execute() {
                 test_inst!((2, 5), [(1, 5), (2, 4), (3, 5)], true),
                 test_inst!((3, 5), [(1, 4), (2, 5), (3, 4)], true),
             ],
-            vec![(1, 4), (2, 5), (3, 5)],
             vec![(1, 4), (2, 4), (3, 4)],
             Vec::<InstanceId>::new(),
         ),
     ];
 
-    for (insts, max_ref, exec_ref, rst) in cases.iter() {
+    for (insts, exec_ref, rst) in cases.iter() {
         insts.iter().for_each(|inst| {
             rp.storage.set_instance(&inst).unwrap();
         });
 
-        for (rid, idx) in max_ref.iter() {
-            rp.storage
-                .set_ref("max", *rid as i64, (*rid as i64, *idx as i64).into())
-                .unwrap();
-        }
         for (rid, idx) in exec_ref.iter() {
             rp.storage
                 .set_ref("exec", *rid as i64, (*rid as i64, *idx as i64).into())
