@@ -7,6 +7,9 @@ extern crate quick_error;
 extern crate lazy_static;
 
 #[macro_use]
+extern crate slog_global;
+
+#[macro_use]
 pub mod testutil;
 
 pub mod conf;

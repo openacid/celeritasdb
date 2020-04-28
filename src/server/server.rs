@@ -57,10 +57,12 @@ impl Server {
         let fut = Server::_start_servers(self.server_data.clone(), rx1, rx2);
         let j = tokio::spawn(fut);
         self.join_handle.push(j);
+        info!("replication server start");
 
         let fut = Server::_start_replica_exec(self.server_data.clone(), rx3);
         let j = tokio::spawn(fut);
         self.join_handle.push(j);
+        info!("replcia exec start");
 
         self.stop_txs.push(("api", tx1));
         self.stop_txs.push(("replication", tx2));
@@ -73,14 +75,14 @@ impl Server {
             for r in sd.local_replicas.values() {
                 match r.execute().await {
                     Ok(iids) => {
-                        println!(
+                        info!(
                             "success to execute instances {:?} for {:?}",
                             iids, r.replica_id
                         );
                         exec_count += iids.len();
                     }
                     Err(e) => {
-                        println!("{:?} while execute instances for {:?}", e, r.replica_id);
+                        error!("{:?} while execute instances for {:?}", e, r.replica_id);
                         continue;
                     }
                 }
@@ -92,13 +94,13 @@ impl Server {
 
             match rx.try_recv() {
                 Ok(_) => {
-                    println!("exit replcia exec thread with recv stop signal");
+                    info!("exit replcia exec thread with recv stop signal");
                     break;
                 }
                 Err(e) => match e {
                     TryRecvError::Empty => {}
                     TryRecvError::Closed => {
-                        println!("exit replcia exec thread with the sender had been dropped");
+                        error!("exit replcia exec thread with the sender had been dropped");
                         break;
                     }
                 },
@@ -120,26 +122,26 @@ impl Server {
 
         let j1 = tokio::spawn(async move {
             let rst = redisapi.serve_with_shutdown(api_addr, sig_api).await;
-            println!("RedisApi rst={:?}", rst);
+            info!("RedisApi rst={:?}", rst);
         });
 
-        println!("serving: {}", api_addr);
+        info!("redis api serving: {}", api_addr);
 
         // TODO load cluster conf
         let qp = QPaxosImpl::new(sd);
         let s = tonic::transport::Server::builder().add_service(QPaxosServer::new(qp));
 
         let j2 = tokio::spawn(async move {
-            println!("repl server spawned");
+            info!("repl server spawned");
             let rst = s
                 .serve_with_shutdown(repl_addr, async {
                     sig_repl.await;
                 })
                 .await;
-            println!("replication server rst={:?}", rst);
+            info!("replication server rst={:?}", rst);
         });
 
-        println!("serving: {}", repl_addr);
+        info!("replication serving: {}", repl_addr);
 
         j1.await.unwrap();
         j2.await.unwrap();
@@ -148,7 +150,7 @@ impl Server {
     pub fn stop(&mut self) -> Result<(), ServerError> {
         while let Some((name, tx)) = self.stop_txs.pop() {
             tx.send(()).or(Err(ServerError::RxClosed))?;
-            println!("{} stop signal sent", name);
+            info!("{} stop signal sent", name);
         }
         Ok(())
     }

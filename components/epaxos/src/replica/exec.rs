@@ -234,6 +234,10 @@ impl Replica {
     pub async fn execute(&self) -> Result<Vec<InstanceId>, StorageError> {
         let mut exec_up_to = InstanceIdVec::from([0; 0]);
         let mut smallest_inst_ids = InstanceIdVec::from([0; 0]);
+
+        info!("execute get exec_up_to: {}", exec_up_to);
+        info!("execute get smallest_inst_ids: {}", smallest_inst_ids);
+
         for rid in self.group_replica_ids.iter() {
             let exec_iid = self.storage.get_ref("exec", *rid)?;
             let exec_iid = exec_iid.unwrap_or((*rid, -1).into());

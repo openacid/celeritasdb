@@ -28,6 +28,10 @@ epaxos = { path = "components/epaxos" }
 storage = { path = "components/storage" }
 quick-error = { version = "1.2.2" }
 futures = "0.3.0"
+slog = { version = "2.5.2", features = ["max_level_trace", "release_max_level_warn"] }
+slog-async = "2.3"
+slog-global = { git = "https://github.com/breeswish/slog-global.git", rev = "0e23a5baff302a9d7bccd85f8f31e43339c2f2c1" }
+slog-term = "2.4"
 
 [dev-dependencies]
 tempfile = { version = "3.1.0" }

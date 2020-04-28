@@ -50,7 +50,7 @@ impl RedisApi {
 
         let mut lis = TcpListener::from_std(lis).unwrap();
 
-        println!("redis api listened: {}", addr);
+        info!("redis api listened: {}", addr);
         loop {
             tokio::select! {
                 _v = (&mut sig) => {
@@ -66,12 +66,12 @@ impl RedisApi {
             }
         }
 
-        println!("RedisApi stopped");
+        info!("RedisApi stopped");
         Ok(())
     }
 
     async fn handle_new_conn(self, mut sock: TcpStream) {
-        println!("new connection");
+        info!("new connection");
 
         loop {
             let mut buf = vec![0u8; 1024];
@@ -81,28 +81,28 @@ impl RedisApi {
                 .await
                 .expect("failed to read data from socket");
 
-            println!("read buf: len={:}, {:?}", n, buf);
+            info!("read buf: len={:}, {:?}", n, buf);
 
             if n == 0 {
-                println!("client closed");
+                warn!("client closed");
                 return;
             }
 
             let v = redis::parse_redis_value(&buf);
             let v = match v {
                 Ok(q) => {
-                    println!("parsed redis value: {:?}", q);
+                    info!("parsed redis value: {:?}", q);
                     q
                 }
                 Err(err) => {
                     // TODO bad protocol handling
-                    println!("parse error: {:}", err);
+                    error!("redis parse error: {:}", err);
                     panic!("bad redis protocol");
                 }
             };
             let r = self.exec_redis_cmd(v).await;
-            println!("exec_redis_cmd r={:?}", r);
-            println!("response bytes:{:?}", r.as_bytes());
+            info!("exec_redis_cmd r={:?}", r);
+            info!("response bytes:{:?}", r.as_bytes());
             sock.write_all(&*r.as_bytes())
                 .await
                 .expect("failed to write data to socket");
@@ -126,12 +126,12 @@ impl RedisApi {
         let t = match tok0 {
             redis::Value::Data(d) => d,
             _ => {
-                println!("tok0 is not a Data!!!");
+                error!("tok0 is not a Data!!!");
                 return Response::Error("invalid command".to_owned());
             }
         };
 
-        println!("instruction: {:?}", t);
+        info!("instruction: {:?}", t);
         let tok0str = from_utf8(&t).unwrap();
 
         // execute the command
@@ -155,7 +155,7 @@ impl RedisApi {
         let key = match tokens[1] {
             redis::Value::Data(ref d) => d,
             _ => {
-                println!("expect tokens[1] to be key but not a Data");
+                error!("expect tokens[1] to be key but not a Data");
                 return Err(Response::Error("invalid key".to_owned()));
             }
         };

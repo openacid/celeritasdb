@@ -6,9 +6,13 @@ use std::sync::Arc;
 
 use tokio;
 
+use cele::init_logger;
 use cele::Server;
 use epaxos::conf::ClusterInfo;
 use storage::MemEngine;
+
+#[macro_use]
+extern crate slog_global;
 
 fn main() {
     // TODO standalone version file.
@@ -34,13 +38,18 @@ fn main() {
     let conffn = matches.value_of("cluster").unwrap();
     let node_id = matches.value_of("id").unwrap();
 
+    init_logger().unwrap();
+
+    info!("get arg conffn: {:?}", &conffn);
+    info!("get arg node_id: {:?}", &node_id);
+
     let sto = MemEngine::new().unwrap();
 
     let cluster = ClusterInfo::from_file(conffn).unwrap();
     let server = Server::new(Arc::new(sto), cluster, node_id.into());
 
     start(server);
-    println!("serve returned");
+    info!("serve returned");
 }
 
 #[tokio::main]

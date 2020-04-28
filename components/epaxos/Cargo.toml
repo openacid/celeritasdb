@@ -29,6 +29,8 @@ serde = { version = "1.0", features = ["derive"] }
 serde_yaml = { version = "0.8" }
 lazy_static = { version = "1.4.0" }
 storage = { path = "../storage" }
+slog = { version = "2.5.2", features = ["max_level_trace", "release_max_level_warn"] }
+slog-global = { git = "https://github.com/breeswish/slog-global.git", rev = "0e23a5baff302a9d7bccd85f8f31e43339c2f2c1" }
 
 # derive FromStr for enum
 enum-utils = "0.1.2"
