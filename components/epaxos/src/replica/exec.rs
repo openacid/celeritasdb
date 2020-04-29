@@ -214,7 +214,6 @@ impl Replica {
             let inst = match self.storage.get_instance(*iid)? {
                 Some(i) => i,
                 None => {
-                    recover_iids.push(*iid);
                     continue;
                 }
             };
