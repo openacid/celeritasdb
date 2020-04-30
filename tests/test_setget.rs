@@ -6,6 +6,7 @@ use epaxos::qpaxos::*;
 use std::time::Duration;
 
 use crate::support::*;
+use redis::RedisResult;
 use tokio::time::delay_for;
 
 mod support;
@@ -83,20 +84,23 @@ async fn _test_set() {
 }
 
 #[test]
-fn test_getset() {
-    let ctx = TestContext::new();
-    let mut con = ctx.connection();
+fn test_get() {
+    _test_get();
+}
+
+#[tokio::main]
+async fn _test_get() {
+    // TODO test with az_3
+    let ctx = InProcContext::new("az_3");
+    let mut con = ctx.client.get_connection().unwrap();
+    // key not found
+    let v: RedisResult<i32> = redis::cmd("GET").arg("foo").query(&mut con);
+    assert!(v.is_err());
 
     redis::cmd("SET").arg("foo").arg(42).execute(&mut con);
-    assert_eq!(redis::cmd("GET").arg("foo").query(&mut con), Ok(42));
 
-    // TODO This test not passed:
-    //
-    // redis::cmd("SET").arg("bar").arg("foo").execute(&mut con);
-    // assert_eq!(
-    //     redis::cmd("GET").arg("bar").query(&mut con),
-    //     Ok(b"foo".to_vec())
-    // );
+    let v: RedisResult<i32> = redis::cmd("GET").arg("foo").query(&mut con);
+    assert_eq!(42, v.unwrap());
 }
 
 #[test]

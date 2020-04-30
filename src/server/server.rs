@@ -75,10 +75,12 @@ impl Server {
             for r in sd.local_replicas.values() {
                 match r.execute().await {
                     Ok(iids) => {
-                        info!(
-                            "success to execute instances {:?} for {:?}",
-                            iids, r.replica_id
-                        );
+                        if iids.len() > 0 {
+                            info!(
+                                "success to execute instances {:?} for {:?}",
+                                iids, r.replica_id
+                            );
+                        }
                         exec_count += iids.len();
                     }
                     Err(e) => {

@@ -348,8 +348,8 @@ async fn _test_send_reply() {
         Ok(v) => {
             println!("got = {:?}", v);
             match &v[0] {
-                ExecuteResult::SuccessWithVal(r) => {
-                    assert_eq!("vx".as_bytes().to_vec(), r.clone().unwrap());
+                Some(r) => {
+                    assert_eq!("vx".as_bytes().to_vec(), &r[..]);
                 }
                 _ => assert!(false, "invalid reply"),
             }

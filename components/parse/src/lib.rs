@@ -19,7 +19,7 @@ pub enum Response {
 
 impl Response {
     /// Serializes the response into an array of bytes using Redis protocol.
-    pub fn as_bytes(&self) -> Vec<u8> {
+    pub fn to_vec(&self) -> Vec<u8> {
         return match *self {
             Response::Nil => b"$-1\r\n".to_vec(),
             Response::Data(ref d) => [
@@ -47,7 +47,7 @@ impl Response {
             Response::Array(ref a) => [
                 &b"*"[..],
                 &format!("{}\r\n", a.len()).into_bytes()[..],
-                &(a.iter().map(|el| el.as_bytes()).collect::<Vec<_>>()[..].concat())[..],
+                &(a.iter().map(|el| el.to_vec()).collect::<Vec<_>>()[..].concat())[..],
             ]
             .concat(),
         };

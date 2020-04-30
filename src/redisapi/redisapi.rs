@@ -14,14 +14,15 @@ use tokio;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 use tokio::net::TcpStream;
+use tokio::sync::oneshot;
 
 use epaxos::qpaxos::Command;
 use epaxos::qpaxos::OpCode;
 use epaxos::replicate;
-
-use parse::Response;
-
 use epaxos::ServerData;
+
+use crate::RedisApiError;
+use parse::Response;
 
 /// ReidsApi impl redis-protocol
 #[derive(Clone)]
@@ -100,16 +101,20 @@ impl RedisApi {
                     panic!("bad redis protocol");
                 }
             };
-            let r = self.exec_redis_cmd(v).await;
-            info!("exec_redis_cmd r={:?}", r);
-            info!("response bytes:{:?}", r.as_bytes());
-            sock.write_all(&*r.as_bytes())
+            let r = match self.exec_redis_cmd(v).await {
+                Ok(r) => r,
+                Err(e) => Response::Error(format!("exec redis cmd error: {:?}", e)),
+            };
+            info!("exec_redis_cmd r={:?}", &r);
+            let r = r.to_vec();
+            info!("response bytes:{:?}", &r);
+            sock.write_all(&r)
                 .await
                 .expect("failed to write data to socket");
         }
     }
 
-    async fn exec_redis_cmd(&self, v: redis::Value) -> Response {
+    async fn exec_redis_cmd(&self, v: redis::Value) -> Result<Response, RedisApiError> {
         // cmd is a nested array: ["set", "a", "1"] or ["set", ["b", "c"], ...]
         // A "set" or "get" redis command is serialized as non-nested array.
         //
@@ -127,7 +132,7 @@ impl RedisApi {
             redis::Value::Data(d) => d,
             _ => {
                 error!("tok0 is not a Data!!!");
-                return Response::Error("invalid command".to_owned());
+                return Ok(Response::Error("invalid command".to_owned()));
             }
         };
 
@@ -136,34 +141,31 @@ impl RedisApi {
 
         // execute the command
 
-        let r = match tok0str {
+        let r = match &tok0str.to_uppercase()[..] {
             "SET" => self.cmd_set(&tokens).await,
             "FLUSHDB" => Ok(Response::Status("OK".to_owned())),
-            "GET" => Ok(Response::Integer(42)),
-            _ => Err(Response::Error("invalid command".to_owned())),
+            "GET" => self.cmd_get(&tokens).await,
+            _ => Ok(Response::Error("invalid command".to_owned())),
         };
 
-        match r {
-            Ok(rr) => rr,
-            Err(rr) => rr,
-        }
+        r
     }
 
     /// cmd_set impl redis-command set. TODO impl it.
-    async fn cmd_set(&self, tokens: &[redis::Value]) -> Result<Response, Response> {
+    async fn cmd_set(&self, tokens: &[redis::Value]) -> Result<Response, RedisApiError> {
         let cmd = OpCode::Set;
         let key = match tokens[1] {
             redis::Value::Data(ref d) => d,
             _ => {
                 error!("expect tokens[1] to be key but not a Data");
-                return Err(Response::Error("invalid key".to_owned()));
+                return Ok(Response::Error("invalid key".to_owned()));
             }
         };
         let value = match tokens[2] {
             redis::Value::Data(ref d) => d,
             _ => {
                 println!("expect tokens[2] to be value but not a Data");
-                return Err(Response::Error("invalid value".to_owned()));
+                return Ok(Response::Error("invalid value".to_owned()));
             }
         };
 
@@ -171,21 +173,45 @@ impl RedisApi {
         let cmds = vec![cmd];
 
         let (g, r) = self.server_data.get_local_replica_for_key(key)?;
-
         let mut st = replicate(&cmds, g, r).await?;
+
         let inst = &mut st.instance;
         inst.committed = true;
-        let rst = r.storage.set_instance(inst);
-
-        match rst {
-            Ok(_v) => {}
-            Err(_e) => {
-                return Ok(Response::Error("local commit error".into()));
-            }
-        }
+        let _ = r.storage.set_instance(inst)?;
 
         // TODO bcast commit
-
         Ok(Response::Status("OK".to_owned()))
+    }
+
+    /// cmd_set impl redis-command set. TODO impl it.
+    async fn cmd_get(&self, tokens: &[redis::Value]) -> Result<Response, RedisApiError> {
+        let cmd = OpCode::Get;
+        let key = match tokens[1] {
+            redis::Value::Data(ref d) => d,
+            _ => {
+                println!("expect tokens[1] to be key but not a Data");
+                return Ok(Response::Error("invalid key".to_owned()));
+            }
+        };
+
+        let cmd = Command::from((cmd, key as &[u8], &vec![][..]));
+        let cmds = vec![cmd];
+
+        let (g, r) = self.server_data.get_local_replica_for_key(key)?;
+        let mut st = replicate(&cmds, g, r).await?;
+
+        let inst = &mut st.instance;
+        inst.committed = true;
+        let (tx, rx) = oneshot::channel();
+        r.insert_tx(inst.instance_id.unwrap(), tx).await;
+        r.storage.set_instance(inst)?;
+
+        // TODO bcast commit
+        let repl = rx.await?.pop().unwrap_or(None);
+        if let Some(v) = repl {
+            return Ok(Response::Data(v));
+        }
+
+        Ok(Response::Nil)
     }
 }

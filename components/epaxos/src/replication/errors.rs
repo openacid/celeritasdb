@@ -7,7 +7,6 @@ use crate::qpaxos::ReplicaId;
 use crate::qpaxos::StorageFailure;
 use crate::replica::InstanceStatus;
 use crate::replica::ReplicaError;
-use parse::Response;
 use storage::StorageError;
 
 quick_error! {
@@ -99,11 +98,5 @@ quick_error! {
         Storage(e: StorageError) {
             from(e: StorageError) -> (e)
         }
-    }
-}
-
-impl From<ReplicationError> for Response {
-    fn from(e: ReplicationError) -> Self {
-        Response::Error(format!("{:?}", e))
     }
 }

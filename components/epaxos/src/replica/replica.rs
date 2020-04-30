@@ -81,11 +81,7 @@ impl From<(ReplicaId, String, bool)> for ReplicaPeer {
     }
 }
 
-#[derive(Clone, Debug, Eq, PartialEq)]
-pub enum ExecuteResult {
-    Success,
-    SuccessWithVal(Option<Vec<u8>>),
-}
+pub type ExecRst = Vec<Option<Vec<u8>>>;
 
 /// structure to represent a replica
 pub struct Replica {
@@ -94,7 +90,7 @@ pub struct Replica {
     pub peers: Vec<ReplicaPeer>,
     pub storage: Storage,
     pub committed_timeout: i32,
-    pub waiting_replies: Mutex<HashMap<InstanceId, Sender<Vec<ExecuteResult>>>>,
+    pub waiting_replies: Mutex<HashMap<InstanceId, Sender<ExecRst>>>,
 }
 
 impl Replica {

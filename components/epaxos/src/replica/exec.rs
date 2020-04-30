@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use std::time::SystemTime;
 
 use crate::qpaxos::{Instance, InstanceId, InstanceIdVec, OpCode};
-use crate::replica::ExecuteResult;
+use crate::replica::ExecRst;
 use crate::replica::Replica;
 use storage::StorageError;
 use storage::WriteEntry;
@@ -66,7 +66,7 @@ impl Replica {
         None
     }
 
-    async fn send_replies(&self, mut replies: Vec<(InstanceId, Vec<ExecuteResult>)>) {
+    async fn send_replies(&self, mut replies: Vec<(InstanceId, ExecRst)>) {
         let mut wrpls = self.waiting_replies.lock().await;
         while let Some((iid, r)) = replies.pop() {
             let tx = match wrpls.remove(&iid) {
@@ -79,7 +79,7 @@ impl Replica {
         }
     }
 
-    pub async fn insert_tx(&self, iid: InstanceId, tx: Sender<Vec<ExecuteResult>>) {
+    pub async fn insert_tx(&self, iid: InstanceId, tx: Sender<ExecRst>) {
         let mut wrpls = self.waiting_replies.lock().await;
         wrpls.insert(iid, tx);
     }
@@ -106,9 +106,9 @@ impl Replica {
                         let v = self.storage.get_kv(&cmd.key)?;
                         existed.insert(&cmd.key, v);
                     }
-                    repl.push(ExecuteResult::SuccessWithVal(existed[&cmd.key].clone()));
+                    repl.push(existed[&cmd.key].clone());
                 } else if cmd.op == OpCode::NoOp as i32 {
-                    repl.push(ExecuteResult::Success);
+                    repl.push(None);
                 } else {
                     let v = if cmd.op == OpCode::Delete as i32 {
                         None
@@ -116,7 +116,7 @@ impl Replica {
                         Some(cmd.value.clone())
                     };
                     existed.insert(&cmd.key, v);
-                    repl.push(ExecuteResult::Success);
+                    repl.push(None);
                 }
             }
 
@@ -218,6 +218,7 @@ impl Replica {
                 }
             };
             if inst.committed {
+                info!("execute find a committed instance: {:?}", inst.instance_id);
                 rst.push(inst);
                 continue;
             }
@@ -234,9 +235,6 @@ impl Replica {
     pub async fn execute(&self) -> Result<Vec<InstanceId>, StorageError> {
         let mut exec_up_to = InstanceIdVec::from([0; 0]);
         let mut smallest_inst_ids = InstanceIdVec::from([0; 0]);
-
-        info!("execute get exec_up_to: {}", exec_up_to);
-        info!("execute get smallest_inst_ids: {}", smallest_inst_ids);
 
         for rid in self.group_replica_ids.iter() {
             let exec_iid = self.storage.get_ref("exec", *rid)?;
