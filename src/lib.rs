@@ -4,6 +4,7 @@ extern crate quick_error;
 extern crate slog;
 #[macro_use]
 extern crate slog_global;
+extern crate chrono;
 extern crate slog_async;
 extern crate slog_term;
 

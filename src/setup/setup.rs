@@ -6,6 +6,8 @@ use std::io::{self, Error, ErrorKind};
 
 use slog::Drain;
 
+use super::log_format::CeleFormat;
+
 /// init a global log
 pub fn init_logger() -> io::Result<()> {
     // TODO: add log config to init logger
@@ -17,9 +19,8 @@ pub fn init_logger() -> io::Result<()> {
 
     let file = open_log_file(log_path)?;
 
-    // TODO: create a format for logger to show line number and file name
     let decorator = slog_term::PlainDecorator::new(file);
-    let drain = slog_term::FullFormat::new(decorator).build().fuse();
+    let drain = CeleFormat::new(decorator).fuse();
     let drain = slog_async::Async::new(drain).build().fuse();
 
     let logger = slog::Logger::root(drain, slog::o!());
