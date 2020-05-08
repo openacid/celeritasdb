@@ -14,10 +14,13 @@ use tokio;
 use tokio::io::{AsyncReadExt, AsyncWriteExt};
 use tokio::net::TcpListener;
 use tokio::net::TcpStream;
+use tokio::sync::mpsc;
 use tokio::sync::oneshot;
 
 use epaxos::qpaxos::Command;
+use epaxos::qpaxos::Instance;
 use epaxos::qpaxos::OpCode;
+use epaxos::replica::ReplicaPeer;
 use epaxos::replicate;
 use epaxos::ServerData;
 
@@ -28,6 +31,7 @@ use parse::Response;
 #[derive(Clone)]
 pub struct RedisApi {
     pub server_data: Arc<ServerData>,
+    pub commit_sender: mpsc::Sender<(Vec<ReplicaPeer>, Instance)>,
 }
 
 impl RedisApi {
@@ -55,6 +59,7 @@ impl RedisApi {
         loop {
             tokio::select! {
                 _v = (&mut sig) => {
+                    drop(self.commit_sender);
                     break;
                 },
                 inc = lis.accept() => {
@@ -71,7 +76,7 @@ impl RedisApi {
         Ok(())
     }
 
-    async fn handle_new_conn(self, mut sock: TcpStream) {
+    async fn handle_new_conn(mut self, mut sock: TcpStream) {
         info!("new connection");
 
         loop {
@@ -114,7 +119,7 @@ impl RedisApi {
         }
     }
 
-    async fn exec_redis_cmd(&self, v: redis::Value) -> Result<Response, RedisApiError> {
+    async fn exec_redis_cmd(&mut self, v: redis::Value) -> Result<Response, RedisApiError> {
         // cmd is a nested array: ["set", "a", "1"] or ["set", ["b", "c"], ...]
         // A "set" or "get" redis command is serialized as non-nested array.
         //
@@ -152,7 +157,7 @@ impl RedisApi {
     }
 
     /// cmd_set impl redis-command set. TODO impl it.
-    async fn cmd_set(&self, tokens: &[redis::Value]) -> Result<Response, RedisApiError> {
+    async fn cmd_set(&mut self, tokens: &[redis::Value]) -> Result<Response, RedisApiError> {
         let cmd = OpCode::Set;
         let key = match tokens[1] {
             redis::Value::Data(ref d) => d,
@@ -164,7 +169,7 @@ impl RedisApi {
         let value = match tokens[2] {
             redis::Value::Data(ref d) => d,
             _ => {
-                println!("expect tokens[2] to be value but not a Data");
+                error!("expect tokens[2] to be value but not a Data");
                 return Ok(Response::Error("invalid value".to_owned()));
             }
         };
@@ -179,17 +184,24 @@ impl RedisApi {
         inst.committed = true;
         let _ = r.storage.set_instance(inst)?;
 
-        // TODO bcast commit
+        if let Err(err) = self
+            .commit_sender
+            .send((r.peers.clone(), st.instance))
+            .await
+        {
+            error!("send commit msg error: {:}", err);
+        }
+
         Ok(Response::Status("OK".to_owned()))
     }
 
     /// cmd_set impl redis-command set. TODO impl it.
-    async fn cmd_get(&self, tokens: &[redis::Value]) -> Result<Response, RedisApiError> {
+    async fn cmd_get(&mut self, tokens: &[redis::Value]) -> Result<Response, RedisApiError> {
         let cmd = OpCode::Get;
         let key = match tokens[1] {
             redis::Value::Data(ref d) => d,
             _ => {
-                println!("expect tokens[1] to be key but not a Data");
+                error!("expect tokens[1] to be key but not a Data");
                 return Ok(Response::Error("invalid key".to_owned()));
             }
         };

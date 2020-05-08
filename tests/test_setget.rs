@@ -65,21 +65,21 @@ async fn _test_set() {
     }
 
     {
-        // TODO no commit broadcast yet,
-        // only replica 1 is committed.
+        delay_for(Duration::from_millis(1_000)).await;
 
-        let rid = 1;
-        let sto = &ctx.get_replica(rid).storage;
-        let inst = sto.get_instance((1, 0).into());
-        let inst = inst.unwrap().unwrap();
+        for rid in 1..=3 {
+            let sto = &ctx.get_replica(rid).storage;
+            let inst = sto.get_instance((1, 0).into());
+            let inst = inst.unwrap().unwrap();
 
-        assert_eq!(
-            inst.final_deps.unwrap(),
-            InstanceIdVec::from(instids![(1, -1), (2, -1), (3, -1)]),
-            "final_deps, replica:{}",
-            rid
-        );
-        assert!(inst.committed);
+            assert_eq!(
+                inst.final_deps.unwrap(),
+                InstanceIdVec::from(instids![(1, -1), (2, -1), (3, -1)]),
+                "final_deps, replica:{}",
+                rid
+            );
+            assert!(inst.committed);
+        }
     }
 }
 

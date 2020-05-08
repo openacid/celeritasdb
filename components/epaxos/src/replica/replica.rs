@@ -52,7 +52,7 @@ macro_rules! ref_or_bug {
 }
 
 /// information of communication peer
-#[derive(Debug, PartialEq, Eq)]
+#[derive(Debug, PartialEq, Eq, Clone)]
 pub struct ReplicaPeer {
     pub replica_id: ReplicaId,
     pub addr: String, // ip: port pairs of each replica

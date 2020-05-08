@@ -5,6 +5,7 @@ use std::time::Duration;
 use futures::Future;
 
 use tokio;
+use tokio::sync::mpsc;
 use tokio::sync::oneshot::{error::TryRecvError, Receiver, Sender};
 use tokio::task::JoinHandle;
 
@@ -12,7 +13,11 @@ use tonic;
 
 use epaxos::conf::ClusterInfo;
 use epaxos::conf::NodeId;
+use epaxos::qpaxos::Instance;
+use epaxos::qpaxos::MakeRequest;
 use epaxos::qpaxos::QPaxosServer;
+use epaxos::replica::ReplicaPeer;
+use epaxos::replication::bcast_msg;
 use epaxos::QPaxosImpl;
 use epaxos::ServerData;
 use epaxos::Storage;
@@ -54,7 +59,14 @@ impl Server {
         let (tx2, rx2) = tokio::sync::oneshot::channel::<()>();
         let (tx3, rx3) = tokio::sync::oneshot::channel::<()>();
 
-        let fut = Server::_start_servers(self.server_data.clone(), rx1, rx2);
+        let (tx4, rx4) = mpsc::channel(1024);
+
+        let fut = Server::_start_replica_commit(rx4);
+        let j = tokio::spawn(fut);
+        self.join_handle.push(j);
+        info!("replica commit start");
+
+        let fut = Server::_start_servers(self.server_data.clone(), rx1, rx2, tx4);
         let j = tokio::spawn(fut);
         self.join_handle.push(j);
         info!("replication server start");
@@ -62,7 +74,7 @@ impl Server {
         let fut = Server::_start_replica_exec(self.server_data.clone(), rx3);
         let j = tokio::spawn(fut);
         self.join_handle.push(j);
-        info!("replcia exec start");
+        info!("replica exec start");
 
         self.stop_txs.push(("api", tx1));
         self.stop_txs.push(("replication", tx2));
@@ -110,16 +122,33 @@ impl Server {
         }
     }
 
+    async fn _start_replica_commit(mut rx: mpsc::Receiver<(Vec<ReplicaPeer>, Instance)>) {
+        loop {
+            match rx.recv().await {
+                Some((peers, inst)) => {
+                    let req = MakeRequest::commit(0, &inst);
+                    bcast_msg(&peers, req).await;
+                }
+                None => {
+                    info!("exit replcia commit thread with the sender had been dropped");
+                    return;
+                }
+            }
+        }
+    }
+
     async fn _start_servers<F: Future + Send + 'static>(
         sd: Arc<ServerData>,
         sig_api: F,
         sig_repl: F,
+        sig_commit: mpsc::Sender<(Vec<ReplicaPeer>, Instance)>,
     ) {
         let api_addr = sd.node.api_addr;
         let repl_addr = sd.node.replication;
 
         let redisapi = RedisApi {
             server_data: sd.clone(),
+            commit_sender: sig_commit,
         };
 
         let j1 = tokio::spawn(async move {
