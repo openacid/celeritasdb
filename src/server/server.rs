@@ -55,30 +55,30 @@ impl Server {
     /// start();
     /// ```
     pub fn start(&mut self) {
-        let (tx1, rx1) = tokio::sync::oneshot::channel::<()>();
-        let (tx2, rx2) = tokio::sync::oneshot::channel::<()>();
-        let (tx3, rx3) = tokio::sync::oneshot::channel::<()>();
+        let (tx_api, rx_api) = tokio::sync::oneshot::channel::<()>();
+        let (tx_repl, rx_repl) = tokio::sync::oneshot::channel::<()>();
+        let (tx_exec, rx_exec) = tokio::sync::oneshot::channel::<()>();
 
-        let (tx4, rx4) = mpsc::channel(1024);
+        let (tx_commit, rx_commit) = mpsc::channel(1024);
 
-        let fut = Server::_start_replica_commit(rx4);
+        let fut = Server::_start_replica_commit(rx_commit);
         let j = tokio::spawn(fut);
         self.join_handle.push(j);
         info!("replica commit start");
 
-        let fut = Server::_start_servers(self.server_data.clone(), rx1, rx2, tx4);
+        let fut = Server::_start_servers(self.server_data.clone(), rx_api, rx_repl, tx_commit);
         let j = tokio::spawn(fut);
         self.join_handle.push(j);
         info!("replication server start");
 
-        let fut = Server::_start_replica_exec(self.server_data.clone(), rx3);
+        let fut = Server::_start_replica_exec(self.server_data.clone(), rx_exec);
         let j = tokio::spawn(fut);
         self.join_handle.push(j);
         info!("replica exec start");
 
-        self.stop_txs.push(("api", tx1));
-        self.stop_txs.push(("replication", tx2));
-        self.stop_txs.push(("exec", tx3));
+        self.stop_txs.push(("api", tx_api));
+        self.stop_txs.push(("replication", tx_repl));
+        self.stop_txs.push(("exec", tx_exec));
     }
 
     async fn _start_replica_exec(sd: Arc<ServerData>, mut rx: Receiver<()>) {

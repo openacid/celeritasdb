@@ -218,7 +218,14 @@ impl RedisApi {
         r.insert_tx(inst.instance_id.unwrap(), tx).await;
         r.storage.set_instance(inst)?;
 
-        // TODO bcast commit
+        if let Err(err) = self
+            .commit_sender
+            .send((r.peers.clone(), st.instance))
+            .await
+        {
+            error!("send commit msg error: {:}", err);
+        }
+
         let repl = rx.await?.pop().unwrap_or(None);
         if let Some(v) = repl {
             return Ok(Response::Data(v));
