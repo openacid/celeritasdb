@@ -23,13 +23,8 @@ macro_rules! instids {
     }
 }
 
-#[test]
-fn test_set() {
-    _test_set();
-}
-
-#[tokio::main]
-async fn _test_set() {
+#[tokio::test(threaded_scheduler)]
+async fn test_set() {
     // TODO test with az_3
     let ctx = InProcContext::new("az_3");
     let mut con = ctx.client.get_connection().unwrap();
@@ -83,13 +78,8 @@ async fn _test_set() {
     }
 }
 
-#[test]
-fn test_get() {
-    _test_get();
-}
-
-#[tokio::main]
-async fn _test_get() {
+#[tokio::test(threaded_scheduler)]
+async fn test_get() {
     // TODO test with az_3
     let ctx = InProcContext::new("az_3");
     let mut con = ctx.client.get_connection().unwrap();
@@ -103,16 +93,9 @@ async fn _test_get() {
     assert_eq!(42, v.unwrap());
 }
 
-#[test]
-fn test_replication_server() {
+#[tokio::test(threaded_scheduler)]
+async fn test_replication_server() {
     let ctx = TestContext::new();
-    connect_repl();
-    // dropping ctx cause sub process to be killed
-    let _ = ctx;
-}
-
-#[tokio::main]
-async fn connect_repl() {
     delay_for(Duration::from_millis(1_000)).await;
     let mut client = QPaxosClient::connect("http://127.0.0.1:6666")
         .await
@@ -127,4 +110,6 @@ async fn connect_repl() {
     let response = client.replicate(request).await.unwrap();
 
     println!("RESPONSE={:?}", response);
+    // dropping ctx cause sub process to be killed
+    let _ = ctx;
 }

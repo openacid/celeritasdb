@@ -12,13 +12,8 @@ use tokio::time::delay_for;
 
 mod support;
 
-#[test]
-fn test_replica_exec_thread() {
-    _test_replica_exec_thread();
-}
-
-#[tokio::main]
-async fn _test_replica_exec_thread() {
+#[tokio::test(threaded_scheduler)]
+async fn test_replica_exec_thread() {
     let ctx = InProcContext::new("az_1");
 
     let cases = [

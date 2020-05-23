@@ -11,13 +11,8 @@ use epaxos::testutil;
 use epaxos::QPaxosImpl;
 use std::sync::Arc;
 
-#[test]
-fn test_repl_server() {
-    _repl_server();
-}
-
-#[tokio::main]
-async fn _repl_server() {
+#[tokio::test(threaded_scheduler)]
+async fn test_repl_server() {
     let addr = "127.0.0.1:4444".parse().unwrap();
 
     // This channel is for shutting down the server
