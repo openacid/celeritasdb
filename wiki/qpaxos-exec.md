@@ -139,8 +139,8 @@ For an example of the concepts above, the vertices in it are named with `seq`:
      ^              |
      `--------------'
 
-Pe(5, G) = [5, 2,                      8]
-P(5, G)  = [5, 2, 6, 3, 4, 6, 3, 5, 2, 8]
+Pe(5, G) = [5, 2,                                  8]
+P(5, G)  = [5, 2, 6, 3, 4, 6, 3, 5, 2, 6, 3, 5, 2, 8]
                         ------- C₁(5, G)
                   ====           ==== C₂(5, G)
 
