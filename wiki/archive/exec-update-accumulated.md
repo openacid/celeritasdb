@@ -1,4 +1,15 @@
+This is an incomplete alog because it didnot specifies how to impl this:
+> 如果一个instance `z`的所有出向边最终都走回到`z`,
+> From Def-topo-order, 执行`z`.
+And this step is critical and no obvious way to impl.
+One of the impl of this is the same as qpaxos-exec, i.e., by removing min-edge
+found in a cycle.
+
 # Execution
+
+TODO: deps only records highest interfering, need to find the minimal. proof
+that only directly deps  need to inherit the deps.
+TODO: newer instance may have lower seq. need to consider this.
 
 这个算法实现了有环depends-on graph中有限步的执行算法,
 解决了livelock问题.
