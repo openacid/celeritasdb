@@ -36,4 +36,4 @@ slog-global = { git = "https://github.com/breeswish/slog-global.git", rev = "0e2
 enum-utils = "0.1.2"
 
 [build-dependencies]
-tonic-build = { version = "0.2.0" }
+tonic-build = { version = "0.3.1" }
