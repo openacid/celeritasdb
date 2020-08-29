@@ -45,36 +45,33 @@ impl RocksDBEngine {
         let cf = self._make_cf_handle(cf).ok()?;
         let mut iter = self.db.iter_cf(cf);
 
-        iter.seek(SeekKey::from(&key[..]));
-        if !iter.valid() {
+        if !iter.seek(SeekKey::from(&key[..])).ok()? {
             // TODO may be a rocksdb panic here
             return None;
         }
 
-        match iter.kv() {
-            Some(kv) => {
-                if include {
-                    return Some(kv);
-                };
+        let k = iter.key();
+        let v = iter.value();
+        if include {
+            return Some((k.to_vec(), v.to_vec()));
+        }
 
-                if kv.0.as_slice() != key {
-                    return Some(kv);
-                };
+        if k != key {
+            return Some((k.to_vec(), v.to_vec()));
+        }
+
+        let valid = {
+            if reverse {
+                iter.prev().ok()?
+            } else {
+                iter.next().ok()?
             }
-            None => return None,
-        }
-
-        if reverse {
-            iter.prev();
-        } else {
-            iter.next();
-        }
-        if !iter.valid() {
-            // TODO may be a rocksdb panic here
+        };
+        if !valid {
             return None;
         }
 
-        return iter.kv();
+        Some((iter.key().to_vec(), iter.value().to_vec()))
     }
 }
 
@@ -119,7 +116,7 @@ impl Base for RocksDBEngine {
             }
         }
 
-        Ok(self.db.write(batch)?)
+        Ok(self.db.write(&batch)?)
     }
 }
 
