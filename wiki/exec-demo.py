@@ -9,9 +9,33 @@ We can see different execution sequence always have the same result.
 
 A report is generated in ``local-min-rst/``
 You need graphviz installed: ``brew install graphviz``.
+
+To test:
+
+    python -m doctest -v exec-demo.py
+
+To run it: see ``usage`` or
+
+    python exec-demo.py -h
+'''
+
+usage = r'''
+This is a demo of local-min execution algo:
+
+Create a random instance space to run and dump result in `local-min-rst/`:
+
+    python exec-demo.py
+
+Load a dumpped instance space and re-run:
+
+    # path/to/instance_space.yaml is generated with `python exec-demo.py`
+    python exec-demo.py load path/to/instance_space.yaml
+
+A prebuilt report is generated in local-min-rst-0/
 '''
 
 import os
+import yaml
 import sys
 import copy
 import subprocess
@@ -32,6 +56,9 @@ class Cmd(object):
     8
 
     >>> str(Cmd('x=y*2'))
+    'x=y*2'
+
+    >>> Cmd('x=y*2').statement
     'x=y*2'
 
     >>> Cmd('x=y*2').interfere_with(Cmd('y=x+1'))
@@ -61,9 +88,10 @@ class Cmd(object):
         expr = expr[:-1]
         return Cmd(expr)
 
-    def __init__(self, expr):
+    def __init__(self, statement):
 
-        self.assignee, self.expr = expr.split('=', 1)
+        self.statement = statement
+        self.assignee, self.expr = statement.split('=', 1)
 
         self.lamb = None
         self.vars = set(self.assignee)
@@ -98,7 +126,7 @@ class Cmd(object):
 
 class Inst(object):
 
-    """
+    r"""
     Instance
 
     >>> str(Inst(0, [Cmd("x=y+2"),Cmd("y=4")], 5))
@@ -113,16 +141,51 @@ class Inst(object):
     >>> Inst(0, [Cmd("x=y+2"),Cmd("y=4")], 0).exec({'x': 1, 'y':3})
     [('x', 5), ('y', 4)]
 
+
+    >>> Inst(1, [Cmd("x=y+2"),Cmd("y=4")], 2, deps=[3, 4]).dump()
+    'cmds:\n- x=y+2\n- y=4\ndeps:\n- 3\n- 4\nid: 1\nseq: 2\n'
+
+    >>> str(Inst.load('cmds:\n- x=y+2\n- y=4\ndeps:\n- 3\n- 4\nid: 1\nseq: 2\n'))
+    '{1,2,x=y+2,y=4,[3, 4]}'
+
     """
 
-    def __init__(self, iid, cmds, seq):
-        self.id = iid
+    def __init__(self, id, cmds, seq, deps=None):
+        self.id = id
         self.cmds = cmds
         self.seq = seq
-        self.deps = []
+        if deps is None:
+            self.deps = []
+        else:
+            self.deps = deps
 
-        self.ord = (seq, iid)
+        self.ord = (seq, id)
         self.execed = False
+
+    def to_dict(self):
+        dic = dict(id=self.id, seq=self.seq, deps=self.deps,
+                   cmds=[str(x) for x in self.cmds])
+        return dic
+
+    @classmethod
+    def from_dict(self, dic):
+        dic['cmds'] = [Cmd(x) for x in dic['cmds']]
+        return Inst(**dic)
+
+    def dump(self):
+        """
+        Dump an instance to yaml
+        """
+        dic = self.to_dict()
+        return yaml.dump(dic, default_flow_style=False)
+
+    @classmethod
+    def load(clz, s):
+        """
+        Load an instance from yaml
+        """
+        dic = yaml.safe_load(s)
+        return Inst.from_dict(dic)
 
     def vars(self):
         vs = set(self.cmds[0].vars)
@@ -149,14 +212,20 @@ class Inst(object):
         return "{{{id},{seq},{cmds},{deps}}}".format(
             id=self.id,
             seq=self.seq,
-            cmds=','.join([str(x) for x in self.cmds]), 
+            cmds=','.join([str(x) for x in self.cmds]),
             deps=str(self.deps)
         )
 
 
 class Space(object):
-    """
+    r"""
     Instance space
+
+    >>> Space({0:Inst(0, [Cmd("x=y+2"),Cmd("y=4")], 0), 1:Inst(1, [Cmd("x=z+2")], 2)}, alphabet='abc').dump()
+    'alphabet: abc\ninsts:\n  0:\n    cmds: [x=y+2, y=4]\n    deps: []\n    id: 0\n    seq: 0\n  1:\n    cmds: [x=z+2]\n    deps: []\n    id: 1\n    seq: 2\n'
+
+    >>> Space.load('alphabet: abc\ninsts:\n  0:\n    cmds:\n    - x=y+2\n    - y=4\n    deps: []\n    id: 0\n    seq: 0\n  1:\n    cmds:\n    - x=z+2\n    deps: []\n    id: 1\n    seq: 2\n').dump()
+    'alphabet: abc\ninsts:\n  0:\n    cmds: [x=y+2, y=4]\n    deps: []\n    id: 0\n    seq: 0\n  1:\n    cmds: [x=z+2]\n    deps: []\n    id: 1\n    seq: 2\n'
     """
 
     def __init__(self, insts, alphabet):
@@ -191,7 +260,7 @@ class Space(object):
                 if iid == did:
                     continue
 
-                #  build random deps 
+                #  build random deps
                 if not inst.interfere_with(dinst):
                     continue
 
@@ -205,7 +274,7 @@ class Space(object):
                 if iid == did:
                     continue
 
-                #  build random deps 
+                #  build random deps
                 if not inst.interfere_with(dinst):
                     continue
 
@@ -213,6 +282,29 @@ class Space(object):
                     inst.deps.append(did)
 
         return Space(insts, alphabet)
+
+    def to_dict(self):
+        insts = {k: v.to_dict() for k, v in self.insts.items()}
+
+        dic = dict(
+            insts=insts,
+            alphabet=self.alphabet
+        )
+        return dic
+
+    def dump(self):
+        dic = self.to_dict()
+        return yaml.dump(dic, default_flow_style=None)
+
+    @classmethod
+    def load(clz, s):
+        dic = yaml.safe_load(s)
+        al = dic['alphabet']
+        insts = {
+                k: Inst.from_dict(v) for k, v in dic['insts'].items()
+        }
+
+        return Space(insts, al)
 
     def output_dot(self):
 
@@ -382,46 +474,83 @@ def popen(cmds, input=None):
     return subproc.returncode, out, err
 
 
-def output(instance_space, runs):
+def output(instance_space, init_storage, runs):
     """
-    Output execution results and execution sequence of instances to stdout, 
+    Output execution results and execution sequence of instances to stdout,
     and to a markdown file with a dependency graph image.
     """
 
     os.makedirs('local-min-rst', exist_ok=True)
 
-    print('A detailed report is generated in local-min-rst/rst.md')
+    print('A detailed report is generated in local-min-rst/report.md')
     for r in runs:
         print("result:", r[0], "exec sequence:", r[1])
 
+    with open('local-min-rst/instance_space.yaml', 'w') as f:
+        f.write(instance_space.dump())
+
     dot = instance_space.output_dot()
-    with open('local-min-rst/dep.dot', 'w') as f:
+    with open('local-min-rst/dep_graph.dot', 'w') as f:
         f.write(dot)
 
-    with open('local-min-rst/rst.md', 'w') as f:
+    with open('local-min-rst/report.md', 'w') as f:
+        f.write('# Local-min exec algo demo report\n')
+        f.write('To rerun: `python exec-demo.py load local-min-rst/instance_space.yaml`\n')
+        f.write('\n')
+        f.write('To run with a random instance space: `python exec-demo.py`\n')
+
+        f.write("## Instance space\n")
+        f.write("```yaml\n")
+        f.write(instance_space.dump() + '\n')
+        f.write("```\n")
+
+        f.write('![](dep_graph.jpg)\n')
+
+        f.write('## Executions\n')
+        f.write('Initial storage `{}`\n'.format(init_storage))
+        f.write('\n')
+
+        r0 = runs[0][0]
+        f.write('Execution Result `{}`\n'.format(r0))
+        f.write('\n')
+        f.write('Execution sequences:\n')
+
         f.write('```\n')
 
-        for r in runs:
-            f.write("result: " + str(r[0]) + '\n')
-            f.write("exec sequence: " + str(r[1]) + '\n')
+        for (i, r) in enumerate(runs):
+            f.write("{0:>02}-th: {1}\n".format(i, str(r[1])))
+            if r[0] != r0:
+                f.write("inconsistent result: " + str(r[0]) + '\n')
 
         f.write('```\n')
 
-        f.write('![](outfile.jpg)')
 
-    popen(['dot', '-Tjpg', '-o', 'local-min-rst/outfile.jpg'], input=dot)
+    popen(['dot', '-Tjpg', '-o', 'local-min-rst/dep_graph.jpg'], input=dot)
 
 
 if __name__ == "__main__":
+
     sp = Space.rand_space(ninsts=10, ncmds=1, nvars=3, alphabet="xyzwab")
     #  sp = Space.rand_space(ninsts=20, ncmds=1, nvars=3, alphabet="xyzwab")
 
+    if len(sys.argv) > 1:
+        if sys.argv[1] in ('-h', '--help', 'help'):
+            print(usage)
+            sys.exit(0)
+
+        if sys.argv[1] == 'load':
+            fn = sys.argv[2]
+            with open(fn, 'r') as f:
+                yml = f.read()
+            sp = Space.load(yml)
+
     runs = []
+    init_storage = {}
+    for i, k in enumerate(sp.alphabet):
+        init_storage[k] = i+1
     for ii in range(10):
 
-        storage = {}
-        for i, k in enumerate(sp.alphabet):
-            storage[k] = i+1
+        storage = copy.deepcopy(init_storage)
 
         ee = Exec(sp, storage)
         ee.exec()
@@ -432,6 +561,6 @@ if __name__ == "__main__":
         if runs[0][0] != rst:
             break
 
-    output(sp, runs)
+    output(sp, init_storage, runs)
     if runs[0][0] != runs[-1][0]:
         print("Inconsistent result found! see local-min-rst/rst.md")
