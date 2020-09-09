@@ -62,9 +62,9 @@ async fn test_set() {
             let inst = inst.unwrap().unwrap();
 
             assert_eq!(
-                inst.final_deps.unwrap(),
+                inst.deps.unwrap(),
                 InstanceIdVec::from(instids![(1, -1), (2, -1), (3, -1)]),
-                "final_deps, replica:{}",
+                "deps, replica:{}",
                 rid
             );
             assert!(inst.committed);

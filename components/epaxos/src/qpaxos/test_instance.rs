@@ -42,9 +42,7 @@ fn test_macro_inst_all_arg() {
         deps: Some(InstanceIdVec {
             ids: vec![(12, 13).into(), (14, 15).into()],
         }),
-        final_deps: Some(InstanceIdVec {
-            ids: vec![(13, 14).into(), (15, 16).into()],
-        }),
+        accepted: true, 
         committed: true,
         executed: true,
     };
@@ -56,7 +54,7 @@ fn test_macro_inst_all_arg() {
             (3, 4, 2),
             [("Set", "x", "y"), ("Get", "a", "b")],
             [(12, 13), (14, 15)],
-            [(13, 14), (15, 16)],
+            true,
             true,
             true,
         )
@@ -70,7 +68,7 @@ fn test_macro_inst_all_arg() {
             (3, 4, 2),
             [("Set", "x", "y"), ("Get", "a", "b")],
             [(12, 13), (14, 15)],
-            [(13, 14), (15, 16)],
+            true,
             true,
             true,
         )
@@ -86,7 +84,7 @@ fn test_macro_inst() {
         deps: Some(InstanceIdVec {
             ids: vec![(11, 12).into(), (13, 14).into()],
         }),
-        final_deps: None,
+        accepted: false, 
         committed: false,
         executed: false,
     };

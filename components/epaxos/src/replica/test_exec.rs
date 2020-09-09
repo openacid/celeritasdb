@@ -8,13 +8,13 @@ use tokio::sync::oneshot;
 
 #[allow(unused_macros)]
 macro_rules! test_inst {
-    // instance_id, final_deps
+    // instance_id, deps
     (($rid:expr, $idx: expr),
      [$( ($fdep_rid:expr, $fdep_idx:expr) ),*]
     ) => {
         Instance {
             instance_id: Some(($rid, $idx).into()),
-            final_deps: Some(
+            deps: Some(
                 instids![$( ($fdep_rid, $fdep_idx)),*].into()
             ),
             ..Default::default()
@@ -32,7 +32,7 @@ macro_rules! test_inst {
         }
     };
 
-    // instance_id, cmds, final_deps
+    // instance_id, cmds, deps
     (($replica_id:expr, $idx:expr),
      [$( ($op:expr, $key:expr, $val:expr)),*],
      [$( ($fdep_rid:expr, $fdep_idx:expr) ),*]
@@ -40,21 +40,21 @@ macro_rules! test_inst {
         Instance {
             instance_id: Some(($replica_id, $idx).into()),
             cmds: cmds![$( ($op, $key, $val)),*].into(),
-            final_deps: Some(
+            deps: Some(
                 instids![$( ($fdep_rid, $fdep_idx)),*].into()
             ),
             ..Default::default()
         }
     };
 
-    // instance_id, final_deps, committed
+    // instance_id, deps, committed
     (($replica_id:expr, $idx:expr),
      [$( ($fdep_rid:expr, $fdep_idx:expr) ),*],
      $committed:expr
      ) => {
         Instance {
             instance_id: Some(($replica_id, $idx).into()),
-            final_deps: Some(
+            deps: Some(
                 instids![$( ($fdep_rid, $fdep_idx)),*].into()
             ),
             committed: $committed,

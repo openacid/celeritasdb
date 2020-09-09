@@ -26,22 +26,19 @@ message Instance {
     InstanceId instance_id = 13;
     repeated Command cmds  = 21;
 
-    // deps is the updated instance ids on a replica when handling PreAccept
+    // deps is the instance ids on a replica when handling PreAccept
     // request.
-    // When an instance is intiated, it is same as initial_deps.
     InstanceIdVec deps                        = 32;
-
-    // final_deps is the final dependency chosen by instance leader or recover
-    // process, and is set by Accept request or Commit request.
-    InstanceIdVec final_deps                  = 41;
 
     // An instance has several status thus one status field is not enough.
     // To determine the instance status:
     //
-    // - is-preaccepted:  if deps is not empty.
-    // - is-accepted:     if final_deps is not empty and not Instace.committed
+    // - is-accepted:     if Instance.accepted
     // - is-committed:    if Instace.committed
     // - is-executed:     if Instance.executed
     bool committed                                  = 51;
     bool executed                                   = 52;
+
+    // TODO: use this, previously accepted is Instance.final_deps != None
+    bool accepted                                   = 53;
 };

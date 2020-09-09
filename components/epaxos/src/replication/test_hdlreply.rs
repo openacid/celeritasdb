@@ -266,7 +266,7 @@ fn test_handle_accept_reply() {
     );
 
     let mut inst = init_inst!((1, 2), [("Set", "x", "1")], []);
-    inst.final_deps = Some(instids![].into());
+    inst.deps = Some(instids![].into());
     rp.storage.set_instance(&inst).unwrap();
     let n = rp.group_replica_ids.len() as i32;
 
@@ -307,6 +307,7 @@ fn test_handle_accept_reply() {
 
     {
         // success
+        inst.accepted = true;
         let mut st = Status::new(n, inst.clone());
         st.start_accept();
         let repl = ReplicateReply {

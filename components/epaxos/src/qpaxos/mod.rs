@@ -224,9 +224,9 @@ impl Instance {
     pub fn after(&self, other: &Instance) -> bool {
         let mut great = false;
         // TODO unwrap
-        for iid in other.final_deps.as_ref().unwrap().iter() {
+        for iid in other.deps.as_ref().unwrap().iter() {
             // TODO unwrap
-            let myiid = self.final_deps.as_ref().unwrap().get(iid.replica_id);
+            let myiid = self.deps.as_ref().unwrap().get(iid.replica_id);
             let myiid = match myiid {
                 Some(v) => v,
                 None => continue,
@@ -278,7 +278,7 @@ impl MakeRequest {
 
     pub fn accept(to_replica_id: i64, inst: &Instance) -> ReplicateRequest {
         let p = AcceptRequest {
-            final_deps: inst.final_deps.clone(),
+            deps: inst.deps.clone(),
         };
         make_req!(to_replica_id, inst, p)
     }
@@ -286,7 +286,7 @@ impl MakeRequest {
     pub fn commit(to_replica_id: i64, inst: &Instance) -> ReplicateRequest {
         let p = CommitRequest {
             cmds: inst.cmds.clone(),
-            final_deps: inst.final_deps.clone(),
+            deps: inst.deps.clone(),
         };
         make_req!(to_replica_id, inst, p)
     }

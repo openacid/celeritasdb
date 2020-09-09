@@ -77,7 +77,7 @@ macro_rules! init_inst {
 /// deps: [(replica_id, idx)...]
 ///
 /// Supported pattern:
-/// inst!(instance_id, ballot, cmds, deps, final_deps, committed, executed)
+/// inst!(instance_id, ballot, cmds, deps, final_deps, acceptted, committed, executed)
 /// inst!(instance_id, ballot, cmds, deps)
 /// inst!(instance_id, ballot, cmds)
 #[macro_export]
@@ -120,7 +120,7 @@ macro_rules! inst {
      ($epoch:expr, $num:expr, $brid:expr),
      [$( ($op:expr, $key:expr, $val:expr)),*],
      [$( ($dep_rid:expr, $dep_idx:expr)),*],
-     [$( ($fdep_rid:expr, $fdep_idx:expr)),*],
+     $accepted:expr,
      $committed:expr,
      $executed:expr
      $(,)*
@@ -132,9 +132,7 @@ macro_rules! inst {
             deps: Some(
                 instids![$( ($dep_rid, $dep_idx)),*].into()
             ),
-            final_deps: Some(
-                instids![$( ($fdep_rid, $fdep_idx)),*].into()
-            ),
+            accepted:$accepted,   
             committed:$committed,
             executed:$executed,
             ..Default::default()

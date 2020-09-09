@@ -14,7 +14,7 @@ fn test_macro_init_inst() {
         deps: Some(InstanceIdVec {
             ids: vec![(11, 12).into(), (13, 14).into()],
         }),
-        final_deps: None,
+        accepted: false,
         committed: false,
         executed: false,
     };

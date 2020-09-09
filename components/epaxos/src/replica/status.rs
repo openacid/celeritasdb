@@ -20,7 +20,7 @@ impl Instance {
             return InstanceStatus::Committed;
         }
 
-        if self.final_deps.is_some() {
+        if self.accepted {
             return InstanceStatus::Accepted;
         }
 

@@ -305,7 +305,7 @@ impl Replica {
     ) -> Result<AcceptReply, RpcHandlerError> {
         // TODO locking
         // TODO check instance status if committed or executed
-        inst.final_deps = req.final_deps.clone();
+        inst.deps = req.deps.clone();
         Ok(AcceptReply {})
     }
 
@@ -315,7 +315,7 @@ impl Replica {
         inst: &mut Instance,
     ) -> Result<CommitReply, RpcHandlerError> {
         inst.cmds = req.cmds.clone();
-        inst.final_deps = req.final_deps.clone();
+        inst.deps = req.deps.clone();
         inst.committed = true;
 
         Ok(CommitReply {})

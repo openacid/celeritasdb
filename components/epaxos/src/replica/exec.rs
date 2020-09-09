@@ -34,7 +34,7 @@ impl Replica {
 
         for inst in min_insts {
             iids.push(inst.instance_id.unwrap());
-            all_dep_iids.extend(inst.final_deps.as_ref().unwrap().iter());
+            all_dep_iids.extend(inst.deps.as_ref().unwrap().iter());
         }
 
         for dep_iid in all_dep_iids.iter() {
@@ -135,7 +135,7 @@ impl Replica {
     }
 
     /// Find out the set of smallest instances of every leader: S.
-    /// If there are any a → b relations(a.final_deps ⊃ b.final_deps) in S,
+    /// If there are any a → b relations(a.deps ⊃ b.deps) in S,
     /// replace replace S with: S = {x | x ∈ S and (∃y: y → x)},
     /// until there is no a → b in S.
     /// Execute all instances in S in instance-id-order

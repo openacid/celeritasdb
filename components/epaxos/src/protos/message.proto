@@ -29,11 +29,11 @@ message FastAcceptRequest {
     repeated bool        deps_committed = 33;
 }
 message AcceptRequest {
-    InstanceIdVec final_deps = 41;
+    InstanceIdVec deps = 32;
 }
 message CommitRequest {
     repeated Command     cmds           = 21;
-    InstanceIdVec        final_deps     = 41;
+    InstanceIdVec        deps           = 32;
 }
 message PrepareRequest {
     // TODO prepare does not need cmds to find conflicting in our algorithm.
@@ -68,7 +68,6 @@ message AcceptReply { }
 message CommitReply { }
 message PrepareReply {
     InstanceIdVec       deps       = 32;
-    InstanceIdVec       final_deps = 41;
     bool                committed  = 51;
 }
 

@@ -32,7 +32,7 @@ pub async fn replicate(
     let fast = st.get_fast_commit_deps(&grids);
     match fast {
         Some(fdeps) => {
-            st.instance.final_deps = Some(fdeps.into());
+            st.instance.deps = Some(fdeps.into());
             // instance is safe to commit.
             return Ok(st);
         }
@@ -59,7 +59,7 @@ pub async fn replicate(
         let fast = st.get_fast_commit_deps(&grids);
         match fast {
             Some(fdeps) => {
-                st.instance.final_deps = Some(fdeps.into());
+                st.instance.deps = Some(fdeps.into());
                 // instance is safe to commit.
                 return Ok(st);
             }
@@ -81,7 +81,7 @@ pub async fn replicate(
 
     // slow path
 
-    st.instance.final_deps = Some(adeps.into());
+    st.instance.deps = Some(adeps.into());
     st.start_accept();
     r.storage.set_instance(&st.instance)?;
 

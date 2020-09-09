@@ -22,7 +22,6 @@ fn new_foo_inst() -> Instance {
     // TODO move these to Instance::new_instance
     inst.instance_id = Some(inst_id1);
     inst.deps = Some(vec![inst_id2].into());
-    inst.final_deps = Some(vec![inst_id3].into());
 
     inst
 }
@@ -147,77 +146,77 @@ fn test_instance_after() {
     let cases = vec![
         (
             Instance {
-                final_deps: Some([(1, 1)].into()),
+                deps: Some([(1, 1)].into()),
                 ..Default::default()
             },
             Instance {
-                final_deps: Some([(1, 1)].into()),
+                deps: Some([(1, 1)].into()),
                 ..Default::default()
             },
             false,
         ),
         (
             Instance {
-                final_deps: Some([(1, 1)].into()),
+                deps: Some([(1, 1)].into()),
                 ..Default::default()
             },
             Instance {
-                final_deps: Some([(1, 0)].into()),
+                deps: Some([(1, 0)].into()),
                 ..Default::default()
             },
             true,
         ),
         (
             Instance {
-                final_deps: Some([(1, 1), (2, 1)].into()),
+                deps: Some([(1, 1), (2, 1)].into()),
                 ..Default::default()
             },
             Instance {
-                final_deps: Some([(1, 1), (2, 1)].into()),
+                deps: Some([(1, 1), (2, 1)].into()),
                 ..Default::default()
             },
             false,
         ),
         (
             Instance {
-                final_deps: Some([(1, 1), (2, 1)].into()),
+                deps: Some([(1, 1), (2, 1)].into()),
                 ..Default::default()
             },
             Instance {
-                final_deps: Some([(1, 1), (2, 0)].into()),
+                deps: Some([(1, 1), (2, 0)].into()),
                 ..Default::default()
             },
             true,
         ),
         (
             Instance {
-                final_deps: Some([(1, 1), (2, 1), (3, 1)].into()),
+                deps: Some([(1, 1), (2, 1), (3, 1)].into()),
                 ..Default::default()
             },
             Instance {
-                final_deps: Some([(1, 1), (2, 1)].into()),
-                ..Default::default()
-            },
-            false,
-        ),
-        (
-            Instance {
-                final_deps: Some([(1, 1), (2, 1)].into()),
-                ..Default::default()
-            },
-            Instance {
-                final_deps: Some([(1, 1), (2, 1), (3, 1)].into()),
+                deps: Some([(1, 1), (2, 1)].into()),
                 ..Default::default()
             },
             false,
         ),
         (
             Instance {
-                final_deps: Some([(1, 2), (2, 1)].into()),
+                deps: Some([(1, 1), (2, 1)].into()),
                 ..Default::default()
             },
             Instance {
-                final_deps: Some([(1, 1), (2, 1), (3, 1)].into()),
+                deps: Some([(1, 1), (2, 1), (3, 1)].into()),
+                ..Default::default()
+            },
+            false,
+        ),
+        (
+            Instance {
+                deps: Some([(1, 2), (2, 1)].into()),
+                ..Default::default()
+            },
+            Instance {
+                deps: Some([(1, 1), (2, 1), (3, 1)].into()),
                 ..Default::default()
             },
             true,
@@ -266,7 +265,7 @@ fn test_request_accept_pb() {
     let req: AcceptRequest = pp.phase.unwrap().try_into().unwrap();
 
     test_request_common!(pp, inst, 100);
-    assert_eq!(inst.final_deps, req.final_deps);
+    assert_eq!(inst.deps, req.deps);
 }
 
 #[test]
@@ -280,7 +279,7 @@ fn test_request_commit_pb() {
 
     test_request_common!(pp, inst, 100);
     assert_eq!(inst.cmds, req.cmds);
-    assert_eq!(inst.final_deps, req.final_deps);
+    assert_eq!(inst.deps, req.deps);
 }
 
 #[test]

@@ -125,12 +125,12 @@ impl_tostr_ext!(InstanceId, "({}, {})", replica_id, idx);
 impl_tostr_ext!(BallotNum, "({}, {}, {})", epoch, num, replica_id);
 impl_tostr_ext!(
     Instance,
-    "{{id:{}, blt:{}, cmds:{}, deps:{}{}, c/e:{}/{}}}",
+    "{{id:{}, blt:{}, cmds:{}, deps:{}, a/c/e:{}/{}/{}}}",
     instance_id,
     ballot,
     cmds,
     deps,
-    final_deps,
+    accepted,
     committed,
     executed
 );
@@ -156,8 +156,8 @@ impl_tostr_ext!(
     deps_committed
 );
 
-impl_tostr_ext!(AcceptRequest, "{{deps:{}}}", final_deps);
-impl_tostr_ext!(CommitRequest, "{{cmds:{}, deps[2]:{}}}", cmds, final_deps);
+impl_tostr_ext!(AcceptRequest, "{{deps:{}}}", deps);
+impl_tostr_ext!(CommitRequest, "{{cmds:{}, deps:{}}}", cmds, deps);
 impl_tostr_ext!(PrepareRequest, "{{}}",);
 
 // replication replies
@@ -182,9 +182,8 @@ impl_tostr_ext!(AcceptReply, "{{}}",);
 impl_tostr_ext!(CommitReply, "{{}}",);
 impl_tostr_ext!(
     PrepareReply,
-    "{{deps:-{}{}, c:{}}}",
+    "{{deps:{}, c:{}}}",
     deps,
-    final_deps,
     committed
 );
 

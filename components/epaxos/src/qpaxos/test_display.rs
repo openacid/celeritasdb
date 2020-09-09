@@ -100,11 +100,11 @@ fn test_display_instance() {
         (2, 3, 4),
         [("Set", "a", "b"), ("Get", "c", "d")],
         [(3, 4), (4, 5)],
-        [(4, 5), (5, 6)],
+        false,
         false,
         true,
     );
-    assert_eq!("{id:(1, 2), blt:(2, 3, 4), cmds:[Set:a=b, Get:c], deps:[(3, 4), (4, 5)][(4, 5), (5, 6)], c/e:false/true}",
+    assert_eq!("{id:(1, 2), blt:(2, 3, 4), cmds:[Set:a=b, Get:c], deps:[(3, 4), (4, 5)], a/c/e:false/false/true}",
     format!("{}", inst));
 }
 
@@ -115,82 +115,82 @@ fn test_display_replicate_request() {
         (2, 3, 4),
         [("Set", "a", "b"), ("Get", "c", "d")],
         [(2, 3), (3, 4)],
-        [(4, 5), (5, 6)],
-        false,
-        true,
-    );
-
-    let r = "to:10, blt:(2, 3, 4), iid:(1, 2), phase";
-
-    let fast = "Fast{cmds:[Set:a=b, Get:c], deps:[(2, 3), (3, 4)], c:[true, false]}";
-    let accept = "Accept{deps:[(4, 5), (5, 6)]}";
-    let commit = "Commit{cmds:[Set:a=b, Get:c], deps[2]:[(4, 5), (5, 6)]}";
-    let prepare = "Prepare{}";
-
-    let f = MakeRequest::fast_accept(10, &inst, &[true, false]);
-    assert_eq!(format!("{{{}:{}}}", r, fast), format!("{}", f));
-
-    let a = MakeRequest::accept(10, &inst);
-    assert_eq!(format!("{{{}:{}}}", r, accept), format!("{}", a));
-
-    let c = MakeRequest::commit(10, &inst);
-    assert_eq!(format!("{{{}:{}}}", r, commit), format!("{}", c));
-
-    let p = MakeRequest::prepare(10, &inst);
-    assert_eq!(format!("{{{}:{}}}", r, prepare), format!("{}", p));
-}
-
-#[test]
-fn test_display_replicate_reply_err() {
-    let cmn = "last:None, iid:None, phase";
-
-    {
-        // storage error
-        let r = ReplicateReply {
-            err: Some(QError {
-                sto: Some(StorageFailure::default()),
-                req: None,
-            }),
-            ..Default::default()
-        };
-        let e = "{sto:StorageFailure, req:None}";
-
-        assert_eq!(
-            format!("{{err:{}, {}:{}}}", e, cmn, "None"),
-            format!("{}", r)
+            false,
+            false,
+            true,
         );
+
+        let r = "to:10, blt:(2, 3, 4), iid:(1, 2), phase";
+
+        let fast = "Fast{cmds:[Set:a=b, Get:c], deps:[(2, 3), (3, 4)], c:[true, false]}";
+        let accept = "Accept{deps:[(2, 3), (3, 4)]}";
+        let commit = "Commit{cmds:[Set:a=b, Get:c], deps:[(2, 3), (3, 4)]}";
+        let prepare = "Prepare{}";
+
+        let f = MakeRequest::fast_accept(10, &inst, &[true, false]);
+        assert_eq!(format!("{{{}:{}}}", r, fast), format!("{}", f));
+
+        let a = MakeRequest::accept(10, &inst);
+        assert_eq!(format!("{{{}:{}}}", r, accept), format!("{}", a));
+
+        let c = MakeRequest::commit(10, &inst);
+        assert_eq!(format!("{{{}:{}}}", r, commit), format!("{}", c));
+
+        let p = MakeRequest::prepare(10, &inst);
+        assert_eq!(format!("{{{}:{}}}", r, prepare), format!("{}", p));
     }
-    {
-        // request error
-        let r = ReplicateReply {
-            err: Some(QError {
-                sto: None,
-                req: Some(InvalidRequest {
-                    field: "foo".into(),
-                    problem: "must-have".into(),
-                    ctx: "ctxbar".into(),
+
+    #[test]
+    fn test_display_replicate_reply_err() {
+        let cmn = "last:None, iid:None, phase";
+
+        {
+            // storage error
+            let r = ReplicateReply {
+                err: Some(QError {
+                    sto: Some(StorageFailure::default()),
+                    req: None,
                 }),
-            }),
-            ..Default::default()
-        };
-        let e = "{sto:None, req:{must-have: 'foo', ctx:ctxbar}}";
+                ..Default::default()
+            };
+            let e = "{sto:StorageFailure, req:None}";
 
-        assert_eq!(
-            format!("{{err:{}, {}:{}}}", e, cmn, "None"),
-            format!("{}", r)
-        );
+            assert_eq!(
+                format!("{{err:{}, {}:{}}}", e, cmn, "None"),
+                format!("{}", r)
+            );
+        }
+        {
+            // request error
+            let r = ReplicateReply {
+                err: Some(QError {
+                    sto: None,
+                    req: Some(InvalidRequest {
+                        field: "foo".into(),
+                        problem: "must-have".into(),
+                        ctx: "ctxbar".into(),
+                    }),
+                }),
+                ..Default::default()
+            };
+            let e = "{sto:None, req:{must-have: 'foo', ctx:ctxbar}}";
+
+            assert_eq!(
+                format!("{{err:{}, {}:{}}}", e, cmn, "None"),
+                format!("{}", r)
+            );
+        }
     }
-}
 
-#[test]
-fn test_display_replicate_reply_normal() {
-    let cmn = "last:(2, 3, 4), iid:(1, 2), phase";
+    #[test]
+    fn test_display_replicate_reply_normal() {
+        let cmn = "last:(2, 3, 4), iid:(1, 2), phase";
 
-    let mut r = ReplicateReply {
-        err: None,
-        last_ballot: Some((2, 3, 4).into()),
-        instance_id: Some((1, 2).into()),
-        phase: None,
+        let mut r = ReplicateReply {
+            err: None,
+            last_ballot: Some((2, 3, 4).into()),
+            instance_id: Some((1, 2).into()),
+            phase: None,
     };
 
     {
@@ -220,10 +220,9 @@ fn test_display_replicate_reply_normal() {
     {
         r.phase = Some(replicate_reply::Phase::Prepare(PrepareReply {
             deps: Some(instids![(1, 2), (3, 4)].into()),
-            final_deps: Some(instids![(3, 4)].into()),
             committed: true,
         }));
-        let ph = "Prepare{deps:-[(1, 2), (3, 4)][(3, 4)], c:true}";
+        let ph = "Prepare{deps:[(1, 2), (3, 4)], c:true}";
 
         assert_eq!(format!("{{err:None, {}:{}}}", cmn, ph), format!("{}", r));
     }

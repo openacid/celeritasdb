@@ -19,7 +19,6 @@ fn new_foo_inst(leader_id: i64) -> Instance {
         [("NoOp", "k1", "v1"), ("Get", "k2", "v2")],
         [(1, 10), (2, 20), (3, 30)],
     );
-    ii.final_deps = Some(instids![(3, 30)].into());
 
     ii
 }
@@ -242,7 +241,7 @@ fn test_handle_fast_accept_normal() {
         assert_eq!(inst.deps, repl.deps);
 
         assert_eq!(inst.deps, local_inst.deps);
-        _test_updated_inst(&local_inst, inst.cmds, None, false, false);
+        _test_updated_inst(&local_inst, inst.cmds, false, false);
     }
 
     {
@@ -319,7 +318,7 @@ fn test_handle_fast_accept_normal() {
 
         assert_eq!(wantdeps.clone(), local_inst.deps);
 
-        _test_updated_inst(&local_inst, insta.cmds, None, false, false);
+        _test_updated_inst(&local_inst, insta.cmds, false, false);
     }
 }
 
@@ -329,7 +328,7 @@ fn test_handle_accept_request() {
     let inst = new_foo_inst(replica_id);
     let iid = inst.instance_id.unwrap();
     let blt = inst.ballot;
-    let fdeps = inst.final_deps.clone();
+    let fdeps = inst.deps.clone();
 
     let replica = new_foo_replica(replica_id, new_mem_sto(), &vec![]);
     let none = replica.storage.get_instance(iid).unwrap();
@@ -351,7 +350,8 @@ fn test_handle_accept_request() {
         println!("inst:{}", inst);
         println!("local_inst:{}", local_inst);
 
-        _test_updated_inst(&local_inst, vec![], fdeps.clone(), false, false);
+        assert_eq!(fdeps, local_inst.deps, "deps");
+        _test_updated_inst(&local_inst, vec![], false, false);
     }
 
     {
@@ -368,7 +368,8 @@ fn test_handle_accept_request() {
         let repl = replica.handle_accept(&req, &mut local_inst);
         assert!(repl.is_ok());
 
-        _test_updated_inst(&local_inst, vec![], fdeps.clone(), false, false);
+        assert_eq!(fdeps, local_inst.deps, "deps");
+        _test_updated_inst(&local_inst, vec![], false, false);
     }
 
     // TODO test higher ballot
@@ -382,7 +383,7 @@ fn test_handle_commit_request() {
     let inst = new_foo_inst(replica_id);
     let iid = inst.instance_id.unwrap();
     let cmds = inst.cmds.clone();
-    let fdeps = inst.final_deps.clone();
+    let fdeps = inst.deps.clone();
 
     let replica = new_foo_replica(replica_id, new_mem_sto(), &vec![]);
 
@@ -394,18 +395,17 @@ fn test_handle_commit_request() {
     let repl = replica.handle_commit(&req, &mut inst);
     assert!(repl.is_ok());
 
-    _test_updated_inst(&inst, cmds.clone(), fdeps.clone(), true, false);
+    assert_eq!(fdeps, inst.deps, "deps");
+    _test_updated_inst(&inst, cmds.clone(), true, false);
 }
 
 fn _test_updated_inst(
     got: &Instance,
     cmds: Vec<Command>,
-    final_deps: Option<InstanceIdVec>,
     committed: bool,
     executed: bool,
 ) {
     assert_eq!(cmds, got.cmds, "cmds");
-    assert_eq!(final_deps, got.final_deps, "final_deps");
     assert_eq!(committed, got.committed, "committed");
     assert_eq!(executed, got.executed, "executed");
 }
