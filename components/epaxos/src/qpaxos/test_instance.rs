@@ -39,9 +39,6 @@ fn test_macro_inst_all_arg() {
         instance_id: Some((1, 2).into()),
         ballot: Some((3, 4, 2).into()),
         cmds: vec![("Set", "x", "y").into(), ("Get", "a", "b").into()],
-        initial_deps: Some(InstanceIdVec {
-            ids: vec![(11, 12).into(), (13, 14).into()],
-        }),
         deps: Some(InstanceIdVec {
             ids: vec![(12, 13).into(), (14, 15).into()],
         }),
@@ -58,7 +55,6 @@ fn test_macro_inst_all_arg() {
             (1, 2),
             (3, 4, 2),
             [("Set", "x", "y"), ("Get", "a", "b")],
-            [(11, 12), (13, 14)],
             [(12, 13), (14, 15)],
             [(13, 14), (15, 16)],
             true,
@@ -73,7 +69,6 @@ fn test_macro_inst_all_arg() {
             InstanceId::from((1, 2)),
             (3, 4, 2),
             [("Set", "x", "y"), ("Get", "a", "b")],
-            [(11, 12), (13, 14)],
             [(12, 13), (14, 15)],
             [(13, 14), (15, 16)],
             true,
@@ -88,10 +83,9 @@ fn test_macro_inst() {
         instance_id: Some((1, 2).into()),
         ballot: Some((3, 4, 1).into()),
         cmds: vec![("Set", "x", "y").into(), ("Get", "a", "b").into()],
-        initial_deps: Some(InstanceIdVec {
+        deps: Some(InstanceIdVec {
             ids: vec![(11, 12).into(), (13, 14).into()],
         }),
-        deps: None,
         final_deps: None,
         committed: false,
         executed: false,
@@ -108,20 +102,7 @@ fn test_macro_inst() {
         )
     );
 
-    // shortcut to set deps to initial_deps
-    want.deps = want.initial_deps.clone();
-    assert_eq!(
-        want,
-        inst!(
-            (1, 2),
-            (3, 4, _),
-            [("Set", "x", "y"), ("Get", "a", "b")],
-            [(11, 12), (13, 14)],
-            "withdeps",
-        )
-    );
-
-    // initial_deps and deps
+    // deps
     want.deps = Some(instids![(10, 0), (11, 12)].into());
     assert_eq!(
         want,
@@ -129,13 +110,11 @@ fn test_macro_inst() {
             (1, 2),
             (3, 4, _),
             [("Set", "x", "y"), ("Get", "a", "b")],
-            [(11, 12), (13, 14)],
             [(10, 0), (11, 12)],
         )
     );
 
     // initial_deps is None
-    want.initial_deps = None;
     want.deps = None;
     assert_eq!(
         want,

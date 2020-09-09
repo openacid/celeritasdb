@@ -48,8 +48,7 @@ macro_rules! foo_inst {
     ) => {
         inst!($id, (0, 0, _),
               [("Set", $key, $key)],
-              [$(($dep_rid, $dep_idx)),*],
-              "withdeps"
+              [$(($dep_rid, $dep_idx)),*]
         )
     };
 
@@ -60,8 +59,7 @@ macro_rules! foo_inst {
             instance_id: None,
             ..inst!((0, 0), (0, 0, _),
                       [("Set", "x", "y")],
-                      [$(($dep_rid, $dep_idx)),*],
-                      "withdeps"
+                      [$(($dep_rid, $dep_idx)),*]
                      )
         }
     };
@@ -71,8 +69,7 @@ macro_rules! foo_inst {
     ) => {
         inst!($id, (0, 0, _),
               [("Set", "x", "y")],
-              [$(($dep_rid, $dep_idx)),*],
-              "withdeps"
+              [$(($dep_rid, $dep_idx)),*]
         )
     };
 

@@ -24,7 +24,6 @@ fn test_status_new() {
         (3, 4, _),
         [("Set", "x", "1")],
         [(1, 1), (2, 0)],
-        "withdeps"
     );
     let iid = inst.instance_id.unwrap();
     let replica_id = iid.replica_id;
@@ -58,7 +57,6 @@ fn test_status_start_accept() {
         (3, 4, _),
         [("Set", "x", "1")],
         [(1, 1), (2, 0)],
-        "withdeps"
     );
     let mut st = Status::new(7, inst.clone());
 

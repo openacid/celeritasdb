@@ -216,7 +216,7 @@ impl Instance {
         Instance {
             cmds: cmds.into(),
             ballot: Some(ballot),
-            initial_deps: Some(deps.into()),
+            deps: Some(deps.into()),
             ..Default::default()
         }
     }
@@ -270,7 +270,7 @@ impl MakeRequest {
     ) -> ReplicateRequest {
         let p = FastAcceptRequest {
             cmds: inst.cmds.clone(),
-            initial_deps: inst.initial_deps.clone(),
+            deps: inst.deps.clone(),
             deps_committed: deps_committed.into(),
         };
         make_req!(to_replica_id, inst, p)

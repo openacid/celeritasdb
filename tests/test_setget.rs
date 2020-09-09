@@ -46,12 +46,6 @@ async fn test_set() {
 
         assert_eq!(cmds![("Set", "foo", "42")], inst.cmds);
         assert_eq!(
-            inst.initial_deps.unwrap(),
-            InstanceIdVec::from(instids![(1, -1), (2, -1), (3, -1)]),
-            "initial_deps, replica:{}",
-            rid
-        );
-        assert_eq!(
             inst.deps.unwrap(),
             InstanceIdVec::from(instids![(1, -1), (2, -1), (3, -1)]),
             "deps, replica:{}",

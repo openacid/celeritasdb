@@ -126,9 +126,9 @@ impl Replica {
         })
     }
 
-    /// new_instance creates a new instance with initial_deps and deps initialized and stores it in
+    /// new_instance creates a new instance with deps initialized and stores it in
     /// replica storage.
-    /// initial_deps and deps could contains (x, -1) if a leader has not yet propose any instance.
+    /// deps could contains (x, -1) if a leader has not yet propose any instance.
     pub fn new_instance(&self, cmds: &[Command]) -> Result<Instance, StorageError> {
         // TODO locking
         // TODO do not need to store max instance id, store it in replica and when starting, scan
@@ -144,7 +144,6 @@ impl Replica {
         let iid = (rid, this_iid.idx + 1).into();
 
         let mut inst = Instance::of(cmds, (0, 0, rid).into(), &maxs);
-        inst.deps = inst.initial_deps.clone();
         inst.instance_id = Some(iid);
 
         self.storage.set_instance(&inst)?;
@@ -245,11 +244,10 @@ impl Replica {
         inst: &mut Instance,
     ) -> Result<FastAcceptReply, RpcHandlerError> {
         let iid = ref_or_bug!(inst.instance_id);
-        let req_deps = ref_or_bug!(req.initial_deps);
+        let req_deps = ref_or_bug!(req.deps);
 
         inst.cmds = req.cmds.clone();
-        inst.initial_deps = req.initial_deps.clone();
-        inst.deps = req.initial_deps.clone();
+        inst.deps = req.deps.clone();
 
         // TODO update local commited status by deps_committed[i] is true
         let mut deps_committed = req.deps_committed.clone();

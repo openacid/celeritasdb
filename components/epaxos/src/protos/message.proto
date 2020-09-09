@@ -25,7 +25,7 @@ enum RequestType {
 
 message FastAcceptRequest {
     repeated Command     cmds           = 21;
-    InstanceIdVec        initial_deps   = 31;
+    InstanceIdVec        deps           = 32;
     repeated bool        deps_committed = 33;
 }
 message AcceptRequest {

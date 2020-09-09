@@ -99,13 +99,12 @@ fn test_display_instance() {
         (1, 2),
         (2, 3, 4),
         [("Set", "a", "b"), ("Get", "c", "d")],
-        [(2, 3), (3, 4)],
         [(3, 4), (4, 5)],
         [(4, 5), (5, 6)],
         false,
         true,
     );
-    assert_eq!("{id:(1, 2), blt:(2, 3, 4), cmds:[Set:a=b, Get:c], deps:[(2, 3), (3, 4)][(3, 4), (4, 5)][(4, 5), (5, 6)], c/e:false/true}",
+    assert_eq!("{id:(1, 2), blt:(2, 3, 4), cmds:[Set:a=b, Get:c], deps:[(3, 4), (4, 5)][(4, 5), (5, 6)], c/e:false/true}",
     format!("{}", inst));
 }
 
@@ -116,7 +115,6 @@ fn test_display_replicate_request() {
         (2, 3, 4),
         [("Set", "a", "b"), ("Get", "c", "d")],
         [(2, 3), (3, 4)],
-        [(3, 4), (4, 5)],
         [(4, 5), (5, 6)],
         false,
         true,
@@ -124,8 +122,8 @@ fn test_display_replicate_request() {
 
     let r = "to:10, blt:(2, 3, 4), iid:(1, 2), phase";
 
-    let fast = "Fast{cmds:[Set:a=b, Get:c], deps[0]:[(2, 3), (3, 4)], c:[true, false]}";
-    let accept = "Accept{deps[2]:[(4, 5), (5, 6)]}";
+    let fast = "Fast{cmds:[Set:a=b, Get:c], deps:[(2, 3), (3, 4)], c:[true, false]}";
+    let accept = "Accept{deps:[(4, 5), (5, 6)]}";
     let commit = "Commit{cmds:[Set:a=b, Get:c], deps[2]:[(4, 5), (5, 6)]}";
     let prepare = "Prepare{}";
 

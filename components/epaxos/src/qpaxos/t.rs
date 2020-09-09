@@ -13,12 +13,12 @@ fn new_foo_inst() -> Instance {
     let inst_id1 = InstanceId::from((1, 10));
     let inst_id2 = InstanceId::from((2, 20));
     let inst_id3 = InstanceId::from((3, 30));
-    let initial_deps = vec![inst_id1, inst_id2, inst_id3];
+    let deps = vec![inst_id1, inst_id2, inst_id3];
 
     let cmds = cmds![("NoOp", "k1", "v1"), ("Get", "k2", "v2")];
     let ballot = (0, 0, replica).into();
 
-    let mut inst = Instance::of(&cmds[..], ballot, &initial_deps[..]);
+    let mut inst = Instance::of(&cmds[..], ballot, &deps[..]);
     // TODO move these to Instance::new_instance
     inst.instance_id = Some(inst_id1);
     inst.deps = Some(vec![inst_id2].into());
@@ -42,12 +42,12 @@ fn test_instance_protobuf() {
     let inst_id1 = (1, 10).into();
     let inst_id2 = (2, 20).into();
     let inst_id3 = (3, 30).into();
-    let initial_deps = vec![inst_id1, inst_id2, inst_id3];
+    let deps = vec![inst_id1, inst_id2, inst_id3];
 
     let cmds = cmds![("NoOp", "k1", "v1"), ("Get", "k2", "v2")];
     let ballot = (1, 2, 3).into();
 
-    let inst1 = Instance::of(&cmds[..], ballot, &initial_deps[..]);
+    let inst1 = Instance::of(&cmds[..], ballot, &deps[..]);
 
     test_enc_dec!(inst1, Instance);
 }
@@ -252,7 +252,7 @@ fn test_request_fast_accpt_pb() {
 
     test_request_common!(pp, inst, 100);
     assert_eq!(inst.cmds, req.cmds);
-    assert_eq!(inst.initial_deps, req.initial_deps);
+    assert_eq!(inst.deps, req.deps);
     assert_eq!(deps_committed.to_vec(), req.deps_committed);
 }
 

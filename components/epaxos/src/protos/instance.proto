@@ -26,9 +26,6 @@ message Instance {
     InstanceId instance_id = 13;
     repeated Command cmds  = 21;
 
-    // initial_deps is the dependent instance ids when an instance is created.
-    InstanceIdVec initial_deps                = 31;
-
     // deps is the updated instance ids on a replica when handling PreAccept
     // request.
     // When an instance is intiated, it is same as initial_deps.

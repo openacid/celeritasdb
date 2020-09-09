@@ -125,11 +125,10 @@ impl_tostr_ext!(InstanceId, "({}, {})", replica_id, idx);
 impl_tostr_ext!(BallotNum, "({}, {}, {})", epoch, num, replica_id);
 impl_tostr_ext!(
     Instance,
-    "{{id:{}, blt:{}, cmds:{}, deps:{}{}{}, c/e:{}/{}}}",
+    "{{id:{}, blt:{}, cmds:{}, deps:{}{}, c/e:{}/{}}}",
     instance_id,
     ballot,
     cmds,
-    initial_deps,
     deps,
     final_deps,
     committed,
@@ -149,13 +148,15 @@ impl_tostr_ext!(
 
 impl_tostr_ext!(
     FastAcceptRequest,
-    "{{cmds:{}, deps[0]:{}, c:{}}}",
+    "{{cmds:{}, deps:{}, c:{}}}",
     cmds,
-    initial_deps,
+    deps,
+
+
     deps_committed
 );
 
-impl_tostr_ext!(AcceptRequest, "{{deps[2]:{}}}", final_deps);
+impl_tostr_ext!(AcceptRequest, "{{deps:{}}}", final_deps);
 impl_tostr_ext!(CommitRequest, "{{cmds:{}, deps[2]:{}}}", cmds, final_deps);
 impl_tostr_ext!(PrepareRequest, "{{}}",);
 

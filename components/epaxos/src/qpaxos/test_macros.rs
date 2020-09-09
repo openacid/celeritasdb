@@ -11,9 +11,6 @@ fn test_macro_init_inst() {
         instance_id: Some((1, 2).into()),
         ballot: Some((0, 0, 1).into()),
         cmds: vec![("Set", "x", "y").into(), ("Get", "a", "b").into()],
-        initial_deps: Some(InstanceIdVec {
-            ids: vec![(11, 12).into(), (13, 14).into()],
-        }),
         deps: Some(InstanceIdVec {
             ids: vec![(11, 12).into(), (13, 14).into()],
         }),

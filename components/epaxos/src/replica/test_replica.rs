@@ -18,7 +18,6 @@ fn new_foo_inst(leader_id: i64) -> Instance {
         (2, 2, _),
         [("NoOp", "k1", "v1"), ("Get", "k2", "v2")],
         [(1, 10), (2, 20), (3, 30)],
-        "withdeps"
     );
     ii.final_deps = Some(instids![(3, 30)].into());
 
@@ -243,8 +242,6 @@ fn test_handle_fast_accept_normal() {
         assert_eq!(inst.deps, repl.deps);
 
         assert_eq!(inst.deps, local_inst.deps);
-        assert_eq!(inst.initial_deps, local_inst.initial_deps);
-
         _test_updated_inst(&local_inst, inst.cmds, None, false, false);
     }
 
@@ -321,7 +318,6 @@ fn test_handle_fast_accept_normal() {
         assert_eq!(wantdeps.clone(), repl.deps);
 
         assert_eq!(wantdeps.clone(), local_inst.deps);
-        assert_eq!(insta.initial_deps, local_inst.initial_deps);
 
         _test_updated_inst(&local_inst, insta.cmds, None, false, false);
     }
