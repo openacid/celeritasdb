@@ -39,16 +39,16 @@ macro_rules! get {
     };
 }
 
-/// deps makes a Some(InstanceIdVec) or None
+/// depvec makes a Some(DepVec) or None
 /// Supported pattern:
-/// deps!(None)
-/// deps!([instid, instid...])
-macro_rules! deps {
+/// depvec!(None)
+/// depvec!([instid, instid...])
+macro_rules! depvec {
     (None) => {
         None
     };
     ([$(($rid:expr, $idx:expr)),*]) => {
-        Some(instids![$(($rid, $idx)),*].into())
+        Some(deps![$(($rid, $idx)),*].into())
     };
 }
 
@@ -91,7 +91,7 @@ macro_rules! frepl {
             instance_id: iid!($id),
             phase: Some(
                 FastAcceptReply {
-                    deps: deps!($deps),
+                    deps: depvec!($deps),
                     ..Default::default()
                 }
                 .into(),
@@ -105,7 +105,7 @@ macro_rules! frepl {
             instance_id: iid!($id),
             phase: Some(
                 FastAcceptReply {
-                    deps: deps!($deps),
+                    deps: depvec!($deps),
                     deps_committed: $cmts,
                     ..Default::default()
                 }
@@ -180,8 +180,8 @@ fn test_handle_fast_accept_reply() {
         assert_eq!(st.fast_replied[&from_rid], true);
         get!(st.fast_oks, &from_rid, true);
 
-        assert_eq!(st.fast_deps[&1], vec![(1, 2).into()]);
-        assert_eq!(st.fast_deps[&2], vec![(2, 3).into()]);
+        assert_eq!(st.fast_deps[&1], vec![Dep::from((1, 2))]);
+        assert_eq!(st.fast_deps[&2], vec![Dep::from((2, 3))]);
         assert!(st.fast_committed[&instid!(2, 3)]);
         assert_eq!(None, st.fast_committed.get(&instid!(1, 2)));
     }
@@ -266,7 +266,7 @@ fn test_handle_accept_reply() {
     );
 
     let mut inst = init_inst!((1, 2), [("Set", "x", "1")], []);
-    inst.deps = Some(instids![].into());
+    inst.deps = Some(deps![].into());
     rp.storage.set_instance(&inst).unwrap();
     let n = rp.group_replica_ids.len() as i32;
 

@@ -19,6 +19,8 @@ fn main() {
         .type_attribute("StorageFailure", "#[derive(Eq)]")
         .type_attribute("InvalidRequest", "#[derive(Eq)]")
         .type_attribute("InstanceIdVec", "#[derive(derive_more::From)]")
+        .type_attribute("DepVec", "#[derive(derive_more::From)]")
+        .type_attribute("Dep", "#[derive(Copy, Eq, Ord, PartialOrd, Hash)]")
         .type_attribute(
             "ReplicateRequest.phase",
             "#[derive(derive_more::From, derive_more::TryInto)]",

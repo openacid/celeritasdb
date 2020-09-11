@@ -13,7 +13,7 @@ use pretty_assertions::assert_eq;
 use prost::Message;
 
 fn new_foo_inst(leader_id: i64) -> Instance {
-    let mut ii = inst!(
+    let ii = inst!(
         (leader_id, 1),
         (2, 2, _),
         [("NoOp", "k1", "v1"), ("Get", "k2", "v2")],
@@ -308,7 +308,7 @@ fn test_handle_fast_accept_normal() {
         let repl = replica.handle_fast_accept(&req, &mut local_inst);
         let repl = repl.unwrap();
 
-        let wantdeps: InstanceIdVec = vec![x_iid, b_iid, z_iid].into();
+        let wantdeps: DepVec = vec![x_iid, b_iid, z_iid].into();
         let wantdeps = Some(wantdeps);
 
         // TODO test updated deps_committed
@@ -399,12 +399,7 @@ fn test_handle_commit_request() {
     _test_updated_inst(&inst, cmds.clone(), true, false);
 }
 
-fn _test_updated_inst(
-    got: &Instance,
-    cmds: Vec<Command>,
-    committed: bool,
-    executed: bool,
-) {
+fn _test_updated_inst(got: &Instance, cmds: Vec<Command>, committed: bool, executed: bool) {
     assert_eq!(cmds, got.cmds, "cmds");
     assert_eq!(committed, got.committed, "committed");
     assert_eq!(executed, got.executed, "executed");

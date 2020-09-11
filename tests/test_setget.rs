@@ -17,10 +17,14 @@ macro_rules! cmds {
     }
 }
 
-macro_rules! instids {
+macro_rules! deps {
+    [] => {
+        Vec::<Dep>::new()
+    };
+
     [$(($replica_id:expr, $idx:expr)),*] => {
-        vec![$(InstanceId::from(($replica_id, $idx))),*]
-    }
+        vec![$(Dep::from(($replica_id, $idx))),*]
+    };
 }
 
 #[tokio::test(threaded_scheduler)]
@@ -47,7 +51,7 @@ async fn test_set() {
         assert_eq!(cmds![("Set", "foo", "42")], inst.cmds);
         assert_eq!(
             inst.deps.unwrap(),
-            InstanceIdVec::from(instids![(1, -1), (2, -1), (3, -1)]),
+            DepVec::from(deps![(1, -1), (2, -1), (3, -1)]),
             "deps, replica:{}",
             rid
         );
@@ -63,7 +67,7 @@ async fn test_set() {
 
             assert_eq!(
                 inst.deps.unwrap(),
-                InstanceIdVec::from(instids![(1, -1), (2, -1), (3, -1)]),
+                DepVec::from(deps![(1, -1), (2, -1), (3, -1)]),
                 "deps, replica:{}",
                 rid
             );

@@ -1,3 +1,4 @@
+use crate::qpaxos::Dep;
 use crate::qpaxos::{Command, OpCode};
 use crate::*;
 use std::sync::Arc;
@@ -63,7 +64,7 @@ fn test_instance_iter() {
             ))];
 
             let ballot = (rid as i32, idx as i32, 0).into();
-            let deps = vec![InstanceId::from((rid + 1, idx + 1))];
+            let deps = vec![Dep::from((rid + 1, idx + 1))];
             let mut inst = Instance::of(&cmds[..], ballot, &deps[..]);
             inst.instance_id = Some(iid);
 

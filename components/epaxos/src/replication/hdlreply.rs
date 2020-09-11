@@ -85,7 +85,8 @@ pub fn handle_fast_accept_reply(
         st.fast_deps.get_mut(&rid).unwrap().push(*d);
 
         if frepl.deps_committed[i] {
-            st.fast_committed.insert(*d, true);
+            let iid = instid!(d.replica_id, d.idx);
+            st.fast_committed.insert(iid, true);
         }
     }
 

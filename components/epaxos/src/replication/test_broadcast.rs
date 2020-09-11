@@ -1,4 +1,5 @@
 use crate::qpaxos::Command;
+use crate::qpaxos::Dep;
 use crate::qpaxos::Instance;
 use crate::qpaxos::InstanceId;
 use crate::qpaxos::MakeRequest;

@@ -6,6 +6,8 @@ use crate::qpaxos::BallotNum;
 use crate::qpaxos::Command;
 use crate::qpaxos::CommitReply;
 use crate::qpaxos::CommitRequest;
+use crate::qpaxos::Dep;
+use crate::qpaxos::DepVec;
 use crate::qpaxos::FastAcceptReply;
 use crate::qpaxos::FastAcceptRequest;
 use crate::qpaxos::Instance;
@@ -55,6 +57,12 @@ impl<T: ToStringExt> ToStringExt for Vec<T> {
 }
 
 impl ToStringExt for InstanceIdVec {
+    fn tostr_ext(&self) -> String {
+        self.ids.tostr_ext()
+    }
+}
+
+impl ToStringExt for DepVec {
     fn tostr_ext(&self) -> String {
         self.ids.tostr_ext()
     }
@@ -122,6 +130,7 @@ impl_tostr_ext!(bool);
 impl_tostr_ext!(i64);
 impl_tostr_ext!(i32);
 impl_tostr_ext!(InstanceId, "({}, {})", replica_id, idx);
+impl_tostr_ext!(Dep, "({}, {}, {})", replica_id, idx, seq);
 impl_tostr_ext!(BallotNum, "({}, {}, {})", epoch, num, replica_id);
 impl_tostr_ext!(
     Instance,
@@ -151,8 +160,6 @@ impl_tostr_ext!(
     "{{cmds:{}, deps:{}, c:{}}}",
     cmds,
     deps,
-
-
     deps_committed
 );
 
@@ -180,12 +187,7 @@ impl_tostr_ext!(
 
 impl_tostr_ext!(AcceptReply, "{{}}",);
 impl_tostr_ext!(CommitReply, "{{}}",);
-impl_tostr_ext!(
-    PrepareReply,
-    "{{deps:{}, c:{}}}",
-    deps,
-    committed
-);
+impl_tostr_ext!(PrepareReply, "{{deps:{}, c:{}}}", deps, committed);
 
 // replication errors
 

@@ -19,12 +19,7 @@ macro_rules! get {
 
 #[test]
 fn test_status_new() {
-    let inst = inst!(
-        (1, 2),
-        (3, 4, _),
-        [("Set", "x", "1")],
-        [(1, 1), (2, 0)],
-    );
+    let inst = inst!((1, 2), (3, 4, _), [("Set", "x", "1")], [(1, 1), (2, 0)],);
     let iid = inst.instance_id.unwrap();
     let replica_id = iid.replica_id;
 
@@ -39,8 +34,8 @@ fn test_status_new() {
     get!(st.fast_replied, &2, None);
     get!(st.fast_oks, &2, None);
 
-    get!(st.fast_deps, &1, vec![instid!(1, 1)]);
-    get!(st.fast_deps, &2, vec![instid!(2, 0)]);
+    get!(st.fast_deps, &1, vec![dep!(1, 1)]);
+    get!(st.fast_deps, &2, vec![dep!(2, 0)]);
     get!(st.fast_deps, &3, None);
 
     get!(st.accept_replied, &1, None);
@@ -52,12 +47,7 @@ fn test_status_new() {
 
 #[test]
 fn test_status_start_accept() {
-    let inst = inst!(
-        (1, 2),
-        (3, 4, _),
-        [("Set", "x", "1")],
-        [(1, 1), (2, 0)],
-    );
+    let inst = inst!((1, 2), (3, 4, _), [("Set", "x", "1")], [(1, 1), (2, 0)],);
     let mut st = Status::new(7, inst.clone());
 
     get!(st.accept_replied, &1, None);
@@ -84,7 +74,7 @@ fn test_get_fast_commit_dep() {
             ) => {
             (
                 $qf,
-                instids![$((1, $didx)),*],
+                deps![$((1, $didx)),*],
                 {
                     let mut m = ::std::collections::HashMap::new();
                     $(
@@ -97,31 +87,26 @@ fn test_get_fast_commit_dep() {
          };
     );
 
-    let mut cases: Vec<(
-        i32,
-        Vec<InstanceId>,
-        HashMap<InstanceId, bool>,
-        Option<InstanceId>,
-    )> = vec![
-        case!(0, [2], {}, Some(instid!(1, 2))),
-        case!(1, [2], {}, Some(instid!(1, 2))),
+    let mut cases: Vec<(i32, Vec<Dep>, HashMap<InstanceId, bool>, Option<Dep>)> = vec![
+        case!(0, [2], {}, Some(dep!(1, 2))),
+        case!(1, [2], {}, Some(dep!(1, 2))),
         case!(2, [2], {}, None),
         case!(2, [2], { 2 }, None),
         case!(2, [2, 3], {}, None),
         case!(2, [2, 3], { 2 }, None),
         case!(2, [2, 3], {2, 3}, None),
         // TODO: proof it: If all equals to initial value, it does not need to be committed
-        case!(2, [2, 2], {}, Some(instid!(1, 2))),
-        case!(2, [2, 2], { 2 }, Some(instid!(1, 2))),
-        case!(2, [2, 2, 3], { 2 }, Some(instid!(1, 2))),
-        case!(2, [2, 2, 3, 3], {}, Some(instid!(1, 2))),
-        case!(2, [2, 2, 3, 3], { 3 }, Some(instid!(1, 2))),
+        case!(2, [2, 2], {}, Some(dep!(1, 2))),
+        case!(2, [2, 2], { 2 }, Some(dep!(1, 2))),
+        case!(2, [2, 2, 3], { 2 }, Some(dep!(1, 2))),
+        case!(2, [2, 2, 3, 3], {}, Some(dep!(1, 2))),
+        case!(2, [2, 2, 3, 3], { 3 }, Some(dep!(1, 2))),
         case!(3, [2, 2, 3, 3], { 3 }, None),
         // same to initial value
-        case!(3, [2, 2, 2, 3], { 3 }, Some(instid!(1, 2))),
-        case!(3, [2, 2, 2, 3], { 2 }, Some(instid!(1, 2))),
+        case!(3, [2, 2, 2, 3], { 3 }, Some(dep!(1, 2))),
+        case!(3, [2, 2, 2, 3], { 2 }, Some(dep!(1, 2))),
         case!(3, [2, 3, 3, 3], { 2 }, None),
-        case!(3, [2, 3, 3, 3], { 3 }, Some(instid!(1, 3))),
+        case!(3, [2, 3, 3, 3], { 3 }, Some(dep!(1, 3))),
     ];
 
     for (fast_quorum, deps, committed, want) in cases.iter_mut() {
@@ -144,22 +129,22 @@ fn test_get_accept_dep() {
             ) => {
             (
                 $qf,
-                instids![$((1, $didx)),*],
+                deps![$((1, $didx)),*],
                 $want
             )
          };
     );
 
-    let mut cases: Vec<(i32, Vec<InstanceId>, Option<InstanceId>)> = vec![
+    let mut cases: Vec<(i32, Vec<Dep>, Option<Dep>)> = vec![
         case!(2, [2], None),
-        case!(2, [2, 2], Some(instid!(1, 2))),
-        case!(2, [2, 3], Some(instid!(1, 3))),
-        case!(2, [2, 2, 3], Some(instid!(1, 2))),
-        case!(2, [2, 2, 3, 3], Some(instid!(1, 2))),
+        case!(2, [2, 2], Some(dep!(1, 2))),
+        case!(2, [2, 3], Some(dep!(1, 3))),
+        case!(2, [2, 2, 3], Some(dep!(1, 2))),
+        case!(2, [2, 2, 3, 3], Some(dep!(1, 2))),
         case!(3, [2, 2], None),
-        case!(3, [2, 2, 2, 3], Some(instid!(1, 2))),
-        case!(3, [2, 2, 3, 3], Some(instid!(1, 3))),
-        case!(3, [2, 2, 3, 4], Some(instid!(1, 3))),
+        case!(3, [2, 2, 2, 3], Some(dep!(1, 2))),
+        case!(3, [2, 2, 3, 3], Some(dep!(1, 3))),
+        case!(3, [2, 2, 3, 4], Some(dep!(1, 3))),
     ];
 
     for (quorum, deps, want) in cases.iter_mut() {
@@ -195,7 +180,7 @@ fn test_status_get_fast_commit_deps() {
                     let mut rid = 0;
                     $(
                         rid += 1;
-                        m.insert(rid, instids![$((rid, $didx)),*]);
+                        m.insert(rid, deps![$((rid, $didx)),*]);
                      )*
                     m
                 },
@@ -213,12 +198,12 @@ fn test_status_get_fast_commit_deps() {
 
     let mut cases: Vec<(
         i32,
-        HashMap<ReplicaId, Vec<InstanceId>>,
+        HashMap<ReplicaId, Vec<Dep>>,
         HashMap<InstanceId, bool>,
-        Option<Vec<InstanceId>>,
+        Option<Vec<Dep>>,
     )> = vec![
-        case!(1, { [2] }, {}, Some(instids![(1, 2)])),
-        case!(1, { [2] }, { (1, 2) }, Some(instids![(1, 2)])),
+        case!(1, { [2] }, {}, Some(deps![(1, 2)])),
+        case!(1, { [2] }, { (1, 2) }, Some(deps![(1, 2)])),
         case!(2, {
             [2, 3],
             [2]
@@ -230,13 +215,13 @@ fn test_status_get_fast_commit_deps() {
             [2, 2]
         },
         {},
-        Some(instids![(1, 2), (2, 2)])),
+        Some(deps![(1, 2), (2, 2)])),
         case!(2, {
             [3, 3],
             [4, 4]
         },
         {(1, 3), (2, 4)},
-        Some(instids![(1, 3), (2, 4)])),
+        Some(deps![(1, 3), (2, 4)])),
         case!(3, {
             [2],
             [3],
@@ -250,14 +235,14 @@ fn test_status_get_fast_commit_deps() {
             [4, 4]
         },
         {},
-        Some(instids![(1, 2), (2, 3), (3, 4)])),
+        Some(deps![(1, 2), (2, 3), (3, 4)])),
         case!(3, {
             [2, 2, 4],
             [3, 4, 4],
             [3, 5, 5]
         },
         {(2, 4), (3, 5)},
-        Some(instids![(1, 2), (2, 4), (3, 5)])),
+        Some(deps![(1, 2), (2, 4), (3, 5)])),
     ];
 
     for (n, deps, committed, want) in cases.iter_mut() {
@@ -297,7 +282,7 @@ fn test_status_get_accept_deps() {
                     let mut rid = 0;
                     $(
                         rid += 1;
-                        m.insert(rid, instids![$((rid, $didx)),*]);
+                        m.insert(rid, deps![$((rid, $didx)),*]);
                      )*
                     m
                 },
@@ -306,17 +291,13 @@ fn test_status_get_accept_deps() {
          };
     );
 
-    let mut cases: Vec<(
-        i32,
-        HashMap<ReplicaId, Vec<InstanceId>>,
-        Option<Vec<InstanceId>>,
-    )> = vec![
-        case!(1, { [2] }, Some(instids![(1, 2)])),
+    let mut cases: Vec<(i32, HashMap<ReplicaId, Vec<Dep>>, Option<Vec<Dep>>)> = vec![
+        case!(1, { [2] }, Some(deps![(1, 2)])),
         case!(2, {[2], [2]}, None),
-        case!(2, {[2, 3], [2, 4]}, Some(instids![(1, 3), (2, 4)])),
+        case!(2, {[2, 3], [2, 4]}, Some(deps![(1, 3), (2, 4)])),
         case!(3, {[2], [3], [4]}, None),
-        case!(3, {[2, 2], [3, 4], [3, 5]}, Some(instids![(1, 2), (2, 4), (3, 5)])),
-        case!(3, {[2, 2, 4], [3, 4, 4], [3, 5, 5]}, Some(instids![(1, 2), (2, 4), (3, 5)])),
+        case!(3, {[2, 2], [3, 4], [3, 5]}, Some(deps![(1, 2), (2, 4), (3, 5)])),
+        case!(3, {[2, 2, 4], [3, 4, 4], [3, 5, 5]}, Some(deps![(1, 2), (2, 4), (3, 5)])),
     ];
 
     for (n, deps, want) in cases.iter_mut() {

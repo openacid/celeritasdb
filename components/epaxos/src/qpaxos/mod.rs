@@ -15,12 +15,14 @@ pub mod macros;
 
 // impl Display for qpaxos data types.
 pub mod conflict;
+pub mod dep_vec;
 mod display;
 pub mod errors;
 mod instance_id_vec;
 pub mod quorums;
 
 pub use conflict::*;
+pub use dep_vec::*;
 pub use display::*;
 pub use errors::*;
 pub use instance_id_vec::*;
@@ -46,6 +48,9 @@ mod test_command;
 
 #[cfg(test)]
 mod test_errors;
+
+#[cfg(test)]
+mod test_dep_vec;
 
 #[cfg(test)]
 mod test_instance;
@@ -141,6 +146,65 @@ impl From<(&str, &str, &str)> for Command {
     }
 }
 
+// TODO test
+impl PartialEq<InstanceId> for Dep {
+    fn eq(&self, other: &InstanceId) -> bool {
+        self.replica_id == other.replica_id && self.idx == other.idx
+    }
+}
+
+impl<A: Into<ReplicaId> + Copy, B: Into<i64> + Copy> From<(A, B)> for Dep {
+    fn from(t: (A, B)) -> Dep {
+        Dep {
+            replica_id: t.0.into(),
+            idx: t.1.into(),
+            ..Default::default()
+        }
+    }
+}
+
+impl<A: Into<ReplicaId> + Copy, B: Into<i64> + Copy, S: Into<i64> + Copy> From<(A, B, S)> for Dep {
+    fn from(t: (A, B, S)) -> Dep {
+        Dep {
+            replica_id: t.0.into(),
+            idx: t.1.into(),
+            seq: t.2.into(),
+            ..Default::default()
+        }
+    }
+}
+
+impl<A: Into<ReplicaId> + Copy, B: Into<i64> + Copy> From<&(A, B)> for Dep {
+    fn from(t: &(A, B)) -> Dep {
+        Dep {
+            replica_id: t.0.into(),
+            idx: t.1.into(),
+            ..Default::default()
+        }
+    }
+}
+
+impl<A: Into<ReplicaId> + Copy, B: Into<i64> + Copy, S: Into<i64> + Copy> From<&(A, B, S)> for Dep {
+    fn from(t: &(A, B, S)) -> Dep {
+        Dep {
+            replica_id: t.0.into(),
+            idx: t.1.into(),
+            seq: t.2.into(),
+            ..Default::default()
+        }
+    }
+}
+
+impl From<&InstanceId> for Dep {
+    fn from(iid: &InstanceId) -> Dep {
+        Dep {
+            replica_id: iid.replica_id,
+            idx: iid.idx,
+            ..Default::default()
+        }
+    }
+}
+
 impl ToKey for InstanceId {
     fn to_key(&self) -> Vec<u8> {
         if self.idx < 0 {
@@ -212,7 +276,7 @@ impl Conflict for Instance {
 }
 
 impl Instance {
-    pub fn of(cmds: &[Command], ballot: BallotNum, deps: &[InstanceId]) -> Instance {
+    pub fn of(cmds: &[Command], ballot: BallotNum, deps: &[Dep]) -> Instance {
         Instance {
             cmds: cmds.into(),
             ballot: Some(ballot),

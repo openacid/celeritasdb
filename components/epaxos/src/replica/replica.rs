@@ -143,7 +143,12 @@ impl Replica {
         let this_iid = maxs.get(rid).unwrap();
         let iid = (rid, this_iid.idx + 1).into();
 
-        let mut inst = Instance::of(cmds, (0, 0, rid).into(), &maxs);
+        let mut deps = Vec::with_capacity(maxs.len());
+        for did in maxs.iter() {
+            deps.push(did.into());
+        }
+
+        let mut inst = Instance::of(cmds, (0, 0, rid).into(), &deps);
         inst.instance_id = Some(iid);
 
         self.storage.set_instance(&inst)?;
@@ -258,8 +263,9 @@ impl Replica {
             for local_inst in self.storage.get_instance_iter(start_iid, true, true) {
                 let local_deps = ref_or_bug!(local_inst.deps);
                 let local_iid = ref_or_bug!(local_inst.instance_id);
+                let local_inst_dep = local_iid.into();
 
-                if local_deps >= &iid {
+                if local_deps >= iid {
                     continue;
                 }
 
@@ -272,7 +278,7 @@ impl Replica {
 
                 // TODO: test: fast-accept adding a new dep
 
-                if req_deps > &local_iid {
+                if req_deps > &local_inst_dep {
                     // the incoming instance already depends on this local instance, which implies
                     // it depends on any lower instances.
                     break;
@@ -280,7 +286,7 @@ impl Replica {
 
                 let req_deps = inst.deps.as_mut().unwrap();
 
-                let (ith, _) = req_deps.set(*local_iid);
+                let (ith, _) = req_deps.set(local_inst_dep);
                 if ith == deps_committed.len() {
                     deps_committed.push(local_inst.committed);
                 } else {

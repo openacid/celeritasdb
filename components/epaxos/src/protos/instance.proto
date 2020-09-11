@@ -9,6 +9,23 @@ message InstanceId {
     int64 idx = 2;
 };
 
+// Dep describes relations between a depending instance and the instances
+// proposed by another leader.
+message Dep {
+
+    // Same as InstanceId.
+    int64 replica_id = 1;
+    int64 idx = 2;
+
+    // The seq of the dependent instance. This attr is used to determine if a
+    // depending instance has seen the committed value of a dependency.
+    int64 seq = 3;
+}
+
+message DepVec {
+    repeated Dep ids = 1;
+}
+
 message InstanceIdVec {
     repeated InstanceId ids = 1;
 }
@@ -28,7 +45,7 @@ message Instance {
 
     // deps is the instance ids on a replica when handling PreAccept
     // request.
-    InstanceIdVec deps                        = 32;
+    DepVec deps                        = 32;
 
     // An instance has several status thus one status field is not enough.
     // To determine the instance status:
@@ -39,6 +56,8 @@ message Instance {
     bool committed                                  = 51;
     bool executed                                   = 52;
 
+    // TODO remove accepted
+    // TODO remove committed
     // TODO: use this, previously accepted is Instance.final_deps != None
     bool accepted                                   = 53;
 };

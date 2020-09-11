@@ -24,6 +24,30 @@ macro_rules! instid {
 
 #[macro_export]
 #[allow(unused_macros)]
+macro_rules! dep {
+    ($replica_id:expr, $idx:expr) => {
+        Dep::from(($replica_id, $idx))
+    };
+
+    ($replica_id:expr, $idx:expr, $seq:expr) => {
+        Dep::from(($replica_id, $idx, $seq))
+    };
+}
+
+#[macro_export]
+#[allow(unused_macros)]
+macro_rules! deps {
+    [] => {
+        Vec::<Dep>::new()
+    };
+
+    [$(($replica_id:expr, $idx:expr)),*] => {
+        vec![$(Dep::from(($replica_id, $idx))),*]
+    };
+}
+
+#[macro_export]
+#[allow(unused_macros)]
 macro_rules! instids {
     [$(($replica_id:expr, $idx:expr)),*] => {
         vec![$(InstanceId::from(($replica_id, $idx))),*]
@@ -77,7 +101,7 @@ macro_rules! init_inst {
 /// deps: [(replica_id, idx)...]
 ///
 /// Supported pattern:
-/// inst!(instance_id, ballot, cmds, deps, final_deps, acceptted, committed, executed)
+/// inst!(instance_id, ballot, cmds, deps, acceptted, committed, executed)
 /// inst!(instance_id, ballot, cmds, deps)
 /// inst!(instance_id, ballot, cmds)
 #[macro_export]
@@ -97,6 +121,22 @@ macro_rules! inst {
         }
     };
 
+    // // instance_id, ballot, cmds, dep=[]
+    // ($id:expr,
+    //  ($epoch:expr, $num:expr, _),
+    //  [$( ($op:expr, $key:expr, $val:expr)),*],
+    //  []
+    //  $(,)*
+    //  ) => {
+    //     Instance {
+    //         instance_id: Some($id.into()),
+    //         ballot: Some(($epoch, $num, InstanceId::from($id).replica_id).into()),
+    //         cmds: cmds![$( ($op, $key, $val)),*].into(),
+    //         deps: Some(Vec::<Dep>::new().into()),
+    //         ..Default::default()
+    //     }
+    // };
+
     // instance_id, ballot, cmds, deps
     ($id:expr,
      ($epoch:expr, $num:expr, _),
@@ -109,7 +149,7 @@ macro_rules! inst {
             ballot: Some(($epoch, $num, InstanceId::from($id).replica_id).into()),
             cmds: cmds![$( ($op, $key, $val)),*].into(),
             deps: Some(
-                instids![$( ($dep_rid, $dep_idx)),*].into()
+                deps![$( ($dep_rid, $dep_idx)),*].into()
             ),
             ..Default::default()
         }
@@ -130,9 +170,9 @@ macro_rules! inst {
             ballot: Some(($epoch, $num, $brid).into()),
             cmds: cmds![$( ($op, $key, $val)),*].into(),
             deps: Some(
-                instids![$( ($dep_rid, $dep_idx)),*].into()
+                deps![$( ($dep_rid, $dep_idx)),*].into()
             ),
-            accepted:$accepted,   
+            accepted:$accepted,
             committed:$committed,
             executed:$executed,
             ..Default::default()

@@ -52,7 +52,7 @@ pub struct Status {
 
     /// fast_deps collects `deps` received in fast-accept phase.
     /// They are stored by dependency instance leader.
-    pub fast_deps: HashMap<ReplicaId, Vec<InstanceId>>,
+    pub fast_deps: HashMap<ReplicaId, Vec<Dep>>,
 
     /// fast_committed tracks what updated dep instance is committed.
     pub fast_committed: HashMap<InstanceId, bool>,
@@ -124,8 +124,8 @@ impl Status {
 
     /// get_fast_commit_deps returns a InstanceId Vec if current status satisfies fast-commit
     /// condition. Otherwise it returns None.
-    pub fn get_fast_commit_deps(&mut self, cluster: &[ReplicaId]) -> Option<Vec<InstanceId>> {
-        let mut rst: Vec<InstanceId> = Vec::with_capacity(cluster.len());
+    pub fn get_fast_commit_deps(&mut self, cluster: &[ReplicaId]) -> Option<Vec<Dep>> {
+        let mut rst: Vec<Dep> = Vec::with_capacity(cluster.len());
         for rid in cluster.iter() {
             let deps = self.fast_deps.get_mut(rid)?;
 
@@ -140,8 +140,8 @@ impl Status {
 
     /// get_accept_deps returns a InstanceId Vec for accept request.
     /// If current status accumulated enough fast-accept-replies. Otherwise it returns None.
-    pub fn get_accept_deps(&mut self, cluster: &[ReplicaId]) -> Option<Vec<InstanceId>> {
-        let mut rst: Vec<InstanceId> = Vec::with_capacity(cluster.len());
+    pub fn get_accept_deps(&mut self, cluster: &[ReplicaId]) -> Option<Vec<Dep>> {
+        let mut rst: Vec<Dep> = Vec::with_capacity(cluster.len());
         for rid in cluster.iter() {
             let deps = self.fast_deps.get_mut(rid)?;
 
@@ -168,10 +168,10 @@ impl Status {
 ///
 /// If there is no safe dep for fast-commit, it returns None.
 pub fn get_fast_commit_dep(
-    deps: &Vec<InstanceId>,
+    deps: &Vec<Dep>,
     committed: &HashMap<InstanceId, bool>,
     fast_quorum: i32,
-) -> Option<InstanceId> {
+) -> Option<Dep> {
     // TODO what if deps.len() is 0
     // the first elt in deps is the initial dep.
     //
@@ -195,9 +195,10 @@ pub fn get_fast_commit_dep(
 
     for i in 0..=x {
         let dep = &deps[i];
+        let iid = instid!(dep.replica_id, dep.idx);
         if dep == &deps[i + fast_quorum as usize - 1] {
             // TODO: add proof of it: equals to initial value does not need to be committed.
-            if i == 0 || committed.get(dep) == Some(&true) {
+            if i == 0 || committed.get(&iid) == Some(&true) {
                 return Some(*dep);
             }
         }
@@ -220,7 +221,7 @@ pub fn get_fast_commit_dep(
 /// `deps` in Accept Request is the union of `deps` replied in fast-accept phase.
 ///
 /// `deps` must be sorted.
-pub fn get_accept_dep(deps: &Vec<InstanceId>, quorum: i32) -> Option<InstanceId> {
+pub fn get_accept_dep(deps: &Vec<Dep>, quorum: i32) -> Option<Dep> {
     // TODO what if deps.len() is 0
     // the first elt in deps is the initial dep.
 

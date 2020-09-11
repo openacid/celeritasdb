@@ -1,10 +1,22 @@
 use std::sync::Arc;
 
+use crate::qpaxos::Dep;
 use crate::qpaxos::{Command, Instance, InstanceId};
 use crate::replica::*;
 use crate::testutil;
 use storage::MemEngine;
 use tokio::sync::oneshot;
+
+#[allow(unused_macros)]
+macro_rules! deps {
+    [] => {
+        Vec::<Dep>::new()
+    };
+
+    [$(($replica_id:expr, $idx:expr)),*] => {
+        vec![$(Dep::from(($replica_id, $idx))),*]
+    };
+}
 
 #[allow(unused_macros)]
 macro_rules! test_inst {
@@ -15,7 +27,7 @@ macro_rules! test_inst {
         Instance {
             instance_id: Some(($rid, $idx).into()),
             deps: Some(
-                instids![$( ($fdep_rid, $fdep_idx)),*].into()
+                deps![$( ($fdep_rid, $fdep_idx)),*].into()
             ),
             ..Default::default()
         }
@@ -41,7 +53,7 @@ macro_rules! test_inst {
             instance_id: Some(($replica_id, $idx).into()),
             cmds: cmds![$( ($op, $key, $val)),*].into(),
             deps: Some(
-                instids![$( ($fdep_rid, $fdep_idx)),*].into()
+                deps![$( ($fdep_rid, $fdep_idx)),*].into()
             ),
             ..Default::default()
         }
@@ -55,7 +67,7 @@ macro_rules! test_inst {
         Instance {
             instance_id: Some(($replica_id, $idx).into()),
             deps: Some(
-                instids![$( ($fdep_rid, $fdep_idx)),*].into()
+                deps![$( ($fdep_rid, $fdep_idx)),*].into()
             ),
             committed: $committed,
             ..Default::default()
@@ -159,7 +171,7 @@ async fn test_execute_commands() {
         .set_kv(&"y".as_bytes().to_vec(), &vec![22])
         .unwrap();
 
-    let cases = [
+    let cases: &[Instance] = &[
         test_inst!((2, 2), []),
         test_inst!((2, 2), [("Get", "xx", "")]),
         test_inst!((2, 2), [("Get", "x", "")]),

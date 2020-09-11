@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::time::SystemTime;
 
-use crate::qpaxos::{Instance, InstanceId, InstanceIdVec, OpCode};
+use crate::qpaxos::{DepVec, Instance, InstanceId, InstanceIdVec, OpCode};
 use crate::replica::ExecRst;
 use crate::replica::Replica;
 use storage::StorageError;
@@ -30,30 +30,30 @@ impl Replica {
     ) -> Option<InstanceIdVec> {
         let mut rst = InstanceIdVec::from([0; 0]);
         let mut iids = InstanceIdVec::from([0; 0]);
-        let mut all_dep_iids = InstanceIdVec::from([0; 0]);
+        let mut all_deps = DepVec::from([0; 0]);
 
         for inst in min_insts {
             iids.push(inst.instance_id.unwrap());
-            all_dep_iids.extend(inst.deps.as_ref().unwrap().iter());
+            all_deps.extend(inst.deps.as_ref().unwrap().iter());
         }
 
-        for dep_iid in all_dep_iids.iter() {
-            if let Some(_) = iids.get(dep_iid.replica_id) {
+        for dep in all_deps.iter() {
+            if let Some(_) = iids.get(dep.replica_id) {
                 continue;
             }
 
-            let missing: InstanceId = match exec_up_to.get(dep_iid.replica_id) {
-                None => (dep_iid.replica_id, 0).into(),
+            let missing: InstanceId = match exec_up_to.get(dep.replica_id) {
+                None => (dep.replica_id, 0).into(),
                 Some(iid) => {
-                    if dep_iid.idx <= iid.idx {
+                    if dep.idx <= iid.idx {
                         continue;
                     }
 
-                    (dep_iid.replica_id, iid.idx + 1).into()
+                    (dep.replica_id, iid.idx + 1).into()
                 }
             };
 
-            if let Some(_) = rst.get(dep_iid.replica_id) {
+            if let Some(_) = rst.get(dep.replica_id) {
                 continue;
             }
             rst.push(missing);

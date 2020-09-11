@@ -25,15 +25,15 @@ enum RequestType {
 
 message FastAcceptRequest {
     repeated Command     cmds           = 21;
-    InstanceIdVec        deps           = 32;
+    DepVec               deps           = 32;
     repeated bool        deps_committed = 33;
 }
 message AcceptRequest {
-    InstanceIdVec deps = 32;
+    DepVec deps = 32;
 }
 message CommitRequest {
     repeated Command     cmds           = 21;
-    InstanceIdVec        deps           = 32;
+    DepVec               deps           = 32;
 }
 message PrepareRequest {
     // TODO prepare does not need cmds to find conflicting in our algorithm.
@@ -61,13 +61,13 @@ message FastAcceptReply {
     // deps_status describe what status a dependent instance is in.
     // Only `deps` needs these information in order to commit on fast-path.
 
-    InstanceIdVec       deps           = 32;
+    DepVec              deps           = 32;
     repeated bool       deps_committed = 33;
 }
 message AcceptReply { }
 message CommitReply { }
 message PrepareReply {
-    InstanceIdVec       deps       = 32;
+    DepVec              deps       = 32;
     bool                committed  = 51;
 }
 
