@@ -68,3 +68,71 @@ fn test_macro_init_inst() {
         )
     );
 }
+
+#[test]
+fn test_macro_inst() {
+    // instance_id, ballot, cmds
+    let want = Instance {
+        instance_id: Some((1, 2).into()),
+        ballot: Some((3, 4, 1).into()),
+        cmds: vec![("Set", "x", "y").into(), ("Get", "a", "b").into()],
+        deps: None,
+        accepted: false,
+        committed: false,
+        executed: false,
+    };
+
+    assert_eq!(
+        want,
+        inst!((1, 2), (3, 4, _), [("Set", "x", "y"), ("Get", "a", "b")])
+    );
+
+    // instance_id, ballot, cmds, deps
+    let want = Instance {
+        instance_id: Some((1, 2).into()),
+        ballot: Some((3, 4, 1).into()),
+        cmds: vec![("Set", "x", "y").into(), ("Get", "a", "b").into()],
+        deps: Some(DepVec {
+            ids: vec![(11, 12).into(), (13, 14).into()],
+        }),
+        accepted: false,
+        committed: false,
+        executed: false,
+    };
+
+    assert_eq!(
+        want,
+        inst!(
+            (1, 2),
+            (3, 4, _),
+            [("Set", "x", "y"), ("Get", "a", "b")],
+            [(11, 12), (13, 14)]
+        )
+    );
+
+    // all arg
+    let want = Instance {
+        instance_id: Some((1, 2).into()),
+        ballot: Some((3, 4, 3).into()),
+        cmds: vec![("Set", "x", "y").into(), ("Get", "a", "b").into()],
+        deps: Some(DepVec {
+            ids: vec![(11, 12).into(), (13, 14).into()],
+        }),
+        accepted: true,
+        committed: true,
+        executed: true,
+    };
+
+    assert_eq!(
+        want,
+        inst!(
+            (1, 2),
+            (3, 4, 3),
+            [("Set", "x", "y"), ("Get", "a", "b")],
+            [(11, 12), (13, 14)],
+            true,
+            true,
+            true
+        )
+    );
+}
