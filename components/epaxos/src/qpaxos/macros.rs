@@ -36,7 +36,7 @@ macro_rules! dep {
 
 #[macro_export]
 #[allow(unused_macros)]
-macro_rules! deps {
+macro_rules! depvec {
     [] => {
         Vec::<Dep>::new()
     };
@@ -121,22 +121,6 @@ macro_rules! inst {
         }
     };
 
-    // // instance_id, ballot, cmds, dep=[]
-    // ($id:expr,
-    //  ($epoch:expr, $num:expr, _),
-    //  [$( ($op:expr, $key:expr, $val:expr)),*],
-    //  []
-    //  $(,)*
-    //  ) => {
-    //     Instance {
-    //         instance_id: Some($id.into()),
-    //         ballot: Some(($epoch, $num, InstanceId::from($id).replica_id).into()),
-    //         cmds: cmds![$( ($op, $key, $val)),*].into(),
-    //         deps: Some(Vec::<Dep>::new().into()),
-    //         ..Default::default()
-    //     }
-    // };
-
     // instance_id, ballot, cmds, deps
     ($id:expr,
      ($epoch:expr, $num:expr, _),
@@ -149,7 +133,7 @@ macro_rules! inst {
             ballot: Some(($epoch, $num, InstanceId::from($id).replica_id).into()),
             cmds: cmds![$( ($op, $key, $val)),*].into(),
             deps: Some(
-                deps![$( ($dep_rid, $dep_idx)),*].into()
+                depvec![$( ($dep_rid, $dep_idx)),*].into()
             ),
             ..Default::default()
         }
@@ -170,7 +154,7 @@ macro_rules! inst {
             ballot: Some(($epoch, $num, $brid).into()),
             cmds: cmds![$( ($op, $key, $val)),*].into(),
             deps: Some(
-                deps![$( ($dep_rid, $dep_idx)),*].into()
+                depvec![$( ($dep_rid, $dep_idx)),*].into()
             ),
             accepted:$accepted,
             committed:$committed,

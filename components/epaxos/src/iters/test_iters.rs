@@ -64,8 +64,8 @@ fn test_instance_iter() {
             ))];
 
             let ballot = (rid as i32, idx as i32, 0).into();
-            let deps = vec![Dep::from((rid + 1, idx + 1))];
-            let mut inst = Instance::of(&cmds[..], ballot, &deps[..]);
+            let depvec = vec![Dep::from((rid + 1, idx + 1))];
+            let mut inst = Instance::of(&cmds[..], ballot, &depvec[..]);
             inst.instance_id = Some(iid);
 
             let _ = sto.set_instance(&inst).unwrap();

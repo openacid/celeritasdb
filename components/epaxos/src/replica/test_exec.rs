@@ -8,7 +8,7 @@ use storage::MemEngine;
 use tokio::sync::oneshot;
 
 #[allow(unused_macros)]
-macro_rules! deps {
+macro_rules! depvec {
     [] => {
         Vec::<Dep>::new()
     };
@@ -27,7 +27,7 @@ macro_rules! test_inst {
         Instance {
             instance_id: Some(($rid, $idx).into()),
             deps: Some(
-                deps![$( ($fdep_rid, $fdep_idx)),*].into()
+                depvec![$( ($fdep_rid, $fdep_idx)),*].into()
             ),
             ..Default::default()
         }
@@ -53,7 +53,7 @@ macro_rules! test_inst {
             instance_id: Some(($replica_id, $idx).into()),
             cmds: cmds![$( ($op, $key, $val)),*].into(),
             deps: Some(
-                deps![$( ($fdep_rid, $fdep_idx)),*].into()
+                depvec![$( ($fdep_rid, $fdep_idx)),*].into()
             ),
             ..Default::default()
         }
@@ -67,7 +67,7 @@ macro_rules! test_inst {
         Instance {
             instance_id: Some(($replica_id, $idx).into()),
             deps: Some(
-                deps![$( ($fdep_rid, $fdep_idx)),*].into()
+                depvec![$( ($fdep_rid, $fdep_idx)),*].into()
             ),
             committed: $committed,
             ..Default::default()

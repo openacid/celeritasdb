@@ -37,12 +37,12 @@ fn test_macro_dep() {
 fn test_macro_deps() {
     {
         // implicit type
-        let deps = deps![];
-        assert_eq!(Vec::<Dep>::new(), deps);
+        let depvec = depvec![];
+        assert_eq!(Vec::<Dep>::new(), depvec);
     }
 
-    let deps = deps![(1, 2)];
-    assert_eq!(vec![Dep::from((1, 2))], deps);
+    let depvec = depvec![(1, 2)];
+    assert_eq!(vec![Dep::from((1, 2))], depvec);
 }
 
 #[test]

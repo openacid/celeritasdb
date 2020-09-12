@@ -116,21 +116,21 @@ impl From<&[Dep]> for DepVec {
 
 impl From<&[InstanceId]> for DepVec {
     fn from(v: &[InstanceId]) -> DepVec {
-        let mut deps: Vec<Dep> = Vec::with_capacity(v.len());
+        let mut depvec: Vec<Dep> = Vec::with_capacity(v.len());
         for iid in v.iter() {
-            deps.push(iid.into());
+            depvec.push(iid.into());
         }
-        deps.into()
+        depvec.into()
     }
 }
 
 impl From<Vec<InstanceId>> for DepVec {
     fn from(v: Vec<InstanceId>) -> DepVec {
-        let mut deps: Vec<Dep> = Vec::with_capacity(v.len());
+        let mut depvec: Vec<Dep> = Vec::with_capacity(v.len());
         for iid in v.iter() {
-            deps.push(iid.into());
+            depvec.push(iid.into());
         }
-        deps.into()
+        depvec.into()
     }
 }
 

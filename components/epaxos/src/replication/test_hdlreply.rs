@@ -39,16 +39,16 @@ macro_rules! get {
     };
 }
 
-/// depvec makes a Some(DepVec) or None
+/// deps makes a Some(DepVec) or None
 /// Supported pattern:
-/// depvec!(None)
-/// depvec!([instid, instid...])
-macro_rules! depvec {
+/// deps!(None)
+/// deps!([instid, instid...])
+macro_rules! deps {
     (None) => {
         None
     };
     ([$(($rid:expr, $idx:expr)),*]) => {
-        Some(deps![$(($rid, $idx)),*].into())
+        Some(depvec![$(($rid, $idx)),*].into())
     };
 }
 
@@ -91,7 +91,7 @@ macro_rules! frepl {
             instance_id: iid!($id),
             phase: Some(
                 FastAcceptReply {
-                    deps: depvec!($deps),
+                    deps: deps!($deps),
                     ..Default::default()
                 }
                 .into(),
@@ -105,7 +105,7 @@ macro_rules! frepl {
             instance_id: iid!($id),
             phase: Some(
                 FastAcceptReply {
-                    deps: depvec!($deps),
+                    deps: deps!($deps),
                     deps_committed: $cmts,
                     ..Default::default()
                 }
@@ -266,7 +266,7 @@ fn test_handle_accept_reply() {
     );
 
     let mut inst = init_inst!((1, 2), [("Set", "x", "1")], []);
-    inst.deps = Some(deps![].into());
+    inst.deps = Some(depvec![].into());
     rp.storage.set_instance(&inst).unwrap();
     let n = rp.group_replica_ids.len() as i32;
 
