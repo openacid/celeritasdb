@@ -19,7 +19,7 @@ fn test_macro_instid() {
 
 #[test]
 fn test_macro_instids() {
-    let ids = instids![(1, 2), (3i32, 4i64)];
+    let ids = instidvec![(1, 2), (3i32, 4i64)];
 
     assert_eq!(InstanceId::from((1, 2)), ids[0]);
     assert_eq!(InstanceId::from((3, 4)), ids[1]);
@@ -101,7 +101,7 @@ fn test_macro_inst() {
     );
 
     // deps
-    want.deps = Some(instids![(10, 0), (11, 12)].into());
+    want.deps = Some(instidvec![(10, 0), (11, 12)].into());
     assert_eq!(
         want,
         inst!(

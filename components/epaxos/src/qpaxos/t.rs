@@ -288,7 +288,7 @@ fn test_replicate_reply_pb() {
         instance_id: Some(instid!(1, 2)),
         phase: Some(
             FastAcceptReply {
-                deps: Some(instids![(1, 2), (3, 4)].into()),
+                deps: Some(instidvec![(1, 2), (3, 4)].into()),
                 deps_committed: vec![true],
             }
             .into(),

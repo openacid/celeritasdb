@@ -90,7 +90,7 @@ fn test_display_command() {
 fn test_display_instance_id_vec() {
     assert_eq!(
         "[(1, 2), (3, 4)]",
-        format!("{}", InstanceIdVec::from(instids![(1, 2), (3, 4)]))
+        format!("{}", InstanceIdVec::from(instidvec![(1, 2), (3, 4)]))
     );
 }
 
@@ -196,7 +196,7 @@ fn test_display_replicate_reply_normal() {
 
     {
         r.phase = Some(replicate_reply::Phase::Fast(FastAcceptReply {
-            deps: Some(instids![(1, 2), (3, 4)].into()),
+            deps: Some(instidvec![(1, 2), (3, 4)].into()),
             deps_committed: vec![true, false],
         }));
         let ph = "Fast{deps[1]:[(1, 2, 0), (3, 4, 0)], c:[true, false]}";
@@ -220,7 +220,7 @@ fn test_display_replicate_reply_normal() {
 
     {
         r.phase = Some(replicate_reply::Phase::Prepare(PrepareReply {
-            deps: Some(instids![(1, 2), (3, 4)].into()),
+            deps: Some(instidvec![(1, 2), (3, 4)].into()),
             committed: true,
         }));
         let ph = "Prepare{deps:[(1, 2, 0), (3, 4, 0)], c:true}";

@@ -48,7 +48,7 @@ macro_rules! deps {
 
 #[macro_export]
 #[allow(unused_macros)]
-macro_rules! instids {
+macro_rules! instidvec {
     [$(($replica_id:expr, $idx:expr)),*] => {
         vec![$(InstanceId::from(($replica_id, $idx))),*]
     }
