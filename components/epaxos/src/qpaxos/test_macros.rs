@@ -136,3 +136,72 @@ fn test_macro_inst() {
         )
     );
 }
+
+#[test]
+fn test_macro_inst_kv() {
+    assert_eq!(
+        Instance {
+            instance_id: Some((1, 2).into()),
+            ..Default::default()
+        },
+        inst!(instance_id:(1, 2))
+    );
+
+    assert_eq!(
+        Instance {
+            instance_id: None,
+            ..Default::default()
+        },
+        inst!(instance_id: None)
+    );
+
+    // with id
+    assert_eq!(
+        Instance {
+            instance_id: Some((1, 2).into()),
+            cmds: vec![("Set", "x", "1").into()],
+            ..Default::default()
+        },
+        inst!((1, 2), cmds:[("Set", "x", "1")])
+    );
+
+    assert_eq!(
+        Instance {
+            ballot: Some((1, 2, 3).into()),
+            ..Default::default()
+        },
+        inst!(ballot:(1, 2, 3))
+    );
+
+    assert_eq!(
+        Instance {
+            ballot: None,
+            ..Default::default()
+        },
+        inst!(ballot: None)
+    );
+
+    assert_eq!(
+        Instance {
+            cmds: vec![("Set", "x", "1").into()],
+            ..Default::default()
+        },
+        inst!(cmds:[("Set", "x", "1")])
+    );
+
+    assert_eq!(
+        Instance {
+            cmds: Vec::<Command>::new(),
+            ..Default::default()
+        },
+        inst!(cmds:[])
+    );
+
+    assert_eq!(
+        Instance {
+            deps: Some(vec![Dep::from((1, 2))].into()),
+            ..Default::default()
+        },
+        inst!(deps:[(1, 2)])
+    );
+}

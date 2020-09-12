@@ -98,6 +98,20 @@ macro_rules! init_inst {
     };
 }
 
+#[doc(hidden)]
+#[macro_export]
+macro_rules! __instance_fields {
+    ($field:expr, None) => { None };
+
+    (instance_id, $v:tt) => { Some($crate::instid!$v) };
+    (ballot, $v:tt) => { Some($crate::ballot!$v) };
+    (cmds, $v:tt) => { $crate::cmdvec!$v.into() };
+    (deps, $v:tt) => { Some($crate::depvec!$v.into()) };
+
+    // other fields
+    ($field:expr, $v:tt) => { $v };
+}
+
 /// Create an instance with:
 /// instance_id: (replica_id, idx),
 /// ballot: (epoch, num, _). the `_` is a place holder indicating to use replica_is from instance_id.
@@ -108,9 +122,36 @@ macro_rules! init_inst {
 /// inst!(instance_id, ballot, cmds, deps, acceptted, committed, executed)
 /// inst!(instance_id, ballot, cmds, deps)
 /// inst!(instance_id, ballot, cmds)
+/// inst!(instance_id:(1, 2, 3), cmds:[("Set", "x", "2")], ...)
+/// inst!(instance_id, cmds:[("Set", "x", "2")], ...)
 #[macro_export]
 #[allow(unused_macros)]
 macro_rules! inst {
+
+    // key:value...
+    ( $($field:ident : $val:tt),*
+    ) => {
+        Instance {
+            $( $field: $crate::__instance_fields!($field, $val) ),*
+                ,
+            ..Default::default()
+        }
+    };
+
+
+    // instance_id, key:value...
+    ($id:tt,
+     $($field:ident : $val:tt),*
+    ) => {
+        Instance {
+            instance_id: Some($crate::instid!$id),
+            $( $field: $crate::__instance_fields!($field, $val) ),*
+                ,
+            ..Default::default()
+        }
+    };
+
+
     // instance_id, ballot, cmds
     ($id:expr,
      ($epoch:expr, $num:expr, _),
