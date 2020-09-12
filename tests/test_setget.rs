@@ -3,6 +3,9 @@ use pretty_assertions::assert_eq;
 
 use epaxos::qpaxos::*;
 
+use epaxos::cmdvec;
+use epaxos::depvec;
+
 use std::time::Duration;
 
 use crate::support::*;
@@ -10,22 +13,6 @@ use redis::RedisResult;
 use tokio::time::delay_for;
 
 mod support;
-
-macro_rules! cmdvec {
-    [$(($op:expr, $key:expr, $val:expr)),*] => {
-        vec![$(Command::from(($op, $key, $val))),*]
-    }
-}
-
-macro_rules! depvec {
-    [] => {
-        Vec::<Dep>::new()
-    };
-
-    [$(($replica_id:expr, $idx:expr)),*] => {
-        vec![$(Dep::from(($replica_id, $idx))),*]
-    };
-}
 
 #[tokio::test(threaded_scheduler)]
 async fn test_set() {

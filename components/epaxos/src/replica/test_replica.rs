@@ -101,7 +101,10 @@ fn test_get_max_instance_ids() {
 
     let r = new_foo_replica(3, new_mem_sto(), &insts);
     let maxs = r.get_max_instance_ids(&[1, 3, 5]);
-    assert_eq!(maxs, InstanceIdVec::from(instidvec![(1, 3), (3, 4), (5, -1)]));
+    assert_eq!(
+        maxs,
+        InstanceIdVec::from(instidvec![(1, 3), (3, 4), (5, -1)])
+    );
 }
 
 #[test]

@@ -28,7 +28,7 @@ pub use replication::*;
 pub use serverdata::*;
 pub use service::*;
 
-use qpaxos::*;
+pub use qpaxos::*;
 use std::sync::Arc;
 use storage::Engine;
 pub use storage::*;
