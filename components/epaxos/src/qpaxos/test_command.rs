@@ -86,8 +86,8 @@ fn test_macro_cmd() {
 }
 
 #[test]
-fn test_macro_cmds() {
-    let cmds = cmds![("Set", "key", "value"), (OpCode::Get, "a", "b")];
+fn test_macro_cmdvec() {
+    let cmds = cmdvec![("Set", "key", "value"), (OpCode::Get, "a", "b")];
 
     assert_eq!(cmds[0], (OpCode::Set, "key", "value").into());
     assert_eq!(cmds[1], ("Get", "a", "b").into());

@@ -13,7 +13,7 @@ fn new_foo_inst() -> Instance {
     let inst_id1 = InstanceId::from((1, 10));
     let inst_id2 = InstanceId::from((2, 20));
 
-    let cmds = cmds![("NoOp", "k1", "v1"), ("Get", "k2", "v2")];
+    let cmds = cmdvec![("NoOp", "k1", "v1"), ("Get", "k2", "v2")];
     let ballot = (0, 0, replica).into();
 
     let mut inst = Instance::of(&cmds[..], ballot, &[]);
@@ -41,7 +41,7 @@ fn test_instance_protobuf() {
     let inst_id3 = (3, 30).into();
     let deps = vec![inst_id1, inst_id2, inst_id3];
 
-    let cmds = cmds![("NoOp", "k1", "v1"), ("Get", "k2", "v2")];
+    let cmds = cmdvec![("NoOp", "k1", "v1"), ("Get", "k2", "v2")];
     let ballot = (1, 2, 3).into();
 
     let inst1 = Instance::of(&cmds[..], ballot, &deps[..]);

@@ -39,7 +39,7 @@ macro_rules! test_inst {
      ) => {
         Instance {
             instance_id: Some(($replica_id, $idx).into()),
-            cmds: cmds![$( ($op, $key, $val)),*].into(),
+            cmds: cmdvec![$( ($op, $key, $val)),*].into(),
             ..Default::default()
         }
     };
@@ -51,7 +51,7 @@ macro_rules! test_inst {
      ) => {
         Instance {
             instance_id: Some(($replica_id, $idx).into()),
-            cmds: cmds![$( ($op, $key, $val)),*].into(),
+            cmds: cmdvec![$( ($op, $key, $val)),*].into(),
             deps: Some(
                 depvec![$( ($fdep_rid, $fdep_idx)),*].into()
             ),

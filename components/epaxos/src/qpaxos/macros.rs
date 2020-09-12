@@ -8,10 +8,14 @@ macro_rules! cmd {
 
 #[macro_export]
 #[allow(unused_macros)]
-macro_rules! cmds {
+macro_rules! cmdvec {
+    [] => {
+        Vec::<Command>::new()
+    };
+
     [$(($op:expr, $key:expr, $val:expr)),*] => {
         vec![$(Command::from(($op, $key, $val))),*]
-    }
+    };
 }
 
 #[macro_export]
@@ -116,7 +120,7 @@ macro_rules! inst {
         Instance {
             instance_id: Some($id.into()),
             ballot: Some(($epoch, $num, InstanceId::from($id).replica_id).into()),
-            cmds: cmds![$( ($op, $key, $val)),*].into(),
+            cmds: cmdvec![$( ($op, $key, $val)),*].into(),
             ..Default::default()
         }
     };
@@ -131,7 +135,7 @@ macro_rules! inst {
         Instance {
             instance_id: Some($id.into()),
             ballot: Some(($epoch, $num, InstanceId::from($id).replica_id).into()),
-            cmds: cmds![$( ($op, $key, $val)),*].into(),
+            cmds: cmdvec![$( ($op, $key, $val)),*].into(),
             deps: Some(
                 depvec![$( ($dep_rid, $dep_idx)),*].into()
             ),
@@ -152,7 +156,7 @@ macro_rules! inst {
         Instance {
             instance_id: Some($id.into()),
             ballot: Some(($epoch, $num, $brid).into()),
-            cmds: cmds![$( ($op, $key, $val)),*].into(),
+            cmds: cmdvec![$( ($op, $key, $val)),*].into(),
             deps: Some(
                 depvec![$( ($dep_rid, $dep_idx)),*].into()
             ),

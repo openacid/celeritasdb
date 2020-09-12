@@ -53,7 +53,7 @@ fn test_new_instance() {
     let rid1 = 1;
     let rid2 = 2;
 
-    let cmds = cmds![("Set", "x", "1")];
+    let cmds = cmdvec![("Set", "x", "1")];
     let sto = new_mem_sto();
 
     let r1 = new_foo_replica(rid1, sto.clone(), &[]);

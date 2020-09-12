@@ -11,7 +11,7 @@ use tokio::time::delay_for;
 
 mod support;
 
-macro_rules! cmds {
+macro_rules! cmdvec {
     [$(($op:expr, $key:expr, $val:expr)),*] => {
         vec![$(Command::from(($op, $key, $val))),*]
     }
@@ -48,7 +48,7 @@ async fn test_set() {
 
         println!("check inst on replica: {}: {}", rid, inst);
 
-        assert_eq!(cmds![("Set", "foo", "42")], inst.cmds);
+        assert_eq!(cmdvec![("Set", "foo", "42")], inst.cmds);
         assert_eq!(
             inst.deps.unwrap(),
             DepVec::from(depvec![(1, -1), (2, -1), (3, -1)]),
