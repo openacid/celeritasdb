@@ -1,79 +1,14 @@
 use std::sync::Arc;
 
+use crate::inst;
+use crate::instidvec;
+
 use crate::qpaxos::Dep;
 use crate::qpaxos::{Command, Instance, InstanceId};
 use crate::replica::*;
 use crate::testutil;
 use storage::MemEngine;
 use tokio::sync::oneshot;
-
-#[allow(unused_macros)]
-macro_rules! depvec {
-    [] => {
-        Vec::<Dep>::new()
-    };
-
-    [$(($replica_id:expr, $idx:expr)),*] => {
-        vec![$(Dep::from(($replica_id, $idx))),*]
-    };
-}
-
-#[allow(unused_macros)]
-macro_rules! test_inst {
-    // instance_id, deps
-    (($rid:expr, $idx: expr),
-     [$( ($fdep_rid:expr, $fdep_idx:expr) ),*]
-    ) => {
-        Instance {
-            instance_id: Some(($rid, $idx).into()),
-            deps: Some(
-                depvec![$( ($fdep_rid, $fdep_idx)),*].into()
-            ),
-            ..Default::default()
-        }
-    };
-
-    // instance_id, cmds
-    (($replica_id:expr, $idx:expr),
-     [$( ($op:expr, $key:expr, $val:expr)),*]
-     ) => {
-        Instance {
-            instance_id: Some(($replica_id, $idx).into()),
-            cmds: cmdvec![$( ($op, $key, $val)),*].into(),
-            ..Default::default()
-        }
-    };
-
-    // instance_id, cmds, deps
-    (($replica_id:expr, $idx:expr),
-     [$( ($op:expr, $key:expr, $val:expr)),*],
-     [$( ($fdep_rid:expr, $fdep_idx:expr) ),*]
-     ) => {
-        Instance {
-            instance_id: Some(($replica_id, $idx).into()),
-            cmds: cmdvec![$( ($op, $key, $val)),*].into(),
-            deps: Some(
-                depvec![$( ($fdep_rid, $fdep_idx)),*].into()
-            ),
-            ..Default::default()
-        }
-    };
-
-    // instance_id, deps, committed
-    (($replica_id:expr, $idx:expr),
-     [$( ($fdep_rid:expr, $fdep_idx:expr) ),*],
-     $committed:expr
-     ) => {
-        Instance {
-            instance_id: Some(($replica_id, $idx).into()),
-            deps: Some(
-                depvec![$( ($fdep_rid, $fdep_idx)),*].into()
-            ),
-            committed: $committed,
-            ..Default::default()
-        }
-    };
-}
 
 fn new_replica() -> Replica {
     testutil::new_replica(
@@ -90,8 +25,8 @@ fn test_find_missing_instances() {
 
     let cases1 = [
         (
-            vec![test_inst!((1, 2), [(1, 1)])],
-            vec![InstanceId::from((1, 1))],
+            vec![inst!((1, 2), deps:[(1, 1)])],
+            instidvec![(1, 1)],
         ),
         // R1               R2              R3
         // |                |               |
@@ -103,10 +38,10 @@ fn test_find_missing_instances() {
         // |                |               |
         (
             vec![
-                test_inst!((1, 2), [(1, 1), (2, 1), (3, 3)]),
-                test_inst!((2, 2), [(1, 1), (2, 1), (3, 5)]),
+                inst!((1, 2), deps:(1, [1, 1, 3])),
+                inst!((2, 2), deps:(1, [1, 1, 5])),
             ],
-            vec![InstanceId::from((1, 1)), (2, 1).into(), (3, 10).into()],
+            instidvec![(1, 1), (2, 1), (3, 10)],
         ),
     ];
 
@@ -129,9 +64,9 @@ fn test_find_missing_instances() {
         //
         // need recover (2, 6) and (3, 6)
         (
-            vec![test_inst!((1, 2), [(1, 1), (2, 6), (3, 6)])],
-            vec![InstanceId::from((1, 1)), (2, 5).into(), (3, 5).into()],
-            vec![InstanceId::from((2, 6)), (3, 6).into()],
+            vec![inst!((1, 2), deps:(1, [1, 6, 6]))],
+            instidvec![(1, 1), (2, 5), (3, 5)],
+            instidvec![(2, 6), (3, 6)],
         ),
         // R1               R2              R3
         // |                |               |
@@ -145,11 +80,11 @@ fn test_find_missing_instances() {
         // need recover (3, 2)
         (
             vec![
-                test_inst!((1, 2), [(1, 1), (2, 1), (3, 1)]),
-                test_inst!((2, 2), [(1, 1), (2, 1), (3, 3)]),
+                inst!((1, 2), deps:(1, [1, 1, 1])),
+                inst!((2, 2), deps:(1, [1, 1, 3])),
             ],
-            vec![InstanceId::from((1, 1)), (2, 1).into(), (3, 1).into()],
-            vec![InstanceId::from((3, 2))],
+            instidvec![(1, 1), (2, 1), (3, 1)],
+            instidvec![(3, 2)],
         ),
     ];
 
@@ -172,13 +107,11 @@ async fn test_execute_commands() {
         .unwrap();
 
     let cases: &[Instance] = &[
-        test_inst!((2, 2), []),
-        test_inst!((2, 2), [("Get", "xx", "")]),
-        test_inst!((2, 2), [("Get", "x", "")]),
-        test_inst!((2, 2), [("Get", "x", ""), ("Get", "y", "")]),
-        test_inst!(
-            (2, 2),
-            [("NoOp", "", ""), ("Set", "y", "foo"), ("Get", "y", "")]
+        inst!((2, 2), []),
+        inst!((2, 2), [(xx)]),
+        inst!((2, 2), [(x)]),
+        inst!((2, 2), [(x), (y)]),
+        inst!( (2, 2), [(), (y=foo), (y)]
         ),
     ];
 
@@ -196,9 +129,9 @@ async fn test_execute_instances() {
 
     // (3, 1)→(2, 1)→(1, 1)
     let min_insts = vec![
-        test_inst!((1, 1), [("Set", "x", "vx")], [(1, 0), (2, 0), (3, 0)]),
-        test_inst!((2, 1), [("NoOp", "", "")], [(1, 1), (2, 0), (3, 0)]),
-        test_inst!((3, 1), [("Set", "y", "vy")], [(1, 1), (2, 1), (3, 0)]),
+        inst!((1, 1), [(x=vx)], (1, [0, 0, 0])),
+        inst!((2, 1), [()],     (1, [1, 0, 0])),
+        inst!((3, 1), [(y=vy)], (1, [1, 1, 0])),
     ];
 
     match rp.execute_instances(min_insts).await {
@@ -208,9 +141,9 @@ async fn test_execute_instances() {
 
     // (3, 1)~(2, 1)~(1, 1)
     let min_insts = vec![
-        test_inst!((1, 1), [("Set", "x", "vx")], [(1, 0), (2, 1), (3, 0)]),
-        test_inst!((2, 1), [("NoOp", "", "")], [(1, 1), (2, 0), (3, 0)]),
-        test_inst!((3, 1), [("Set", "y", "vy")], [(1, 1), (2, 0), (3, 0)]),
+        inst!((1, 1), [(x=vx)], (1, [0, 1, 0])),
+        inst!((2, 1), [()],     (1, [1, 0, 0])),
+        inst!((3, 1), [(y=vy)], (1, [1, 0, 0])),
     ];
 
     match rp.execute_instances(min_insts).await {
@@ -225,13 +158,13 @@ async fn test_execute_instances() {
     //       ↘   ~
     //         (2, 1)
     let min_insts = vec![
-        test_inst!((1, 1), [("Set", "x", "vx")], [(1, 0), (2, 1), (3, 0)]),
-        test_inst!((2, 1), [("NoOp", "", "")], [(1, 1), (2, 0), (3, 0)]),
-        test_inst!((3, 1), [("Set", "y", "vy")], [(1, 1), (2, 1), (3, 0)]),
+        inst!((1, 1), [(x=vx)], (1, [0, 1, 0])),
+        inst!((2, 1), [()],     (1, [1, 0, 0])),
+        inst!((3, 1), [(y=vy)], (1, [1, 1, 0])),
     ];
 
     match rp.execute_instances(min_insts).await {
-        Ok(iids) => assert_eq!(vec![InstanceId::from((1, 1)), (2, 1).into()], iids),
+        Ok(iids) => assert_eq!(instidvec![(1, 1), (2, 1)], iids),
         Err(_) => assert!(false),
     };
 }
@@ -243,48 +176,48 @@ async fn test_replica_execute() {
     let cases = vec![
         // (1, 1)
         (
-            vec![test_inst!((1, 1), [(1, 0), (2, 0), (3, 0)], true)],
+            vec![inst!((1, 1), deps:(1, [0, 0, 0]), committed:true)],
             vec![(1, 0), (2, 0), (3, 0)],
-            vec![InstanceId::from((1, 1))],
+            instidvec![(1, 1)],
         ),
         // (3, 2)->(2, 2)->(1, 2)
         (
             vec![
-                test_inst!((1, 2), [(1, 1), (2, 1), (3, 1)], true),
-                test_inst!((2, 2), [(1, 2), (2, 1), (3, 1)], true),
-                test_inst!((3, 2), [(1, 2), (2, 2), (3, 1)], true),
+                inst!((1, 2), deps:(1, [1, 1, 1]), committed:true),
+                inst!((2, 2), deps:(1, [2, 1, 1]), committed:true),
+                inst!((3, 2), deps:(1, [2, 2, 1]), committed:true),
             ],
             vec![(1, 1), (2, 1), (3, 1)],
-            vec![InstanceId::from((1, 2))],
+            instidvec![(1, 2)],
         ),
         // (1, 3)~(2, 3)~(3, 3)
         (
             vec![
-                test_inst!((1, 3), [(1, 2), (2, 3), (3, 2)], true),
-                test_inst!((2, 3), [(1, 3), (2, 2), (3, 2)], true),
-                test_inst!((3, 3), [(1, 3), (2, 2), (3, 2)], true),
+                inst!((1, 3), deps:(1, [2, 3, 2]), committed:true),
+                inst!((2, 3), deps:(1, [3, 2, 2]), committed:true),
+                inst!((3, 3), deps:(1, [3, 2, 2]), committed:true),
             ],
             vec![(1, 2), (2, 2), (3, 2)],
-            vec![InstanceId::from((1, 3)), (2, 3).into(), (3, 3).into()],
+            instidvec![(1, 3), (2, 3), (3, 3)],
         ),
         // (1, 4)->(2, 4)~(3, 4)
         (
             vec![
-                test_inst!((1, 4), [(1, 3), (2, 4), (3, 4)], true),
-                test_inst!((2, 4), [(1, 3), (2, 3), (3, 4)], true),
-                test_inst!((3, 4), [(1, 4), (2, 4), (3, 3)], true),
+                inst!((1, 4), deps:(1, [3, 4, 4]), committed:true),
+                inst!((2, 4), deps:(1, [3, 3, 4]), committed:true),
+                inst!((3, 4), deps:(1, [4, 4, 3]), committed:true),
             ],
             vec![(1, 3), (2, 3), (3, 3)],
-            vec![InstanceId::from((2, 4))],
+            instidvec![(2, 4)],
         ),
         // (1, 5)[NotFound]<-(2, 5)~(3, 5)
         (
             vec![
-                test_inst!((2, 5), [(1, 5), (2, 4), (3, 5)], true),
-                test_inst!((3, 5), [(1, 4), (2, 5), (3, 4)], true),
+                inst!((2, 5), deps:(1, [5, 4, 5]), committed:true),
+                inst!((3, 5), deps:(1, [4, 5, 4]), committed:true),
             ],
             vec![(1, 4), (2, 4), (3, 4)],
-            Vec::<InstanceId>::new(),
+            instidvec![],
         ),
     ];
 
@@ -326,8 +259,8 @@ async fn test_send_reply() {
     let (tx, rx) = oneshot::channel();
     // (1, 1) ~ (2, 1)
     let min_insts = vec![
-        test_inst!((1, 1), [("Set", "x", "vx")], [(1, 0), (2, 1), (3, 0)]),
-        test_inst!((2, 1), [("Get", "x", "")], [(1, 1), (2, 0), (3, 0)]),
+        inst!((1, 1), [(x=vx)], (1, [0, 1, 0])),
+        inst!((2, 1), [(x)], (1, [1, 0, 0])),
     ];
 
     rp.insert_tx((2, 1).into(), tx).await;
