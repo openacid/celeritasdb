@@ -118,7 +118,7 @@ macro_rules! frepl {
 
 #[test]
 fn test_handle_fast_accept_reply_err() {
-    let inst = init_inst!((1, 2), [("Set", "x", "1")], [(1, 1)]);
+    let inst = inst!((1, 2), (0, 0, _), [(x="1")], [(1, 1)]);
 
     let cases: Vec<(ReplicateReply, RpcHandlerError)> = vec![
         (
@@ -166,7 +166,7 @@ fn test_handle_fast_accept_reply_err() {
 
 #[test]
 fn test_handle_fast_accept_reply() {
-    let inst = init_inst!((1, 2), [("Set", "x", "1")], []);
+    let inst = inst!((1, 2), (0, 0, _), [(x="1")], []);
     let mut st = Status::new(3, inst.clone());
 
     {
@@ -265,7 +265,7 @@ fn test_handle_accept_reply() {
         Arc::new(MemEngine::new().unwrap()),
     );
 
-    let mut inst = init_inst!((1, 2), [("Set", "x", "1")], []);
+    let mut inst = inst!((1, 2), (0, 0, _), [(x="1")], []);
     inst.deps = Some(depvec![].into());
     rp.storage.set_instance(&inst).unwrap();
     let n = rp.group_replica_ids.len() as i32;

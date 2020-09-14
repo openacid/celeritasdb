@@ -111,30 +111,6 @@ fn test_macro_instidvec() {
 
 
 #[test]
-fn test_macro_init_inst() {
-    let want = Instance {
-        instance_id: Some((1, 2).into()),
-        ballot: Some((0, 0, 1).into()),
-        cmds: vec![("Set", "x", "y").into(), ("Get", "a", "b").into()],
-        deps: Some(DepVec {
-            ids: vec![(11, 12).into(), (13, 14).into()],
-        }),
-        accepted: false,
-        committed: false,
-        executed: false,
-    };
-
-    assert_eq!(
-        want,
-        init_inst!(
-            (1, 2),
-            [("Set", "x", "y"), ("Get", "a", "b")],
-            [(11, 12), (13, 14)]
-        )
-    );
-}
-
-#[test]
 fn test_macro_inst() {
     // instance_id, ballot, cmds
     let want = Instance {

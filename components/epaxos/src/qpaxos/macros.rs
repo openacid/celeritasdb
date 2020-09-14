@@ -117,34 +117,6 @@ macro_rules! ballot {
     };
 }
 
-/// Create a just initialized instance.
-/// supported pattern:
-/// init_inst!(inst_id, cmds, deps)
-///
-/// Example:
-/// ```
-/// #[macro_use] extern crate epaxos;
-/// use epaxos::qpaxos::*;
-///
-/// let inst = init_inst!((0, 1),
-///            [("Set", "x", "1"), ("Set", "y", "2")],
-///            [(1, 0), (2, 0), (3, 0)]);
-/// println!("{:?}", inst);
-/// ```
-#[macro_export]
-#[allow(unused_macros)]
-macro_rules! init_inst {
-    ($id:expr,
-     [$( ($op:expr, $key:expr, $val:expr)),*],
-     [$(($dep_rid:expr, $dep_idx:expr)),* $(,)*]
-    ) => {
-        inst!($id, (0, 0, _),
-              [$( ($op, $key, $val)),*],
-              [$(($dep_rid, $dep_idx)),*]
-        )
-    };
-}
-
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __instance_fields {
@@ -173,6 +145,17 @@ macro_rules! __instance_fields {
 /// inst!(instance_id, cmds)
 /// inst!(instance_id:(1, 2, 3), cmds:[("Set", "x", "2")], ...)
 /// inst!(instance_id, cmds:[("Set", "x", "2")], ...)
+///
+/// Example:
+/// ```
+/// #[macro_use] extern crate epaxos;
+/// use epaxos::qpaxos::*;
+///
+/// let inst = inst!((0, 1),
+///            [(x="1"), (y="2")],
+///            (1, [0, 0, 0]));
+/// println!("{:?}", inst);
+/// ```
 #[macro_export]
 #[allow(unused_macros)]
 macro_rules! inst {
@@ -244,17 +227,15 @@ macro_rules! inst {
     // instance_id, ballot, cmds, deps
     ($id:expr,
      ($epoch:expr, $num:expr, _),
-     [$( ($op:expr, $key:expr, $val:expr)),*],
-     [$( ($dep_rid:expr, $dep_idx:expr)),*]
+     [$($cmd:tt),*],
+     $deps:tt
      $(,)*
      ) => {
         Instance {
             instance_id: Some($id.into()),
             ballot: Some(($epoch, $num, InstanceId::from($id).replica_id).into()),
-            cmds: $crate::cmdvec![$( ($op, $key, $val)),*].into(),
-            deps: Some(
-                depvec![$( ($dep_rid, $dep_idx)),*].into()
-            ),
+            cmds: $crate::cmdvec![$($cmd),*].into(),
+            deps: Some($crate::depvec!$deps.into()),
             ..Default::default()
         }
     };
