@@ -190,7 +190,7 @@ macro_rules! inst {
      ) => {
         Instance {
             instance_id: Some($id.into()),
-            cmds: cmdvec![$($cmd),*].into(),
+            cmds: $crate::cmdvec![$($cmd),*].into(),
             ..Default::default()
         }
     };
@@ -203,8 +203,8 @@ macro_rules! inst {
      ) => {
         Instance {
             instance_id: Some($id.into()),
-            cmds: cmdvec![$($cmd),*].into(),
-            deps: Some(depvec!$deps.into()),
+            cmds: $crate::cmdvec![$($cmd),*].into(),
+            deps: Some($crate::depvec!$deps.into()),
             ..Default::default()
         }
     };
@@ -218,7 +218,7 @@ macro_rules! inst {
         Instance {
             instance_id: Some($id.into()),
             ballot: Some(($epoch, $num, InstanceId::from($id).replica_id).into()),
-            cmds: cmdvec![$( ($op, $key, $val)),*].into(),
+            cmds: $crate::cmdvec![$( ($op, $key, $val)),*].into(),
             ..Default::default()
         }
     };
@@ -233,7 +233,7 @@ macro_rules! inst {
         Instance {
             instance_id: Some($id.into()),
             ballot: Some(($epoch, $num, InstanceId::from($id).replica_id).into()),
-            cmds: cmdvec![$( ($op, $key, $val)),*].into(),
+            cmds: $crate::cmdvec![$( ($op, $key, $val)),*].into(),
             deps: Some(
                 depvec![$( ($dep_rid, $dep_idx)),*].into()
             ),
