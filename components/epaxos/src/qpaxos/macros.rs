@@ -1,8 +1,22 @@
+/// cmd creates a command. Supported pattern:
+/// cmd!()  // NoOp
+/// cmd!(x)  // Get x
+/// cmd!(x=y)  // Set value of x to be y
+/// cmd!(x="complex expr")  // Set value of x to be "complex expr"
+/// cmd!("NoOp"|"Get"|"Set", "key", "value")  // build a command with operation, key and value.
 #[macro_export]
 #[allow(unused_macros)]
 macro_rules! cmd {
     ($op:expr, $key:expr, $val:expr) => {
         Command::from(($op, $key, $val))
+    };
+
+    () => {
+        Command::from(("NoOp", "", ""))
+    };
+
+    (NoOp) => {
+        Command::from(("NoOp", "", ""))
     };
 
     // create a Get command with rust style syntax, just a single var `x`

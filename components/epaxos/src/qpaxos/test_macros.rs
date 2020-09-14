@@ -7,6 +7,14 @@ use crate::qpaxos::*;
 
 #[test]
 fn test_macro_cmd() {
+    // noop
+    assert_eq!(
+        Command::from(("NoOp", "", "")),
+        cmd!());
+    assert_eq!(
+        Command::from(("NoOp", "", "")),
+        cmd!(NoOp));
+
     assert_eq!(
         Command::from(("Get", "x", "y")),
         cmd!("Get", "x", "y"));
