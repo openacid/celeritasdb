@@ -6,6 +6,44 @@ use crate::qpaxos::*;
 // TODO move other macro test in test_instance here.
 
 #[test]
+fn test_macro_cmd() {
+    assert_eq!(
+        Command::from(("Get", "x", "y")),
+        cmd!("Get", "x", "y"));
+
+    assert_eq!(
+        Command::from(("Get", "x", "")),
+        cmd!(x));
+
+    assert_eq!(
+        Command::from(("Set", "x", "y")),
+        cmd!(x=y));
+
+    assert_eq!(
+        Command::from(("Set", "x", "yyy")),
+        cmd!(x="yyy"));
+
+    assert_eq!(
+        Command::from(("Set", "x", "y")),
+        cmd!(x="y"));
+}
+
+#[test]
+fn test_macro_cmdvec() {
+    assert_eq!(
+        Vec::<Command>::new(),
+        cmdvec![]
+    );
+
+    assert_eq!(
+        vec![Command::from(("Get", "x", "")),
+        Command::from(("Set", "x", "y")),
+        Command::from(("Set", "a", "b")),
+        ],
+        cmdvec![(x), (x=y), ("Set", "a", "b")]);
+}
+
+#[test]
 fn test_macro_dep() {
     {
         // implicit type
@@ -34,7 +72,7 @@ fn test_macro_dep() {
 }
 
 #[test]
-fn test_macro_deps() {
+fn test_macro_depvec() {
     {
         // implicit type
         let depvec = depvec![];
@@ -43,6 +81,12 @@ fn test_macro_deps() {
 
     let depvec = depvec![(1, 2)];
     assert_eq!(vec![Dep::from((1, 2))], depvec);
+
+    let depvec = depvec!(0, [1, 2]);
+    assert_eq!(vec![Dep::from((0, 1)), Dep::from((1, 2))], depvec);
+
+    let depvec = depvec!(3, [1, 2]);
+    assert_eq!(vec![Dep::from((3, 1)), Dep::from((4, 2))], depvec);
 }
 
 #[test]

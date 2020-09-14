@@ -4,6 +4,20 @@ macro_rules! cmd {
     ($op:expr, $key:expr, $val:expr) => {
         Command::from(($op, $key, $val))
     };
+
+    // create a Get command with rust style syntax, just a single var `x`
+    ($v:ident) => {
+        Command::from(("Get", stringify!($v), ""))
+    };
+
+    // create a Set command with `x=val`
+    ($v:ident = $what:ident) => {
+        Command::from(("Set", stringify!($v), stringify!($what)))
+    };
+
+    ($v:ident = $what:expr) => {
+        Command::from(("Set", stringify!($v), $what))
+    };
 }
 
 #[macro_export]
@@ -13,8 +27,8 @@ macro_rules! cmdvec {
         Vec::<Command>::new()
     };
 
-    [$(($op:expr, $key:expr, $val:expr)),*] => {
-        vec![$(Command::from(($op, $key, $val))),*]
+    [$($cmd:tt),*] => {
+        vec![$($crate::cmd!$cmd),*]
     };
 }
 
@@ -47,6 +61,21 @@ macro_rules! depvec {
 
     [$(($replica_id:expr, $idx:expr)),*] => {
         vec![$(Dep::from(($replica_id, $idx))),*]
+    };
+
+    // create a DepVec with replica id rid, rid+1, rid+2..
+    ($rid:expr, [$($idx:expr),*]) => {
+        {
+            let mut v = Vec::<Dep>::new();
+            let mut rid = $rid;
+            let v0 =  vec![$($idx),*];
+            for d in v0.iter() {
+                v.push(Dep::from((rid, *d)));
+                rid+=1;
+            }
+
+            v
+        }
     };
 }
 
