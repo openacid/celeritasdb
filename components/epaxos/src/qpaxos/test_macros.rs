@@ -90,6 +90,19 @@ fn test_macro_depvec() {
 }
 
 #[test]
+fn test_macro_instidvec() {
+    {
+        // implicit type
+        let instidvec = instidvec![];
+        assert_eq!(Vec::<Dep>::new(), instidvec);
+    }
+
+    let instidvec = instidvec![(1, 2)];
+    assert_eq!(vec![InstanceId::from((1, 2))], instidvec);
+}
+
+
+#[test]
 fn test_macro_init_inst() {
     let want = Instance {
         instance_id: Some((1, 2).into()),

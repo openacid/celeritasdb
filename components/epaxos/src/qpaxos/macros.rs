@@ -82,9 +82,13 @@ macro_rules! depvec {
 #[macro_export]
 #[allow(unused_macros)]
 macro_rules! instidvec {
+    [] => {
+        Vec::<InstanceId>::new()
+    };
+
     [$(($replica_id:expr, $idx:expr)),*] => {
         vec![$(InstanceId::from(($replica_id, $idx))),*]
-    }
+    };
 }
 
 #[macro_export]
