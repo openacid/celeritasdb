@@ -151,6 +151,8 @@ macro_rules! __instance_fields {
 /// inst!(instance_id, ballot, cmds, deps, acceptted, committed, executed)
 /// inst!(instance_id, ballot, cmds, deps)
 /// inst!(instance_id, ballot, cmds)
+/// inst!(instance_id, cmds, deps)
+/// inst!(instance_id, cmds)
 /// inst!(instance_id:(1, 2, 3), cmds:[("Set", "x", "2")], ...)
 /// inst!(instance_id, cmds:[("Set", "x", "2")], ...)
 #[macro_export]
@@ -180,6 +182,32 @@ macro_rules! inst {
         }
     };
 
+
+    // instance_id, cmds
+    ($id:expr,
+     [$($cmd:tt),*]
+     $(,)*
+     ) => {
+        Instance {
+            instance_id: Some($id.into()),
+            cmds: cmdvec![$($cmd),*].into(),
+            ..Default::default()
+        }
+    };
+
+    // instance_id, cmds, deps
+    ($id:expr,
+     [$($cmd:tt),*],
+     $deps:tt
+     $(,)*
+     ) => {
+        Instance {
+            instance_id: Some($id.into()),
+            cmds: cmdvec![$($cmd),*].into(),
+            deps: Some(depvec!$deps.into()),
+            ..Default::default()
+        }
+    };
 
     // instance_id, ballot, cmds
     ($id:expr,

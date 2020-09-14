@@ -131,6 +131,46 @@ fn test_macro_inst() {
         inst!((1, 2), (3, 4, _), [("Set", "x", "y"), ("Get", "a", "b")])
     );
 
+    // instance_id, cmds
+    let want = Instance {
+        instance_id: Some((1, 2).into()),
+        ballot: None,
+        cmds: vec![("Set", "x", "y").into(), ("Get", "a", "").into()],
+        deps: None,
+        accepted: false,
+        committed: false,
+        executed: false,
+    };
+
+    assert_eq!(
+        want,
+        inst!((1, 2), [("Set", "x", "y"), ("Get", "a", "")])
+    );
+    assert_eq!(
+        want,
+        inst!((1, 2), [(x=y), (a)])
+    );
+
+    // instance_id, cmds, deps
+    let want = Instance {
+        instance_id: Some((1, 2).into()),
+        ballot: None,
+        cmds: vec![("Set", "x", "y").into(), ("Get", "a", "").into()],
+        deps:Some(vec![dep!(11, 12), dep!(12, 13)].into()),
+        accepted: false,
+        committed: false,
+        executed: false,
+    };
+
+    assert_eq!(
+        want,
+        inst!((1, 2), [(x=y), (a)], [(11, 12), (12, 13)])
+    );
+    assert_eq!(
+        want,
+        inst!((1, 2), [(x=y), (a)], (11, [12, 13]))
+    );
+
     // instance_id, ballot, cmds, deps
     let want = Instance {
         instance_id: Some((1, 2).into()),
