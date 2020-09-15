@@ -8,47 +8,32 @@ use crate::qpaxos::*;
 #[test]
 fn test_macro_cmd() {
     // noop
-    assert_eq!(
-        Command::from(("NoOp", "", "")),
-        cmd!());
-    assert_eq!(
-        Command::from(("NoOp", "", "")),
-        cmd!(NoOp));
+    assert_eq!(Command::from(("NoOp", "", "")), cmd!());
+    assert_eq!(Command::from(("NoOp", "", "")), cmd!(NoOp));
 
-    assert_eq!(
-        Command::from(("Get", "x", "y")),
-        cmd!("Get", "x", "y"));
+    assert_eq!(Command::from(("Get", "x", "y")), cmd!("Get", "x", "y"));
 
-    assert_eq!(
-        Command::from(("Get", "x", "")),
-        cmd!(x));
+    assert_eq!(Command::from(("Get", "x", "")), cmd!(x));
 
-    assert_eq!(
-        Command::from(("Set", "x", "y")),
-        cmd!(x=y));
+    assert_eq!(Command::from(("Set", "x", "y")), cmd!(x = y));
 
-    assert_eq!(
-        Command::from(("Set", "x", "yyy")),
-        cmd!(x="yyy"));
+    assert_eq!(Command::from(("Set", "x", "yyy")), cmd!(x = "yyy"));
 
-    assert_eq!(
-        Command::from(("Set", "x", "y")),
-        cmd!(x="y"));
+    assert_eq!(Command::from(("Set", "x", "y")), cmd!(x = "y"));
 }
 
 #[test]
 fn test_macro_cmdvec() {
-    assert_eq!(
-        Vec::<Command>::new(),
-        cmdvec![]
-    );
+    assert_eq!(Vec::<Command>::new(), cmdvec![]);
 
     assert_eq!(
-        vec![Command::from(("Get", "x", "")),
-        Command::from(("Set", "x", "y")),
-        Command::from(("Set", "a", "b")),
+        vec![
+            Command::from(("Get", "x", "")),
+            Command::from(("Set", "x", "y")),
+            Command::from(("Set", "a", "b")),
         ],
-        cmdvec![(x), (x=y), ("Set", "a", "b")]);
+        cmdvec![(x), (x = y), ("Set", "a", "b")]
+    );
 }
 
 #[test]
@@ -109,7 +94,6 @@ fn test_macro_instidvec() {
     assert_eq!(vec![InstanceId::from((1, 2))], instidvec);
 }
 
-
 #[test]
 fn test_macro_inst() {
     // instance_id, ballot, cmds
@@ -118,7 +102,7 @@ fn test_macro_inst() {
         ballot: Some((3, 4, 1).into()),
         cmds: vec![("Set", "x", "y").into(), ("Get", "a", "b").into()],
         deps: None,
-        accepted: false,
+        accepted_ballot: None,
         committed: false,
         executed: false,
     };
@@ -134,39 +118,27 @@ fn test_macro_inst() {
         ballot: None,
         cmds: vec![("Set", "x", "y").into(), ("Get", "a", "").into()],
         deps: None,
-        accepted: false,
+        accepted_ballot: None,
         committed: false,
         executed: false,
     };
 
-    assert_eq!(
-        want,
-        inst!((1, 2), [("Set", "x", "y"), ("Get", "a", "")])
-    );
-    assert_eq!(
-        want,
-        inst!((1, 2), [(x=y), (a)])
-    );
+    assert_eq!(want, inst!((1, 2), [("Set", "x", "y"), ("Get", "a", "")]));
+    assert_eq!(want, inst!((1, 2), [(x = y), (a)]));
 
     // instance_id, cmds, deps
     let want = Instance {
         instance_id: Some((1, 2).into()),
         ballot: None,
         cmds: vec![("Set", "x", "y").into(), ("Get", "a", "").into()],
-        deps:Some(vec![dep!(11, 12), dep!(12, 13)].into()),
-        accepted: false,
+        deps: Some(vec![dep!(11, 12), dep!(12, 13)].into()),
+        accepted_ballot: None,
         committed: false,
         executed: false,
     };
 
-    assert_eq!(
-        want,
-        inst!((1, 2), [(x=y), (a)], [(11, 12), (12, 13)])
-    );
-    assert_eq!(
-        want,
-        inst!((1, 2), [(x=y), (a)], (11, [12, 13]))
-    );
+    assert_eq!(want, inst!((1, 2), [(x = y), (a)], [(11, 12), (12, 13)]));
+    assert_eq!(want, inst!((1, 2), [(x = y), (a)], (11, [12, 13])));
 
     // instance_id, ballot, cmds, deps
     let want = Instance {
@@ -174,9 +146,9 @@ fn test_macro_inst() {
         ballot: Some((3, 4, 1).into()),
         cmds: vec![("Set", "x", "y").into(), ("Get", "a", "b").into()],
         deps: Some(Deps {
-            ids: vec![(11, 12).into(), (13, 14).into()],
+            dep_vec: vec![(11, 12).into(), (13, 14).into()],
         }),
-        accepted: false,
+        accepted_ballot: None,
         committed: false,
         executed: false,
     };
@@ -197,9 +169,9 @@ fn test_macro_inst() {
         ballot: Some((3, 4, 3).into()),
         cmds: vec![("Set", "x", "y").into(), ("Get", "a", "b").into()],
         deps: Some(Deps {
-            ids: vec![(11, 12).into(), (13, 14).into()],
+            dep_vec: vec![(11, 12).into(), (13, 14).into()],
         }),
-        accepted: true,
+        accepted_ballot: Some((1, 2, 3).into()),
         committed: true,
         executed: true,
     };
@@ -211,7 +183,7 @@ fn test_macro_inst() {
             (3, 4, 3),
             [("Set", "x", "y"), ("Get", "a", "b")],
             [(11, 12), (13, 14)],
-            true,
+            (1, 2, 3),
             true,
             true
         )
@@ -252,6 +224,14 @@ fn test_macro_inst_kv() {
             ..Default::default()
         },
         inst!(ballot:(1, 2, 3))
+    );
+
+    assert_eq!(
+        Instance {
+            accepted_ballot: Some((1, 2, 3).into()),
+            ..Default::default()
+        },
+        inst!(accepted_ballot:(1, 2, 3))
     );
 
     assert_eq!(

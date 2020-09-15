@@ -11,14 +11,14 @@ use crate::qpaxos::ReplicaId;
 impl Deref for Deps {
     type Target = Vec<Dep>;
     fn deref(&self) -> &Self::Target {
-        &self.ids
+        &self.dep_vec
     }
 }
 
 /// Let user use method of Vec<Dep> directly.
 impl DerefMut for Deps {
     fn deref_mut(&mut self) -> &mut Vec<Dep> {
-        &mut self.ids
+        &mut self.dep_vec
     }
 }
 
@@ -28,7 +28,7 @@ impl DerefMut for Deps {
 impl Index<ReplicaId> for Deps {
     type Output = Dep;
     fn index(&self, rid: ReplicaId) -> &Self::Output {
-        for inst in self.ids.iter() {
+        for inst in self.dep_vec.iter() {
             if inst.replica_id == rid {
                 return inst;
             }
@@ -77,7 +77,7 @@ impl Deps {
     /// get retreive a Dep with specified replica_id.
     /// It returns the first match.
     pub fn get(&self, rid: ReplicaId) -> Option<Dep> {
-        for iid in self.ids.iter() {
+        for iid in self.dep_vec.iter() {
             if iid.replica_id == rid {
                 return Some(*iid);
             }
@@ -89,7 +89,7 @@ impl Deps {
     /// It returns the index the added Dep is, along with an Option of the replaced value.
     pub fn set(&mut self, inst_id: Dep) -> (usize, Option<Dep>) {
         let mut idx: i64 = -1;
-        for (i, iid) in self.ids.iter().enumerate() {
+        for (i, iid) in self.dep_vec.iter().enumerate() {
             if iid.replica_id == inst_id.replica_id {
                 idx = i as i64;
                 break;
@@ -97,12 +97,12 @@ impl Deps {
         }
 
         if idx == -1 {
-            let l = self.ids.len();
-            self.ids.push(inst_id);
+            let l = self.dep_vec.len();
+            self.dep_vec.push(inst_id);
             (l, None)
         } else {
-            let old = self.ids[idx as usize];
-            self.ids[idx as usize] = inst_id;
+            let old = self.dep_vec[idx as usize];
+            self.dep_vec[idx as usize] = inst_id;
             (idx as usize, Some(old))
         }
     }
@@ -110,7 +110,7 @@ impl Deps {
 
 impl From<&[Dep]> for Deps {
     fn from(v: &[Dep]) -> Deps {
-        Deps { ids: v.into() }
+        Deps { dep_vec: v.into() }
     }
 }
 
@@ -142,13 +142,13 @@ impl<A: Into<ReplicaId> + Copy, B: Into<i64> + Copy> From<&[(A, B)]> for Deps {
 
 impl<A> From<&[A; 0]> for Deps {
     fn from(_v: &[A; 0]) -> Deps {
-        Deps { ids: vec![] }
+        Deps { dep_vec: vec![] }
     }
 }
 
 impl<A> From<[A; 0]> for Deps {
     fn from(_v: [A; 0]) -> Deps {
-        Deps { ids: vec![] }
+        Deps { dep_vec: vec![] }
     }
 }
 

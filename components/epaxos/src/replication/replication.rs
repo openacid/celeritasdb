@@ -70,13 +70,13 @@ pub async fn replicate(
     }
 
     let adeps = st.get_accept_deps(&grids);
-    println!("st.fast_deps: {:?}", st.fast_deps);
+    // println!("st.fast_deps: {:?}", st.fast_deps);
     println!("got accept deps:{:?}", adeps);
 
     let adeps = adeps.ok_or(ReplicationError::NotEnoughQuorum(
         InstanceStatus::FastAccepted,
         st.quorum,
-        st.fast_oks.len() as i32,
+        st.prepared[&0].replied.len() as i32,
     ))?;
 
     // slow path
@@ -96,7 +96,7 @@ pub async fn replicate(
         }
     }
 
-    println!("{:?}", st.fast_deps);
+    // println!("{:?}", st.fast_deps);
 
     Err(ReplicationError::NotEnoughQuorum(
         InstanceStatus::Accepted,

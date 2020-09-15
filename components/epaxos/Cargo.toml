@@ -19,6 +19,7 @@ pretty_assertions = { version = "0.6.1" }
 [dependencies]
 parse = { path = "../parse" }
 quick-error = { version = "1.2.2" }
+maplit = { version = "1.0.2" }
 tempfile = { version = "3.1.0" }
 prost = { version = "0.6.1" }
 tonic = "0.2"

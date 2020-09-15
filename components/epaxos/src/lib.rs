@@ -1,6 +1,9 @@
 #![feature(is_sorted)]
 
 #[macro_use]
+extern crate maplit;
+
+#[macro_use]
 extern crate quick_error;
 
 #[macro_use]

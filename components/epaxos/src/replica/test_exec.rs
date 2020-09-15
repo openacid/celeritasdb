@@ -24,10 +24,7 @@ fn test_find_missing_instances() {
     let rp = new_replica();
 
     let cases1 = [
-        (
-            vec![inst!((1, 2), deps:[(1, 1)])],
-            instidvec![(1, 1)],
-        ),
+        (vec![inst!((1, 2), deps:[(1, 1)])], instidvec![(1, 1)]),
         // R1               R2              R3
         // |                |               |
         // |                2(Committed)-.  10(Executed)
@@ -111,8 +108,7 @@ async fn test_execute_commands() {
         inst!((2, 2), [(xx)]),
         inst!((2, 2), [(x)]),
         inst!((2, 2), [(x), (y)]),
-        inst!( (2, 2), [(), (y=foo), (y)]
-        ),
+        inst!((2, 2), [(), (y = foo), (y)]),
     ];
 
     for inst in cases.iter() {
@@ -129,9 +125,9 @@ async fn test_execute_instances() {
 
     // (3, 1)→(2, 1)→(1, 1)
     let min_insts = vec![
-        inst!((1, 1), [(x=vx)], (1, [0, 0, 0])),
-        inst!((2, 1), [()],     (1, [1, 0, 0])),
-        inst!((3, 1), [(y=vy)], (1, [1, 1, 0])),
+        inst!((1, 1), [(x = vx)], (1, [0, 0, 0])),
+        inst!((2, 1), [()], (1, [1, 0, 0])),
+        inst!((3, 1), [(y = vy)], (1, [1, 1, 0])),
     ];
 
     match rp.execute_instances(min_insts).await {
@@ -141,9 +137,9 @@ async fn test_execute_instances() {
 
     // (3, 1)~(2, 1)~(1, 1)
     let min_insts = vec![
-        inst!((1, 1), [(x=vx)], (1, [0, 1, 0])),
-        inst!((2, 1), [()],     (1, [1, 0, 0])),
-        inst!((3, 1), [(y=vy)], (1, [1, 0, 0])),
+        inst!((1, 1), [(x = vx)], (1, [0, 1, 0])),
+        inst!((2, 1), [()], (1, [1, 0, 0])),
+        inst!((3, 1), [(y = vy)], (1, [1, 0, 0])),
     ];
 
     match rp.execute_instances(min_insts).await {
@@ -158,9 +154,9 @@ async fn test_execute_instances() {
     //       ↘   ~
     //         (2, 1)
     let min_insts = vec![
-        inst!((1, 1), [(x=vx)], (1, [0, 1, 0])),
-        inst!((2, 1), [()],     (1, [1, 0, 0])),
-        inst!((3, 1), [(y=vy)], (1, [1, 1, 0])),
+        inst!((1, 1), [(x = vx)], (1, [0, 1, 0])),
+        inst!((2, 1), [()], (1, [1, 0, 0])),
+        inst!((3, 1), [(y = vy)], (1, [1, 1, 0])),
     ];
 
     match rp.execute_instances(min_insts).await {
@@ -259,7 +255,7 @@ async fn test_send_reply() {
     let (tx, rx) = oneshot::channel();
     // (1, 1) ~ (2, 1)
     let min_insts = vec![
-        inst!((1, 1), [(x=vx)], (1, [0, 1, 0])),
+        inst!((1, 1), [(x = vx)], (1, [0, 1, 0])),
         inst!((2, 1), [(x)], (1, [1, 0, 0])),
     ];
 

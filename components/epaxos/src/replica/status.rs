@@ -1,5 +1,6 @@
 use crate::qpaxos::*;
 use std::collections::HashMap;
+use std::collections::HashSet;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum InstanceStatus {
@@ -20,7 +21,7 @@ impl Instance {
             return InstanceStatus::Committed;
         }
 
-        if self.accepted {
+        if self.accepted_ballot != None {
             return InstanceStatus::Accepted;
         }
 
@@ -30,6 +31,20 @@ impl Instance {
 
         InstanceStatus::Na
     }
+}
+
+/// RepliedDep stores a dependency replied from replica-j that is proposed by replica-i
+#[derive(Debug, Default, PartialEq, PartialOrd, Eq, Ord, Clone)]
+pub struct RepliedDep {
+    pub idx: i64,
+    pub seq: i64,
+    pub committed: bool,
+}
+
+#[derive(Debug, Default, Clone)]
+pub struct DepStatus {
+    pub replied: HashSet<ReplicaId>,
+    pub rdeps: Vec<RepliedDep>,
 }
 
 /// Status tracks replication status during fast-accept, accept and commit phase.
@@ -42,29 +57,15 @@ pub struct Status {
     // With a cached instance it is possible to reduce storage access during replication.
     pub instance: Instance,
 
-    /// fast_replied tracks what replica has sent back FastAcceptReply.
-    /// It is used to de-dup duplicated messages.
-    pub fast_replied: HashMap<ReplicaId, bool>,
-
-    /// fast_oks tracks positive fast-accept-replies.
-    /// AcceptReply with error, delayed, or with lower ballot does not count.
-    pub fast_oks: HashMap<ReplicaId, bool>,
-
-    /// fast_deps collects `deps` received in fast-accept phase.
-    /// They are stored by dependency instance leader.
-    pub fast_deps: HashMap<ReplicaId, Vec<Dep>>,
-
-    /// fast_committed tracks what updated dep instance is committed.
-    pub fast_committed: HashMap<InstanceId, bool>,
-
-    /// accept_replie tracks what replica has sent back AcceptReply.
-    /// It does include the leader itself, although the leader update instance status
-    /// to "accept" locally.
-    pub accept_replied: HashMap<ReplicaId, bool>,
+    /// prepared tracks prepare replies.
+    ///
+    /// prepared[i] stores the status of an instance proposed by replica-i.
+    /// prepared[i].rdeps[j] stores replies from replica-j.
+    pub prepared: HashMap<ReplicaId, DepStatus>,
 
     /// accept_oks tracks positive accept-replies.
     /// AcceptReply with error, delayed, or with lower ballot does not count.
-    pub accept_oks: HashMap<ReplicaId, bool>,
+    pub accept_oks: HashSet<ReplicaId>,
 }
 
 impl Status {
@@ -76,13 +77,9 @@ impl Status {
             fast_quorum: fast_quorum(n_replica),
             instance,
 
-            fast_replied: HashMap::new(),
-            fast_oks: HashMap::new(),
-            fast_deps: HashMap::new(),
-            fast_committed: HashMap::new(),
+            prepared: HashMap::new(),
 
-            accept_replied: HashMap::new(),
-            accept_oks: HashMap::new(),
+            accept_oks: HashSet::new(),
         };
 
         st.start_fast_accept();
@@ -93,19 +90,24 @@ impl Status {
     /// start_fast_accept performs a handle-fast-accept-reply for the instance it serves.
     pub fn start_fast_accept(&mut self) -> &mut Self {
         let iid = self.instance.instance_id.unwrap();
-        let rid = iid.replica_id;
-
-        self.fast_replied.insert(rid, true);
-        self.fast_oks.insert(rid, true);
 
         let deps = self.instance.deps.as_ref().unwrap();
         for d in deps.iter() {
-            let rid = d.replica_id;
-            if !self.fast_deps.contains_key(&rid) {
-                self.fast_deps.insert(rid, Vec::new());
-            }
+            let drid = d.replica_id;
 
-            self.fast_deps.get_mut(&rid).unwrap().push(*d);
+            // TODO committed is not impl
+
+            self.prepared.insert(
+                drid,
+                DepStatus {
+                    replied: hashset! {iid.replica_id},
+                    rdeps: vec![RepliedDep {
+                        idx: d.idx,
+                        seq: d.seq,
+                        committed: false,
+                    }],
+                },
+            );
         }
 
         self
@@ -116,8 +118,7 @@ impl Status {
         // local instance accepts it.
         let iid = self.instance.instance_id.unwrap();
         let rid = iid.replica_id;
-        self.accept_replied.insert(rid, true);
-        self.accept_oks.insert(rid, true);
+        self.accept_oks.insert(rid);
 
         self
     }
@@ -127,12 +128,12 @@ impl Status {
     pub fn get_fast_commit_deps(&mut self, cluster: &[ReplicaId]) -> Option<Vec<Dep>> {
         let mut rst: Vec<Dep> = Vec::with_capacity(cluster.len());
         for rid in cluster.iter() {
-            let deps = self.fast_deps.get_mut(rid)?;
-
             // TODO do not need to sort every time calling this function.
+            let deps = &mut self.prepared.get_mut(rid)?.rdeps;
+
             deps.sort();
 
-            let fdep = get_fast_commit_dep(deps, &self.fast_committed, self.fast_quorum)?;
+            let fdep = get_fast_commit_dep(*rid, deps, self.fast_quorum)?;
             rst.push(fdep);
         }
         Some(rst)
@@ -143,12 +144,12 @@ impl Status {
     pub fn get_accept_deps(&mut self, cluster: &[ReplicaId]) -> Option<Vec<Dep>> {
         let mut rst: Vec<Dep> = Vec::with_capacity(cluster.len());
         for rid in cluster.iter() {
-            let deps = self.fast_deps.get_mut(rid)?;
-
             // TODO do not need to sort every time calling this function.
+            let deps = &mut self.prepared.get_mut(rid)?.rdeps;
+
             deps.sort();
 
-            let fdep = get_accept_dep(deps, self.quorum)?;
+            let fdep = get_accept_dep(*rid, deps, self.quorum)?;
             rst.push(fdep);
         }
         Some(rst)
@@ -157,10 +158,8 @@ impl Status {
 
 /// `get_fast_commit_dep` finds out the safe dependency by a leader for fast commit.
 ///
-/// `deps` are instance-ids with the same `replica_id`. It contains the initial dep at the 0-th
-/// slot, and updated deps from 1-th slot.
-/// `deps` must be sorted.
-/// `committed` stores which instance has been committed.
+/// `rdeps`: replied dependent instances proposed by replica `rid`.
+/// `rdeps` must be sorted.
 ///
 /// The conditions of fast-commit are:
 /// - the number of identical deps is at least fast-quorum,
@@ -168,38 +167,36 @@ impl Status {
 ///
 /// If there is no safe dep for fast-commit, it returns None.
 pub fn get_fast_commit_dep(
-    deps: &Vec<Dep>,
-    committed: &HashMap<InstanceId, bool>,
+    rid: ReplicaId,
+    rdeps: &Vec<RepliedDep>,
     fast_quorum: i32,
 ) -> Option<Dep> {
-    // TODO what if deps.len() is 0
-    // the first elt in deps is the initial dep.
-    //
-    // TODO need to ensure the committed dep not depend on this instance, the second FP-condition.
+    let fast_quorum = fast_quorum as usize;
+    let n = rdeps.len();
 
-    let n = deps.len() as i32;
     assert!(n > 0);
-    assert!(deps.is_sorted());
+    assert!(fast_quorum > 0);
+    assert!(rdeps.is_sorted());
 
     if n < fast_quorum {
         return None;
     }
 
-    if fast_quorum == 0 {
-        // only when n==1 fast_quorum could be 0
-        assert!(n == 1);
-        return Some(deps[0]);
-    }
+    // In a sorted vec, that i-th elt equals the (i+k)-th elt implies there are at least k+1 equal elts.
+    for i in 0..=(n - fast_quorum) {
+        let left = &rdeps[i];
 
-    let x = (n - fast_quorum) as usize;
+        for j in (i + fast_quorum - 1)..n {
+            let right = &rdeps[j];
 
-    for i in 0..=x {
-        let dep = &deps[i];
-        let iid = instid!(dep.replica_id, dep.idx);
-        if dep == &deps[i + fast_quorum as usize - 1] {
             // TODO: add proof of it: equals to initial value does not need to be committed.
-            if i == 0 || committed.get(&iid) == Some(&true) {
-                return Some(*dep);
+
+            if left.idx == right.idx && left.seq == right.seq && (i == 0 || right.committed) {
+                return Some(Dep {
+                    replica_id: rid,
+                    idx: left.idx,
+                    seq: left.seq,
+                });
             }
         }
     }
@@ -218,20 +215,27 @@ pub fn get_fast_commit_dep(
 /// Thus `L` does not have to be after `b`.
 ///
 /// It contains the initial dep at the 0-th slot, and updated deps from 1-th slot.
-/// `deps` in Accept Request is the union of `deps` replied in fast-accept phase.
+/// `rdeps` in Accept Request is the union of `rdeps` replied in fast-accept phase.
 ///
-/// `deps` must be sorted.
-pub fn get_accept_dep(deps: &Vec<Dep>, quorum: i32) -> Option<Dep> {
-    // TODO what if deps.len() is 0
-    // the first elt in deps is the initial dep.
+/// `rdeps` must be sorted.
+pub fn get_accept_dep(rid: ReplicaId, rdeps: &Vec<RepliedDep>, quorum: i32) -> Option<Dep> {
+    let quorum = quorum as usize;
 
-    let n = deps.len() as i32;
+    // the first elt in rdeps is the initial dep.
+
+    let n = rdeps.len();
     assert!(n > 0);
-    assert!(deps.is_sorted());
+    assert!(quorum > 0);
+    assert!(rdeps.is_sorted());
 
     if n < quorum {
         return None;
     }
 
-    return Some(deps[(quorum - 1) as usize]);
+    let d = &rdeps[quorum - 1];
+    return Some(Dep {
+        replica_id: rid,
+        idx: d.idx,
+        seq: d.seq,
+    });
 }

@@ -15,14 +15,14 @@ pub mod macros;
 
 // impl Display for qpaxos data types.
 pub mod conflict;
-pub mod dep_vec;
+pub mod deps;
 mod display;
 pub mod errors;
 mod instance_id_vec;
 pub mod quorums;
 
 pub use conflict::*;
-pub use dep_vec::*;
+pub use deps::*;
 pub use display::*;
 pub use errors::*;
 pub use instance_id_vec::*;
@@ -50,7 +50,7 @@ mod test_command;
 mod test_errors;
 
 #[cfg(test)]
-mod test_dep_vec;
+mod test_deps;
 
 #[cfg(test)]
 mod test_instance;

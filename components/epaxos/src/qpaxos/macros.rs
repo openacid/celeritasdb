@@ -124,6 +124,7 @@ macro_rules! __instance_fields {
 
     (instance_id, $v:tt) => { Some($crate::instid!$v) };
     (ballot, $v:tt) => { Some($crate::ballot!$v) };
+    (accepted_ballot, $v:tt) => { Some($crate::ballot!$v) };
     (cmds, $v:tt) => { $crate::cmdvec!$v.into() };
     (deps, $v:tt) => { Some($crate::depvec!$v.into()) };
 
@@ -138,7 +139,7 @@ macro_rules! __instance_fields {
 /// deps: [(replica_id, idx)...]
 ///
 /// Supported pattern:
-/// inst!(instance_id, ballot, cmds, deps, acceptted, committed, executed)
+/// inst!(instance_id, ballot, cmds, deps, accepted_ballot, committed, executed)
 /// inst!(instance_id, ballot, cmds, deps)
 /// inst!(instance_id, ballot, cmds)
 /// inst!(instance_id, cmds, deps)
@@ -245,7 +246,7 @@ macro_rules! inst {
      ($epoch:expr, $num:expr, $brid:expr),
      [$( ($op:expr, $key:expr, $val:expr)),*],
      [$( ($dep_rid:expr, $dep_idx:expr)),*],
-     $accepted:expr,
+     $accepted_ballot:expr,
      $committed:expr,
      $executed:expr
      $(,)*
@@ -257,10 +258,9 @@ macro_rules! inst {
             deps: Some(
                 depvec![$( ($dep_rid, $dep_idx)),*].into()
             ),
-            accepted:$accepted,
+            accepted_ballot:Some($accepted_ballot.into()),
             committed:$committed,
-            executed:$executed,
-            ..Default::default()
+            executed:$executed
         }
     };
 }

@@ -29,16 +29,6 @@ macro_rules! iid {
     };
 }
 
-macro_rules! get {
-    ($container:expr, $key:expr, None) => {
-        assert_eq!($container.get($key), None);
-    };
-
-    ($container:expr, $key:expr, $want:expr) => {
-        assert_eq!($container.get($key), Some(&$want));
-    };
-}
-
 /// deps makes a Some(Deps) or None
 /// Supported pattern:
 /// deps!(None)
@@ -118,7 +108,7 @@ macro_rules! frepl {
 
 #[test]
 fn test_handle_fast_accept_reply_err() {
-    let inst = inst!((1, 2), (0, 0, _), [(x="1")], [(1, 1)]);
+    let inst = inst!((1, 2), (0, 0, _), [(x = "1")], [(1, 1)]);
 
     let cases: Vec<(ReplicateReply, RpcHandlerError)> = vec![
         (
@@ -166,7 +156,7 @@ fn test_handle_fast_accept_reply_err() {
 
 #[test]
 fn test_handle_fast_accept_reply() {
-    let inst = inst!((1, 2), (0, 0, _), [(x="1")], []);
+    let inst = inst!((1, 2), (0, 0, _), [(x = "1")], []);
     let mut st = Status::new(3, inst.clone());
 
     {
@@ -177,13 +167,25 @@ fn test_handle_fast_accept_reply() {
 
         let r = handle_fast_accept_reply(&mut st, from_rid, repl.clone());
         assert_eq!(r.unwrap(), ());
-        assert_eq!(st.fast_replied[&from_rid], true);
-        get!(st.fast_oks, &from_rid, true);
+        // assert_eq!(st.fast_replied[&from_rid], true);
+        assert!(st.prepared[&1].replied.contains(&from_rid));
 
-        assert_eq!(st.fast_deps[&1], vec![Dep::from((1, 2))]);
-        assert_eq!(st.fast_deps[&2], vec![Dep::from((2, 3))]);
-        assert!(st.fast_committed[&instid!(2, 3)]);
-        assert_eq!(None, st.fast_committed.get(&instid!(1, 2)));
+        assert_eq!(
+            st.prepared[&1].rdeps,
+            vec![RepliedDep {
+                idx: 2,
+                seq: 0,
+                committed: false
+            }]
+        );
+        assert_eq!(
+            st.prepared[&2].rdeps,
+            vec![RepliedDep {
+                idx: 3,
+                seq: 0,
+                committed: true
+            }]
+        );
     }
     {
         // greater ballot should be ignored
@@ -196,20 +198,24 @@ fn test_handle_fast_accept_reply() {
             RpcHandlerError::StaleBallot((0, 0, 1).into(), (100, 0, 1).into())
         );
         assert_eq!(
-            true,
-            st.fast_replied.contains_key(&from_rid),
+            false,
+            st.prepared[&1].replied.contains(&from_rid),
             "reply with higher ballot is still be recorded"
         );
 
-        get!(st.fast_oks, &from_rid, None);
-
-        assert_eq!(false, st.fast_deps.contains_key(&3));
-        assert_eq!(false, st.fast_committed.contains_key(&instid!(3, 4)));
+        assert_eq!(false, st.prepared.contains_key(&3));
     }
     {
         // duplicated message
+
+        let inst = inst!((1, 2), (0, 0, _), [(x = "1")], []);
+        let mut st = Status::new(3, inst.clone());
+
         let repl: ReplicateReply = frepl!(((0, 0, 1), (1, 2)), ([(3, 4)], vec![true]));
         let from_rid = 4;
+
+        let r = handle_fast_accept_reply(&mut st, from_rid, repl.clone());
+        assert_eq!(None, r.err());
 
         let r = handle_fast_accept_reply(&mut st, from_rid, repl.clone());
         assert_eq!(
@@ -221,12 +227,6 @@ fn test_handle_fast_accept_reply() {
                 st.instance.instance_id.unwrap()
             )
         );
-        assert_eq!(true, st.fast_replied.contains_key(&from_rid));
-
-        get!(st.fast_oks, &from_rid, None);
-
-        assert_eq!(false, st.fast_deps.contains_key(&3));
-        assert_eq!(false, st.fast_committed.contains_key(&instid!(3, 4)));
     }
 
     {
@@ -242,16 +242,6 @@ fn test_handle_fast_accept_reply() {
             r.err().unwrap(),
             RpcHandlerError::RemoteError(repl.err.unwrap())
         );
-        assert_eq!(
-            true,
-            st.fast_replied.contains_key(&from_rid),
-            "error reply should be recorded"
-        );
-
-        get!(st.fast_oks, &from_rid, None);
-
-        assert_eq!(false, st.fast_deps.contains_key(&3));
-        assert_eq!(false, st.fast_committed.contains_key(&instid!(3, 4)));
     }
 }
 
@@ -265,7 +255,7 @@ fn test_handle_accept_reply() {
         Arc::new(MemEngine::new().unwrap()),
     );
 
-    let mut inst = inst!((1, 2), (0, 0, _), [(x="1")], []);
+    let mut inst = inst!((1, 2), (0, 0, _), [(x = "1")], []);
     inst.deps = Some(depvec![].into());
     rp.storage.set_instance(&inst).unwrap();
     let n = rp.group_replica_ids.len() as i32;
@@ -283,7 +273,6 @@ fn test_handle_accept_reply() {
         assert!(r.is_err());
 
         assert_eq!(st.get_accept_deps(&rp.group_replica_ids), None);
-        assert_eq!(2, st.accept_replied.len());
         assert_eq!(1, st.accept_oks.len());
     }
 
@@ -301,13 +290,12 @@ fn test_handle_accept_reply() {
 
         assert_eq!(st.get_accept_deps(&rp.group_replica_ids), None);
 
-        assert_eq!(2, st.accept_replied.len());
         assert_eq!(1, st.accept_oks.len());
     }
 
     {
         // success
-        inst.accepted = true;
+        inst.accepted_ballot = Some((1, 2, 3).into());
         let mut st = Status::new(n, inst.clone());
         st.start_accept();
         let repl = ReplicateReply {
@@ -320,7 +308,6 @@ fn test_handle_accept_reply() {
         println!("{:?}", r);
         assert!(r.is_ok());
 
-        assert_eq!(2, st.accept_replied.len());
         assert_eq!(2, st.accept_oks.len());
     }
 }

@@ -63,7 +63,7 @@ fn test_new_instance() {
     let i10 = r1.new_instance(&cmds).unwrap();
     assert_eq!(
         i10,
-        inst!((rid1, 0), (0, 0, _), [(x="1")], (0, [-1, -1, -1]))
+        inst!((rid1, 0), (0, 0, _), [(x = "1")], (0, [-1, -1, -1]))
     );
     assert_eq!(
         i10,
@@ -74,7 +74,7 @@ fn test_new_instance() {
     let i20 = r2.new_instance(&cmds).unwrap();
     assert_eq!(
         i20,
-        inst!((rid2, 0), (0, 0, _), [(x="1")], (0, [-1, 0, -1]))
+        inst!((rid2, 0), (0, 0, _), [(x = "1")], (0, [-1, 0, -1]))
     );
     assert_eq!(
         i20,
@@ -85,7 +85,7 @@ fn test_new_instance() {
     let i21 = r2.new_instance(&cmds).unwrap();
     assert_eq!(
         i21,
-        inst!((rid2, 1), (0, 0, _), [(x="1")], (0, [-1, 0, 0]))
+        inst!((rid2, 1), (0, 0, _), [(x = "1")], (0, [-1, 0, 0]))
     );
     assert_eq!(
         i21,

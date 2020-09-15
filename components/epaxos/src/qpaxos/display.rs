@@ -64,7 +64,7 @@ impl ToStringExt for InstanceIdVec {
 
 impl ToStringExt for Deps {
     fn tostr_ext(&self) -> String {
-        self.ids.tostr_ext()
+        self.dep_vec.tostr_ext()
     }
 }
 
@@ -134,12 +134,12 @@ impl_tostr_ext!(Dep, "({}, {}, {})", replica_id, idx, seq);
 impl_tostr_ext!(BallotNum, "({}, {}, {})", epoch, num, replica_id);
 impl_tostr_ext!(
     Instance,
-    "{{id:{}, blt:{}, cmds:{}, deps:{}, a/c/e:{}/{}/{}}}",
+    "{{id:{}, blt:{}, ablt:{}, cmds:{}, deps:{}, c/e:{}/{}}}",
     instance_id,
     ballot,
+    accepted_ballot,
     cmds,
     deps,
-    accepted,
     committed,
     executed
 );

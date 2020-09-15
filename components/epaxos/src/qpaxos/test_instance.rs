@@ -40,9 +40,9 @@ fn test_macro_inst_all_arg() {
         ballot: Some((3, 4, 2).into()),
         cmds: vec![("Set", "x", "y").into(), ("Get", "a", "b").into()],
         deps: Some(Deps {
-            ids: vec![(12, 13).into(), (14, 15).into()],
+            dep_vec: vec![(12, 13).into(), (14, 15).into()],
         }),
-        accepted: true,
+        accepted_ballot: Some((1, 2, 3).into()),
         committed: true,
         executed: true,
     };
@@ -54,7 +54,7 @@ fn test_macro_inst_all_arg() {
             (3, 4, 2),
             [("Set", "x", "y"), ("Get", "a", "b")],
             [(12, 13), (14, 15)],
-            true,
+            (1, 2, 3),
             true,
             true,
         )
@@ -68,7 +68,7 @@ fn test_macro_inst_all_arg() {
             (3, 4, 2),
             [("Set", "x", "y"), ("Get", "a", "b")],
             [(12, 13), (14, 15)],
-            true,
+            (1, 2, 3),
             true,
             true,
         )
@@ -82,9 +82,9 @@ fn test_macro_inst() {
         ballot: Some((3, 4, 1).into()),
         cmds: vec![("Set", "x", "y").into(), ("Get", "a", "b").into()],
         deps: Some(Deps {
-            ids: vec![(11, 12).into(), (13, 14).into()],
+            dep_vec: vec![(11, 12).into(), (13, 14).into()],
         }),
-        accepted: false,
+        accepted_ballot: None,
         committed: false,
         executed: false,
     };

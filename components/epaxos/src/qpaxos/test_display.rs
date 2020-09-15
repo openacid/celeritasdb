@@ -101,11 +101,11 @@ fn test_display_instance() {
         (2, 3, 4),
         [("Set", "a", "b"), ("Get", "c", "d")],
         [(3, 4), (4, 5)],
-        false,
+        (5, 6, 7),
         false,
         true,
     );
-    assert_eq!("{id:(1, 2), blt:(2, 3, 4), cmds:[Set:a=b, Get:c], deps:[(3, 4, 0), (4, 5, 0)], a/c/e:false/false/true}",
+    assert_eq!("{id:(1, 2), blt:(2, 3, 4), ablt:(5, 6, 7), cmds:[Set:a=b, Get:c], deps:[(3, 4, 0), (4, 5, 0)], c/e:false/true}",
     format!("{}", inst));
 }
 
@@ -116,7 +116,7 @@ fn test_display_replicate_request() {
         (2, 3, 4),
         [("Set", "a", "b"), ("Get", "c", "d")],
         [(2, 3), (3, 4)],
-        false,
+        (1, 2, 3),
         false,
         true,
     );

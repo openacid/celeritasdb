@@ -39,18 +39,6 @@ pub fn handle_fast_accept_reply(
     from_rid: ReplicaId,
     repl: ReplicateReply,
 ) -> Result<(), RpcHandlerError> {
-    // A duplicated message is received. Just ignore.
-    if st.fast_replied.contains_key(&from_rid) {
-        return Err(RpcHandlerError::DupRpc(
-            InstanceStatus::FastAccepted,
-            Direction::Reply,
-            from_rid,
-            st.instance.instance_id.unwrap(),
-        ));
-    }
-
-    st.fast_replied.insert(from_rid, true);
-
     if let Some(ref e) = repl.err {
         return Err(RpcHandlerError::RemoteError(e.clone()));
     }
@@ -78,19 +66,33 @@ pub fn handle_fast_accept_reply(
 
     for (i, d) in deps.iter().enumerate() {
         let rid = d.replica_id;
-        if !st.fast_deps.contains_key(&rid) {
-            st.fast_deps.insert(rid, Vec::new());
+
+        if !st.prepared.contains_key(&rid) {
+            st.prepared.insert(
+                rid,
+                DepStatus {
+                    ..DepStatus::default()
+                },
+            );
         }
 
-        st.fast_deps.get_mut(&rid).unwrap().push(*d);
-
-        if frepl.deps_committed[i] {
-            let iid = instid!(d.replica_id, d.idx);
-            st.fast_committed.insert(iid, true);
+        let pre = st.prepared.get_mut(&rid).unwrap();
+        if pre.replied.insert(from_rid) {
+            // successfully inserted means not received reply from this replica.
+            pre.rdeps.push(RepliedDep {
+                idx: d.idx,
+                seq: d.seq,
+                committed: frepl.deps_committed[i],
+            });
+        } else {
+            return Err(RpcHandlerError::DupRpc(
+                InstanceStatus::FastAccepted,
+                Direction::Reply,
+                from_rid,
+                st.instance.instance_id.unwrap(),
+            ));
         }
     }
-
-    st.fast_oks.insert(from_rid, true);
 
     Ok(())
 }
@@ -102,15 +104,6 @@ pub fn handle_accept_reply(
 ) -> Result<(), RpcHandlerError> {
     // TODO test duplicated message
     // A duplicated message is received. Just ignore.
-    if st.accept_replied.contains_key(&from_rid) {
-        return Err(RpcHandlerError::DupRpc(
-            InstanceStatus::Accepted,
-            Direction::Reply,
-            from_rid,
-            st.instance.instance_id.unwrap(),
-        ));
-    }
-    st.accept_replied.insert(from_rid, true);
 
     if let Some(ref e) = repl.err {
         return Err(RpcHandlerError::RemoteError(e.clone()));
@@ -129,7 +122,16 @@ pub fn handle_accept_reply(
         ));
     }
 
-    st.accept_oks.insert(from_rid, true);
+    if st.accept_oks.insert(from_rid) {
+
+    } else {
+        return Err(RpcHandlerError::DupRpc(
+            InstanceStatus::Accepted,
+            Direction::Reply,
+            from_rid,
+            st.instance.instance_id.unwrap(),
+        ));
+    }
 
     Ok(())
 }

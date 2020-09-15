@@ -1,6 +1,8 @@
 use crate::qpaxos::*;
 use crate::replica::get_accept_dep;
 use crate::replica::get_fast_commit_dep;
+use crate::replica::DepStatus;
+use crate::replica::RepliedDep;
 use crate::replica::Status;
 use std::collections::HashMap;
 
@@ -20,8 +22,6 @@ macro_rules! get {
 #[test]
 fn test_status_new() {
     let inst = inst!((1, 2), (3, 4, _), [("Set", "x", "1")], [(1, 1), (2, 0)],);
-    let iid = inst.instance_id.unwrap();
-    let replica_id = iid.replica_id;
 
     let st = Status::new(7, inst.clone());
 
@@ -29,17 +29,26 @@ fn test_status_new() {
     assert_eq!(5, st.fast_quorum);
     assert_eq!(st.instance, inst);
 
-    get!(st.fast_replied, &replica_id, true);
-    get!(st.fast_oks, &replica_id, true);
-    get!(st.fast_replied, &2, None);
-    get!(st.fast_oks, &2, None);
-
-    get!(st.fast_deps, &1, vec![dep!(1, 1)]);
-    get!(st.fast_deps, &2, vec![dep!(2, 0)]);
-    get!(st.fast_deps, &3, None);
-
-    get!(st.accept_replied, &1, None);
-    get!(st.accept_replied, &2, None);
+    assert!(st.prepared.contains_key(&1));
+    assert!(st.prepared.contains_key(&2));
+    assert!(st.prepared[&1].replied.contains(&1));
+    assert!(!st.prepared[&1].replied.contains(&2));
+    assert_eq!(
+        vec![RepliedDep {
+            idx: 1,
+            seq: 0,
+            committed: false
+        },],
+        st.prepared[&1].rdeps
+    );
+    assert_eq!(
+        vec![RepliedDep {
+            idx: 0,
+            seq: 0,
+            committed: false
+        },],
+        st.prepared[&2].rdeps
+    );
 
     get!(st.accept_oks, &1, None);
     get!(st.accept_oks, &2, None);
@@ -50,16 +59,11 @@ fn test_status_start_accept() {
     let inst = inst!((1, 2), (3, 4, _), [("Set", "x", "1")], [(1, 1), (2, 0)],);
     let mut st = Status::new(7, inst.clone());
 
-    get!(st.accept_replied, &1, None);
     get!(st.accept_oks, &1, None);
 
     st.start_accept();
 
-    get!(st.accept_replied, &1, true);
-    get!(st.accept_replied, &2, None);
-
-    get!(st.accept_oks, &1, true);
-    get!(st.accept_oks, &2, None);
+    assert!(st.accept_oks.contains(&1));
 }
 
 #[test]
@@ -68,54 +72,61 @@ fn test_get_fast_commit_dep() {
     macro_rules! case(
         (
             $qf:expr,
-            [$($didx:expr),*],
-            {$($cidx:expr),*},
+            [$(($didx:expr, $committed:expr)),*],
             $want:expr
             ) => {
             (
                 $qf,
-                depvec![$((1, $didx)),*],
-                {
-                    let mut m = ::std::collections::HashMap::new();
-                    $(
-                        m.insert(instid!(1, $cidx), true);
-                     )*
-                    m
-                },
+                vec![$(RepliedDep{idx:$didx, seq:0, committed: $committed}),*],
                 $want
             )
          };
     );
 
-    let mut cases: Vec<(i32, Vec<Dep>, HashMap<InstanceId, bool>, Option<Dep>)> = vec![
-        case!(0, [2], {}, Some(dep!(1, 2))),
-        case!(1, [2], {}, Some(dep!(1, 2))),
-        case!(2, [2], {}, None),
-        case!(2, [2], { 2 }, None),
-        case!(2, [2, 3], {}, None),
-        case!(2, [2, 3], { 2 }, None),
-        case!(2, [2, 3], {2, 3}, None),
+    let mut cases: Vec<(i32, Vec<RepliedDep>, Option<Dep>)> = vec![
+        case!(1, [(2, false)], Some(dep!(1, 2))),
+        case!(2, [(2, false)], None),
+        case!(2, [(2, true)], None),
+        case!(2, [(2, false), (3, false)], None),
+        case!(2, [(2, true), (3, false)], None),
+        case!(2, [(2, true), (3, true)], None),
         // TODO: proof it: If all equals to initial value, it does not need to be committed
-        case!(2, [2, 2], {}, Some(dep!(1, 2))),
-        case!(2, [2, 2], { 2 }, Some(dep!(1, 2))),
-        case!(2, [2, 2, 3], { 2 }, Some(dep!(1, 2))),
-        case!(2, [2, 2, 3, 3], {}, Some(dep!(1, 2))),
-        case!(2, [2, 2, 3, 3], { 3 }, Some(dep!(1, 2))),
-        case!(3, [2, 2, 3, 3], { 3 }, None),
+        case!(2, [(2, false), (2, false)], Some(dep!(1, 2))),
+        case!(2, [(2, false), (2, true)], Some(dep!(1, 2))),
+        case!(2, [(2, false), (2, true), (3, false)], Some(dep!(1, 2))),
+        case!(
+            2,
+            [(2, false), (2, false), (3, false), (3, false)],
+            Some(dep!(1, 2))
+        ),
+        case!(
+            2,
+            [(2, false), (2, false), (3, false), (3, true)],
+            Some(dep!(1, 2))
+        ),
+        case!(3, [(2, false), (2, false), (3, false), (3, true)], None),
         // same to initial value
-        case!(3, [2, 2, 2, 3], { 3 }, Some(dep!(1, 2))),
-        case!(3, [2, 2, 2, 3], { 2 }, Some(dep!(1, 2))),
-        case!(3, [2, 3, 3, 3], { 2 }, None),
-        case!(3, [2, 3, 3, 3], { 3 }, Some(dep!(1, 3))),
+        case!(
+            3,
+            [(2, false), (2, false), (2, false), (3, true)],
+            Some(dep!(1, 2))
+        ),
+        case!(
+            3,
+            [(2, false), (2, false), (2, true), (3, false)],
+            Some(dep!(1, 2))
+        ),
+        case!(3, [(2, true), (3, false), (3, false), (3, false)], None),
+        case!(
+            3,
+            [(2, false), (3, false), (3, false), (3, true)],
+            Some(dep!(1, 3))
+        ),
     ];
 
-    for (fast_quorum, deps, committed, want) in cases.iter_mut() {
-        let fdep = get_fast_commit_dep(deps, committed, *fast_quorum);
-        assert_eq!(
-            *want, fdep,
-            "deps:{:?}, committed:{:?}, qf:{}",
-            deps, committed, fast_quorum
-        );
+    for (fast_quorum, deps, want) in cases.iter_mut() {
+        let fdep = get_fast_commit_dep(1, deps, *fast_quorum);
+        assert_eq!(*want, fdep, "deps:{:?}, qf:{}", deps, fast_quorum);
     }
 }
 
@@ -129,13 +140,13 @@ fn test_get_accept_dep() {
             ) => {
             (
                 $qf,
-                depvec![$((1, $didx)),*],
+                vec![$(RepliedDep{idx: $didx, seq: 0, committed: false}),*],
                 $want
             )
          };
     );
 
-    let mut cases: Vec<(i32, Vec<Dep>, Option<Dep>)> = vec![
+    let mut cases: Vec<(i32, Vec<RepliedDep>, Option<Dep>)> = vec![
         case!(2, [2], None),
         case!(2, [2, 2], Some(dep!(1, 2))),
         case!(2, [2, 3], Some(dep!(1, 3))),
@@ -148,7 +159,7 @@ fn test_get_accept_dep() {
     ];
 
     for (quorum, deps, want) in cases.iter_mut() {
-        let adep = get_accept_dep(deps, *quorum);
+        let adep = get_accept_dep(1, deps, *quorum);
         assert_eq!(*want, adep, "deps:{:?}, f:{}", deps, quorum);
     }
 }
@@ -162,13 +173,7 @@ fn test_status_get_fast_commit_deps() {
             // fast_deps
             {
                 $(
-                [$($didx:expr),*]
-                ),*
-            },
-            // fast_committed
-            {
-                $(
-                ($rid:expr, $iid:expr)
+                [$(($didx:expr, $committed:expr)),*]
                 ),*
             },
             $want:expr
@@ -180,14 +185,11 @@ fn test_status_get_fast_commit_deps() {
                     let mut rid = 0;
                     $(
                         rid += 1;
-                        m.insert(rid, depvec![$((rid, $didx)),*]);
-                     )*
-                    m
-                },
-                {
-                    let mut m = ::std::collections::HashMap::new();
-                    $(
-                        m.insert(instid!($rid, $iid), true);
+                        m.insert(rid, DepStatus{
+                                rdeps: vec![$(RepliedDep{idx:$didx, seq:0,committed:$committed}),*],
+                                ..Default::default()
+                        }
+                        );
                      )*
                     m
                 },
@@ -196,70 +198,54 @@ fn test_status_get_fast_commit_deps() {
          };
     );
 
-    let mut cases: Vec<(
-        i32,
-        HashMap<ReplicaId, Vec<Dep>>,
-        HashMap<InstanceId, bool>,
-        Option<Vec<Dep>>,
-    )> = vec![
-        case!(1, { [2] }, {}, Some(depvec![(1, 2)])),
-        case!(1, { [2] }, { (1, 2) }, Some(depvec![(1, 2)])),
+    let mut cases: Vec<(i32, HashMap<ReplicaId, DepStatus>, Option<Vec<Dep>>)> = vec![
+        case!(1, { [(2, false)] }, Some(depvec![(1, 2)])),
+        case!(1, { [(2, true)] }, Some(depvec![(1, 2)])),
         case!(2, {
-            [2, 3],
-            [2]
+            [(2,false),(3,true)],
+            [(2,false)]
         },
-        {(1, 3)},
         None),
         case!(2, {
-            [2, 2],
-            [2, 2]
+            [(2,false),(2,false)],
+            [(2,false),(2,false)]
         },
-        {},
         Some(depvec![(1, 2), (2, 2)])),
         case!(2, {
-            [3, 3],
-            [4, 4]
+            [(3,false),(3,true)],
+            [(4,false),(4,true)]
         },
-        {(1, 3), (2, 4)},
         Some(depvec![(1, 3), (2, 4)])),
         case!(3, {
-            [2],
-            [3],
-            [4]
+            [(2,false)],
+            [(3,false)],
+            [(4,false)]
         },
-        {},
         None),
         case!(3, {
-            [2, 2],
-            [3, 3],
-            [4, 4]
+            [(2,false),(2,false)],
+            [(3,false),(3,false)],
+            [(4,false),(4,false)]
         },
-        {},
         Some(depvec![(1, 2), (2, 3), (3, 4)])),
         case!(3, {
-            [2, 2, 4],
-            [3, 4, 4],
-            [3, 5, 5]
+            [(2,false),(2,false),(4,false)],
+            [(3,false),(4,false),(4,true)],
+            [(3,false),(5,false),(5,true)]
         },
-        {(2, 4), (3, 5)},
         Some(depvec![(1, 2), (2, 4), (3, 5)])),
     ];
 
-    for (n, deps, committed, want) in cases.iter_mut() {
+    for (n, deps, want) in cases.iter_mut() {
         let fq = fast_quorum(*n);
         let mut st = Status {
             fast_quorum: fq,
-            fast_deps: deps.clone(),
-            fast_committed: committed.clone(),
+            prepared: deps.clone(),
             ..Default::default()
         };
         let cluster: Vec<i64> = (1..(*n + 1) as i64).map(|x| x).collect();
         let adep = st.get_fast_commit_deps(&cluster);
-        assert_eq!(
-            *want, adep,
-            "deps:{:?}, committed:{:?}, n:{}, fq:{}",
-            deps, committed, n, fq
-        );
+        assert_eq!(*want, adep, "deps:{:?}, n:{}, fq:{}", deps, n, fq);
     }
 }
 
@@ -282,7 +268,11 @@ fn test_status_get_accept_deps() {
                     let mut rid = 0;
                     $(
                         rid += 1;
-                        m.insert(rid, depvec![$((rid, $didx)),*]);
+                        m.insert(rid, DepStatus{
+                            rdeps: vec![$(RepliedDep{idx: $didx, seq: 0, committed: true}),*],
+                            ..Default::default()
+                        }
+                    );
                      )*
                     m
                 },
@@ -291,7 +281,7 @@ fn test_status_get_accept_deps() {
          };
     );
 
-    let mut cases: Vec<(i32, HashMap<ReplicaId, Vec<Dep>>, Option<Vec<Dep>>)> = vec![
+    let mut cases: Vec<(i32, HashMap<ReplicaId, DepStatus>, Option<Vec<Dep>>)> = vec![
         case!(1, { [2] }, Some(depvec![(1, 2)])),
         case!(2, {[2], [2]}, None),
         case!(2, {[2, 3], [2, 4]}, Some(depvec![(1, 3), (2, 4)])),
@@ -304,7 +294,7 @@ fn test_status_get_accept_deps() {
         let q = quorum(*n);
         let mut st = Status {
             quorum: q,
-            fast_deps: deps.clone(),
+            prepared: deps.clone(),
             ..Default::default()
         };
         let cluster: Vec<i64> = (1..(*n + 1) as i64).map(|x| x).collect();

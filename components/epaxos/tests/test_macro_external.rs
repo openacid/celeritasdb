@@ -1,10 +1,10 @@
 // test using macro outside a crate.
 // every test is a single crate
 
-use epaxos::inst;
+use epaxos::cmdvec;
 use epaxos::dep;
 use epaxos::depvec;
-use epaxos::cmdvec;
+use epaxos::inst;
 use epaxos::qpaxos::BallotNum;
 use epaxos::qpaxos::Command;
 use epaxos::qpaxos::Dep;
@@ -20,7 +20,7 @@ fn test_external_macro_inst() {
         ballot: Some((3, 4, 1).into()),
         cmds: vec![("Set", "x", "y").into(), ("Get", "a", "b").into()],
         deps: None,
-        accepted: false,
+        accepted_ballot: None,
         committed: false,
         executed: false,
     };
@@ -36,39 +36,27 @@ fn test_external_macro_inst() {
         ballot: None,
         cmds: vec![("Set", "x", "y").into(), ("Get", "a", "").into()],
         deps: None,
-        accepted: false,
+        accepted_ballot: None,
         committed: false,
         executed: false,
     };
 
-    assert_eq!(
-        want,
-        inst!((1, 2), [("Set", "x", "y"), ("Get", "a", "")])
-    );
-    assert_eq!(
-        want,
-        inst!((1, 2), [(x=y), (a)])
-    );
+    assert_eq!(want, inst!((1, 2), [("Set", "x", "y"), ("Get", "a", "")]));
+    assert_eq!(want, inst!((1, 2), [(x = y), (a)]));
 
     // instance_id, cmds, deps
     let want = Instance {
         instance_id: Some((1, 2).into()),
         ballot: None,
         cmds: vec![("Set", "x", "y").into(), ("Get", "a", "").into()],
-        deps:Some(vec![dep!(11, 12), dep!(12, 13)].into()),
-        accepted: false,
+        deps: Some(vec![dep!(11, 12), dep!(12, 13)].into()),
+        accepted_ballot: None,
         committed: false,
         executed: false,
     };
 
-    assert_eq!(
-        want,
-        inst!((1, 2), [(x=y), (a)], [(11, 12), (12, 13)])
-    );
-    assert_eq!(
-        want,
-        inst!((1, 2), [(x=y), (a)], (11, [12, 13]))
-    );
+    assert_eq!(want, inst!((1, 2), [(x = y), (a)], [(11, 12), (12, 13)]));
+    assert_eq!(want, inst!((1, 2), [(x = y), (a)], (11, [12, 13])));
 
     // instance_id, ballot, cmds, deps
     let want = Instance {
@@ -76,9 +64,9 @@ fn test_external_macro_inst() {
         ballot: Some((3, 4, 1).into()),
         cmds: vec![("Set", "x", "y").into(), ("Get", "a", "b").into()],
         deps: Some(Deps {
-            ids: vec![(11, 12).into(), (13, 14).into()],
+            dep_vec: vec![(11, 12).into(), (13, 14).into()],
         }),
-        accepted: false,
+        accepted_ballot: None,
         committed: false,
         executed: false,
     };
@@ -99,9 +87,9 @@ fn test_external_macro_inst() {
         ballot: Some((3, 4, 3).into()),
         cmds: vec![("Set", "x", "y").into(), ("Get", "a", "b").into()],
         deps: Some(Deps {
-            ids: vec![(11, 12).into(), (13, 14).into()],
+            dep_vec: vec![(11, 12).into(), (13, 14).into()],
         }),
-        accepted: true,
+        accepted_ballot: Some((1, 2, 3).into()),
         committed: true,
         executed: true,
     };
@@ -113,7 +101,7 @@ fn test_external_macro_inst() {
             (3, 4, 3),
             [("Set", "x", "y"), ("Get", "a", "b")],
             [(11, 12), (13, 14)],
-            true,
+            (1, 2, 3),
             true,
             true
         )

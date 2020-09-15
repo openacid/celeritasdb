@@ -4,18 +4,18 @@ use crate::qpaxos::InstanceId;
 pub use std::cmp::Ordering;
 
 #[test]
-fn test_dep_vec_deref() {
+fn test_deps_deref() {
     let ids = Deps {
-        ids: vec![(1, 2).into(), (3, 4).into()],
+        dep_vec: vec![(1, 2).into(), (3, 4).into()],
     };
 
     let mut it = ids.iter();
-    assert_eq!(&ids.ids[0], it.next().unwrap());
-    assert_eq!(&ids.ids[1], it.next().unwrap());
+    assert_eq!(&ids.dep_vec[0], it.next().unwrap());
+    assert_eq!(&ids.dep_vec[1], it.next().unwrap());
     assert_eq!(None, it.next());
 
     let mut ids = Deps {
-        ids: vec![(1, 2).into(), (3, 4).into()],
+        dep_vec: vec![(1, 2).into(), (3, 4).into()],
     };
 
     let mut it = ids.iter_mut();
@@ -25,32 +25,32 @@ fn test_dep_vec_deref() {
 }
 
 #[test]
-fn test_dep_vec_index() {
+fn test_deps_index() {
     let ids = Deps {
-        ids: vec![(1, 2).into(), (3, 4).into()],
+        dep_vec: vec![(1, 2).into(), (3, 4).into()],
     };
 
-    assert_eq!(ids.ids[0], ids[1]);
-    assert_eq!(ids.ids[1], ids[3]);
+    assert_eq!(ids.dep_vec[0], ids[1]);
+    assert_eq!(ids.dep_vec[1], ids[3]);
 }
 
 #[test]
 #[should_panic(expected = "NotFound dep with replica_id=2")]
-fn test_dep_vec_index_panic() {
+fn test_deps_index_panic() {
     let ids = Deps {
-        ids: vec![(1, 2).into(), (3, 4).into()],
+        dep_vec: vec![(1, 2).into(), (3, 4).into()],
     };
 
     let _ = ids[2];
 }
 
 #[test]
-fn test_dep_vec_cmp_dep() {
+fn test_deps_cmp_dep() {
     let id12 = Dep::from((1, 2));
     let id34 = Dep::from((3, 4));
 
     let ids = Deps {
-        ids: vec![id12, id34],
+        dep_vec: vec![id12, id34],
     };
 
     // TODO compare with instanceId
@@ -76,12 +76,12 @@ fn test_dep_vec_cmp_dep() {
 }
 
 #[test]
-fn test_dep_vec_cmp_instance_id() {
+fn test_deps_cmp_instance_id() {
     let id12 = Dep::from((1, 2));
     let id34 = Dep::from((3, 4));
 
     let ids = Deps {
-        ids: vec![id12, id34],
+        dep_vec: vec![id12, id34],
     };
 
     // TODO compare with instanceId
@@ -107,30 +107,30 @@ fn test_dep_vec_cmp_instance_id() {
 }
 
 #[test]
-fn test_dep_vec_get() {
+fn test_deps_get() {
     let ids = Deps {
-        ids: vec![(1, 2).into(), (3, 4).into()],
+        dep_vec: vec![(1, 2).into(), (3, 4).into()],
     };
 
-    assert_eq!(ids.ids[0], ids.get(1).unwrap());
-    assert_eq!(ids.ids[1], ids.get(3).unwrap());
+    assert_eq!(ids.dep_vec[0], ids.get(1).unwrap());
+    assert_eq!(ids.dep_vec[1], ids.get(3).unwrap());
     assert_eq!(None, ids.get(2));
 
     let refids = &ids;
-    assert_eq!(ids.ids[0], refids.get(1).unwrap());
-    assert_eq!(ids.ids[1], refids.get(3).unwrap());
+    assert_eq!(ids.dep_vec[0], refids.get(1).unwrap());
+    assert_eq!(ids.dep_vec[1], refids.get(3).unwrap());
     assert_eq!(None, ids.get(2));
 
     let sm = Some(ids.clone());
     let refids = sm.as_ref().unwrap();
 
-    assert_eq!(ids.ids[0], refids.get(1i64).unwrap());
-    assert_eq!(ids.ids[1], refids.get(3).unwrap());
+    assert_eq!(ids.dep_vec[0], refids.get(1i64).unwrap());
+    assert_eq!(ids.dep_vec[1], refids.get(3).unwrap());
     assert_eq!(None, refids.get(2));
 }
 
 #[test]
-fn test_dep_vec_set() {
+fn test_deps_set() {
     let id01 = Dep::from((0, 1));
     let id12 = Dep::from((1, 2));
     let id13 = Dep::from((1, 3));
@@ -138,7 +138,7 @@ fn test_dep_vec_set() {
     let id56 = Dep::from((5, 6));
 
     let mut ids = Deps {
-        ids: vec![id12, id34],
+        dep_vec: vec![id12, id34],
     };
 
     let r = ids.set((1, 3).into());
@@ -162,21 +162,21 @@ fn test_dep_vec_set() {
 }
 
 #[test]
-fn test_dep_vec_with_dup() {
+fn test_deps_with_dup() {
     let ids = Deps {
-        ids: vec![(1, 2).into(), (3, 4).into(), (1, 100).into()],
+        dep_vec: vec![(1, 2).into(), (3, 4).into(), (1, 100).into()],
     };
 
-    assert_eq!(ids.ids[0], ids.get(1).unwrap());
-    assert_eq!(ids.ids[1], ids.get(3).unwrap());
+    assert_eq!(ids.dep_vec[0], ids.get(1).unwrap());
+    assert_eq!(ids.dep_vec[1], ids.get(3).unwrap());
     assert_eq!(None, ids.get(2));
 
-    assert_eq!(ids.ids[0], ids[1]);
-    assert_eq!(ids.ids[1], ids[3]);
+    assert_eq!(ids.dep_vec[0], ids[1]);
+    assert_eq!(ids.dep_vec[1], ids[3]);
 }
 
 #[test]
-fn test_dep_vec_from() {
+fn test_deps_from() {
     let iid = Dep::from((1, 2));
 
     let sl: &[_] = &[iid];
@@ -199,7 +199,7 @@ fn test_dep_vec_from() {
 }
 
 #[test]
-fn test_dep_vec_from_array() {
+fn test_deps_from_array() {
     let iid = Dep::from((1, 2));
 
     let arr: [i32; 0] = [];
@@ -249,7 +249,7 @@ fn test_dep_vec_from_array() {
 }
 
 #[test]
-fn test_dep_vec_from_array_ref() {
+fn test_deps_from_array_ref() {
     let iid = Dep::from((1, 2));
 
     let arr: &[i32; 0] = &[];
