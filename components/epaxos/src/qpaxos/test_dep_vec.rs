@@ -1,11 +1,11 @@
 use crate::qpaxos::Dep;
-use crate::qpaxos::DepVec;
+use crate::qpaxos::Deps;
 use crate::qpaxos::InstanceId;
 pub use std::cmp::Ordering;
 
 #[test]
 fn test_dep_vec_deref() {
-    let ids = DepVec {
+    let ids = Deps {
         ids: vec![(1, 2).into(), (3, 4).into()],
     };
 
@@ -14,7 +14,7 @@ fn test_dep_vec_deref() {
     assert_eq!(&ids.ids[1], it.next().unwrap());
     assert_eq!(None, it.next());
 
-    let mut ids = DepVec {
+    let mut ids = Deps {
         ids: vec![(1, 2).into(), (3, 4).into()],
     };
 
@@ -26,7 +26,7 @@ fn test_dep_vec_deref() {
 
 #[test]
 fn test_dep_vec_index() {
-    let ids = DepVec {
+    let ids = Deps {
         ids: vec![(1, 2).into(), (3, 4).into()],
     };
 
@@ -37,7 +37,7 @@ fn test_dep_vec_index() {
 #[test]
 #[should_panic(expected = "NotFound dep with replica_id=2")]
 fn test_dep_vec_index_panic() {
-    let ids = DepVec {
+    let ids = Deps {
         ids: vec![(1, 2).into(), (3, 4).into()],
     };
 
@@ -49,7 +49,7 @@ fn test_dep_vec_cmp_dep() {
     let id12 = Dep::from((1, 2));
     let id34 = Dep::from((3, 4));
 
-    let ids = DepVec {
+    let ids = Deps {
         ids: vec![id12, id34],
     };
 
@@ -80,7 +80,7 @@ fn test_dep_vec_cmp_instance_id() {
     let id12 = Dep::from((1, 2));
     let id34 = Dep::from((3, 4));
 
-    let ids = DepVec {
+    let ids = Deps {
         ids: vec![id12, id34],
     };
 
@@ -108,7 +108,7 @@ fn test_dep_vec_cmp_instance_id() {
 
 #[test]
 fn test_dep_vec_get() {
-    let ids = DepVec {
+    let ids = Deps {
         ids: vec![(1, 2).into(), (3, 4).into()],
     };
 
@@ -137,7 +137,7 @@ fn test_dep_vec_set() {
     let id34 = Dep::from((3, 4));
     let id56 = Dep::from((5, 6));
 
-    let mut ids = DepVec {
+    let mut ids = Deps {
         ids: vec![id12, id34],
     };
 
@@ -163,7 +163,7 @@ fn test_dep_vec_set() {
 
 #[test]
 fn test_dep_vec_with_dup() {
-    let ids = DepVec {
+    let ids = Deps {
         ids: vec![(1, 2).into(), (3, 4).into(), (1, 100).into()],
     };
 
@@ -180,21 +180,21 @@ fn test_dep_vec_from() {
     let iid = Dep::from((1, 2));
 
     let sl: &[_] = &[iid];
-    let ids: DepVec = sl.into();
+    let ids: Deps = sl.into();
     assert_eq!(iid, ids[1]);
 
-    let ids: DepVec = vec![iid].into();
+    let ids: Deps = vec![iid].into();
     assert_eq!(iid, ids[1]);
 
     let sl: &[_] = &[(1, 2), (3, 4)];
-    let ids: DepVec = sl.into();
+    let ids: Deps = sl.into();
     assert_eq!(iid, ids[1]);
 
     let sl: &[(i32, i64)] = &[(1, 2), (3, 4)];
-    let ids: DepVec = sl.into();
+    let ids: Deps = sl.into();
     assert_eq!(iid, ids[1]);
 
-    let ids: DepVec = vec![Dep::from((1, 2))].into();
+    let ids: Deps = vec![Dep::from((1, 2))].into();
     assert_eq!(iid, ids[1]);
 }
 
@@ -203,35 +203,35 @@ fn test_dep_vec_from_array() {
     let iid = Dep::from((1, 2));
 
     let arr: [i32; 0] = [];
-    let ids: DepVec = arr.into();
+    let ids: Deps = arr.into();
     assert_eq!(0, ids.len());
 
     let arr = [(1, 2)];
-    let ids: DepVec = arr.into();
+    let ids: Deps = arr.into();
     assert_eq!(iid, ids[1]);
 
     let arr = [(1, 2), (3, 4)];
-    let ids: DepVec = arr.into();
+    let ids: Deps = arr.into();
     assert_eq!(iid, ids[1]);
 
     let arr = [(1, 2), (3, 4), (5, 6)];
-    let ids: DepVec = arr.into();
+    let ids: Deps = arr.into();
     assert_eq!(iid, ids[1]);
 
     let arr = [(1, 2), (3, 4), (5, 6), (7, 8)];
-    let ids: DepVec = arr.into();
+    let ids: Deps = arr.into();
     assert_eq!(iid, ids[1]);
 
     let arr = [(1, 2), (3, 4), (5, 6), (7, 8), (9, 10)];
-    let ids: DepVec = arr.into();
+    let ids: Deps = arr.into();
     assert_eq!(iid, ids[1]);
 
     let arr = [(1, 2), (3, 4), (5, 6), (7, 8), (9, 10), (11, 12)];
-    let ids: DepVec = arr.into();
+    let ids: Deps = arr.into();
     assert_eq!(iid, ids[1]);
 
     let arr = [(1, 2), (3, 4), (5, 6), (7, 8), (9, 10), (11, 12), (13, 14)];
-    let ids: DepVec = arr.into();
+    let ids: Deps = arr.into();
     assert_eq!(iid, ids[1]);
 
     let arr = [
@@ -244,7 +244,7 @@ fn test_dep_vec_from_array() {
         (13, 14),
         (15, 16),
     ];
-    let ids: DepVec = arr.into();
+    let ids: Deps = arr.into();
     assert_eq!(iid, ids[1]);
 }
 
@@ -253,35 +253,35 @@ fn test_dep_vec_from_array_ref() {
     let iid = Dep::from((1, 2));
 
     let arr: &[i32; 0] = &[];
-    let ids: DepVec = arr.into();
+    let ids: Deps = arr.into();
     assert_eq!(0, ids.len());
 
     let arr = &[(1, 2)];
-    let ids: DepVec = arr.into();
+    let ids: Deps = arr.into();
     assert_eq!(iid, ids[1]);
 
     let arr = &[(1, 2), (3, 4)];
-    let ids: DepVec = arr.into();
+    let ids: Deps = arr.into();
     assert_eq!(iid, ids[1]);
 
     let arr = &[(1, 2), (3, 4), (5, 6)];
-    let ids: DepVec = arr.into();
+    let ids: Deps = arr.into();
     assert_eq!(iid, ids[1]);
 
     let arr = &[(1, 2), (3, 4), (5, 6), (7, 8)];
-    let ids: DepVec = arr.into();
+    let ids: Deps = arr.into();
     assert_eq!(iid, ids[1]);
 
     let arr = &[(1, 2), (3, 4), (5, 6), (7, 8), (9, 10)];
-    let ids: DepVec = arr.into();
+    let ids: Deps = arr.into();
     assert_eq!(iid, ids[1]);
 
     let arr = &[(1, 2), (3, 4), (5, 6), (7, 8), (9, 10), (11, 12)];
-    let ids: DepVec = arr.into();
+    let ids: Deps = arr.into();
     assert_eq!(iid, ids[1]);
 
     let arr = &[(1, 2), (3, 4), (5, 6), (7, 8), (9, 10), (11, 12), (13, 14)];
-    let ids: DepVec = arr.into();
+    let ids: Deps = arr.into();
     assert_eq!(iid, ids[1]);
 
     let arr = &[
@@ -294,6 +294,6 @@ fn test_dep_vec_from_array_ref() {
         (13, 14),
         (15, 16),
     ];
-    let ids: DepVec = arr.into();
+    let ids: Deps = arr.into();
     assert_eq!(iid, ids[1]);
 }

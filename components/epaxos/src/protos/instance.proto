@@ -22,7 +22,7 @@ message Dep {
     int64 seq = 3;
 }
 
-message DepVec {
+message Deps {
     repeated Dep ids = 1;
 }
 
@@ -45,7 +45,7 @@ message Instance {
 
     // deps is the instance ids on a replica when handling PreAccept
     // request.
-    DepVec deps                        = 32;
+    Deps deps                        = 32;
 
     // An instance has several status thus one status field is not enough.
     // To determine the instance status:

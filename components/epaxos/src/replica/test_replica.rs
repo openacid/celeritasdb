@@ -311,7 +311,7 @@ fn test_handle_fast_accept_normal() {
         let repl = replica.handle_fast_accept(&req, &mut local_inst);
         let repl = repl.unwrap();
 
-        let wantdeps: DepVec = vec![x_iid, b_iid, z_iid].into();
+        let wantdeps: Deps = vec![x_iid, b_iid, z_iid].into();
         let wantdeps = Some(wantdeps);
 
         // TODO test updated deps_committed

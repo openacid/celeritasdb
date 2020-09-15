@@ -8,7 +8,7 @@ use epaxos::cmdvec;
 use epaxos::qpaxos::BallotNum;
 use epaxos::qpaxos::Command;
 use epaxos::qpaxos::Dep;
-use epaxos::qpaxos::DepVec;
+use epaxos::qpaxos::Deps;
 use epaxos::qpaxos::Instance;
 use epaxos::qpaxos::InstanceId;
 
@@ -75,7 +75,7 @@ fn test_external_macro_inst() {
         instance_id: Some((1, 2).into()),
         ballot: Some((3, 4, 1).into()),
         cmds: vec![("Set", "x", "y").into(), ("Get", "a", "b").into()],
-        deps: Some(DepVec {
+        deps: Some(Deps {
             ids: vec![(11, 12).into(), (13, 14).into()],
         }),
         accepted: false,
@@ -98,7 +98,7 @@ fn test_external_macro_inst() {
         instance_id: Some((1, 2).into()),
         ballot: Some((3, 4, 3).into()),
         cmds: vec![("Set", "x", "y").into(), ("Get", "a", "b").into()],
-        deps: Some(DepVec {
+        deps: Some(Deps {
             ids: vec![(11, 12).into(), (13, 14).into()],
         }),
         accepted: true,

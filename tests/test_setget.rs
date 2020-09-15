@@ -38,7 +38,7 @@ async fn test_set() {
         assert_eq!(cmdvec![("Set", "foo", "42")], inst.cmds);
         assert_eq!(
             inst.deps.unwrap(),
-            DepVec::from(depvec![(1, -1), (2, -1), (3, -1)]),
+            Deps::from(depvec![(1, -1), (2, -1), (3, -1)]),
             "deps, replica:{}",
             rid
         );
@@ -54,7 +54,7 @@ async fn test_set() {
 
             assert_eq!(
                 inst.deps.unwrap(),
-                DepVec::from(depvec![(1, -1), (2, -1), (3, -1)]),
+                Deps::from(depvec![(1, -1), (2, -1), (3, -1)]),
                 "deps, replica:{}",
                 rid
             );

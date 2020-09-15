@@ -173,7 +173,7 @@ fn test_macro_inst() {
         instance_id: Some((1, 2).into()),
         ballot: Some((3, 4, 1).into()),
         cmds: vec![("Set", "x", "y").into(), ("Get", "a", "b").into()],
-        deps: Some(DepVec {
+        deps: Some(Deps {
             ids: vec![(11, 12).into(), (13, 14).into()],
         }),
         accepted: false,
@@ -196,7 +196,7 @@ fn test_macro_inst() {
         instance_id: Some((1, 2).into()),
         ballot: Some((3, 4, 3).into()),
         cmds: vec![("Set", "x", "y").into(), ("Get", "a", "b").into()],
-        deps: Some(DepVec {
+        deps: Some(Deps {
             ids: vec![(11, 12).into(), (13, 14).into()],
         }),
         accepted: true,

@@ -77,7 +77,7 @@ macro_rules! depvec {
         vec![$(Dep::from(($replica_id, $idx))),*]
     };
 
-    // create a DepVec with replica id rid, rid+1, rid+2..
+    // create a Deps with replica id rid, rid+1, rid+2..
     ($rid:expr, [$($idx:expr),*]) => {
         {
             let mut v = Vec::<Dep>::new();

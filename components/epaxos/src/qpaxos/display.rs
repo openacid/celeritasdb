@@ -7,7 +7,7 @@ use crate::qpaxos::Command;
 use crate::qpaxos::CommitReply;
 use crate::qpaxos::CommitRequest;
 use crate::qpaxos::Dep;
-use crate::qpaxos::DepVec;
+use crate::qpaxos::Deps;
 use crate::qpaxos::FastAcceptReply;
 use crate::qpaxos::FastAcceptRequest;
 use crate::qpaxos::Instance;
@@ -62,7 +62,7 @@ impl ToStringExt for InstanceIdVec {
     }
 }
 
-impl ToStringExt for DepVec {
+impl ToStringExt for Deps {
     fn tostr_ext(&self) -> String {
         self.ids.tostr_ext()
     }

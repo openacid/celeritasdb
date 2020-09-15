@@ -2,7 +2,7 @@ use std::cell::RefCell;
 use std::collections::HashMap;
 use std::time::SystemTime;
 
-use crate::qpaxos::{DepVec, Instance, InstanceId, InstanceIdVec, OpCode};
+use crate::qpaxos::{Deps, Instance, InstanceId, InstanceIdVec, OpCode};
 use crate::replica::ExecRst;
 use crate::replica::Replica;
 use storage::StorageError;
@@ -30,7 +30,7 @@ impl Replica {
     ) -> Option<InstanceIdVec> {
         let mut rst = InstanceIdVec::from([0; 0]);
         let mut iids = InstanceIdVec::from([0; 0]);
-        let mut all_deps = DepVec::from([0; 0]);
+        let mut all_deps = Deps::from([0; 0]);
 
         for inst in min_insts {
             iids.push(inst.instance_id.unwrap());

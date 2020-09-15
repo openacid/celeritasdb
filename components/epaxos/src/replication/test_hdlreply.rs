@@ -39,7 +39,7 @@ macro_rules! get {
     };
 }
 
-/// deps makes a Some(DepVec) or None
+/// deps makes a Some(Deps) or None
 /// Supported pattern:
 /// deps!(None)
 /// deps!([instid, instid...])
