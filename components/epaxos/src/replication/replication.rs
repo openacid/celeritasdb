@@ -47,7 +47,7 @@ pub async fn replicate(
         deps_committed.push(false);
     }
 
-    let req = MakeRequest::fast_accept(0, &st.instance, &deps_committed);
+    let req = MakeRequest::prepare(0, &st.instance, &deps_committed);
     let repls = bcast_msg(&r.peers, req).await;
 
     println!("got {} replies", repls.len());

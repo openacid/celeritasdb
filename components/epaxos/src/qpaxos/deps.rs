@@ -87,10 +87,10 @@ impl Deps {
 
     /// set add an instanceId into it or overrides an existing one with the same replicaId.
     /// It returns the index the added Dep is, along with an Option of the replaced value.
-    pub fn set(&mut self, inst_id: Dep) -> (usize, Option<Dep>) {
+    pub fn set(&mut self, dep: Dep) -> (usize, Option<Dep>) {
         let mut idx: i64 = -1;
         for (i, iid) in self.dep_vec.iter().enumerate() {
-            if iid.replica_id == inst_id.replica_id {
+            if iid.replica_id == dep.replica_id {
                 idx = i as i64;
                 break;
             }
@@ -98,11 +98,11 @@ impl Deps {
 
         if idx == -1 {
             let l = self.dep_vec.len();
-            self.dep_vec.push(inst_id);
+            self.dep_vec.push(dep);
             (l, None)
         } else {
             let old = self.dep_vec[idx as usize];
-            self.dep_vec[idx as usize] = inst_id;
+            self.dep_vec[idx as usize] = dep;
             (idx as usize, Some(old))
         }
     }
@@ -152,7 +152,7 @@ impl<A> From<[A; 0]> for Deps {
     }
 }
 
-macro_rules! impl_instance_id_vec {
+macro_rules! impl_deps_from_arr {
     ($n:expr) => {
         impl<A: Into<ReplicaId> + Copy, B: Into<i64> + Copy> From<&[(A, B); $n]> for Deps {
             fn from(v: &[(A, B); $n]) -> Deps {
@@ -170,11 +170,11 @@ macro_rules! impl_instance_id_vec {
     };
 }
 
-impl_instance_id_vec!(1);
-impl_instance_id_vec!(2);
-impl_instance_id_vec!(3);
-impl_instance_id_vec!(4);
-impl_instance_id_vec!(5);
-impl_instance_id_vec!(6);
-impl_instance_id_vec!(7);
-impl_instance_id_vec!(8);
+impl_deps_from_arr!(1);
+impl_deps_from_arr!(2);
+impl_deps_from_arr!(3);
+impl_deps_from_arr!(4);
+impl_deps_from_arr!(5);
+impl_deps_from_arr!(6);
+impl_deps_from_arr!(7);
+impl_deps_from_arr!(8);

@@ -15,7 +15,7 @@ import "instance.proto";
 // 51~60: for commit.
 
 
-message FastAcceptRequest {
+message PrepareRequest {
     repeated Command     cmds           = 21;
     Deps                 deps           = 32;
     repeated bool        deps_committed = 33;
@@ -37,13 +37,13 @@ message ReplicateRequest {
     InstanceId instance_id = 13;
 
     oneof phase {
-        FastAcceptRequest fast    = 100;
+        PrepareRequest    prepare = 100;
         AcceptRequest     accept  = 101;
         CommitRequest     commit  = 102;
     }
 }
 
-message FastAcceptReply {
+message PrepareReply {
     // deps_status describe what status a dependent instance is in.
     // Only `deps` needs these information in order to commit on fast-path.
 
@@ -61,7 +61,7 @@ message ReplicateReply {
     InstanceId instance_id = 13;
 
     oneof phase {
-        FastAcceptReply fast    = 100;
+        PrepareReply    prepare = 100;
         AcceptReply     accept  = 101;
         CommitReply     commit  = 102;
     }

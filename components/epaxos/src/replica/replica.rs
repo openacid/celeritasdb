@@ -9,8 +9,8 @@ use crate::qpaxos::Command;
 use crate::qpaxos::CommitReply;
 use crate::qpaxos::CommitRequest;
 use crate::qpaxos::Conflict;
-use crate::qpaxos::FastAcceptReply;
-use crate::qpaxos::FastAcceptRequest;
+use crate::qpaxos::PrepareReply;
+use crate::qpaxos::PrepareRequest;
 use crate::qpaxos::Instance;
 use crate::qpaxos::InstanceId;
 use crate::qpaxos::InstanceIdVec;
@@ -198,7 +198,7 @@ impl Replica {
             .ok_or(ProtocolError::LackOf("phase".into()))?;
 
         match phase {
-            Phase::Fast(_) | Phase::Accept(_) => {
+            Phase::Prepare(_) | Phase::Accept(_) => {
                 if req.ballot < inst.ballot {
                     return Ok(ReplicateReply {
                         err: None,
@@ -213,7 +213,7 @@ impl Replica {
         };
 
         let reply_phase: replicate_reply::Phase = match phase {
-            Phase::Fast(r) => self.handle_fast_accept(r, &mut inst)?.into(),
+            Phase::Prepare(r) => self.handle_prepare(r, &mut inst)?.into(),
             Phase::Accept(r) => self.handle_accept(r, &mut inst)?.into(),
             Phase::Commit(r) => self.handle_commit(r, &mut inst)?.into(),
         };
@@ -228,11 +228,11 @@ impl Replica {
         })
     }
 
-    pub fn handle_fast_accept(
+    pub fn handle_prepare(
         &self,
-        req: &FastAcceptRequest,
+        req: &PrepareRequest,
         inst: &mut Instance,
-    ) -> Result<FastAcceptReply, RpcHandlerError> {
+    ) -> Result<PrepareReply, RpcHandlerError> {
         let iid = ref_or_bug!(inst.instance_id);
         let req_deps = ref_or_bug!(req.deps);
 
@@ -261,7 +261,7 @@ impl Replica {
                     continue;
                 }
 
-                // TODO: test: fast-accept adding a new dep
+                // TODO: test: prepare adding a new dep
 
                 if req_deps > &local_inst_dep {
                     // the incoming instance already depends on this local instance, which implies
@@ -283,7 +283,7 @@ impl Replica {
             }
         }
 
-        Ok(FastAcceptReply {
+        Ok(PrepareReply {
             deps: inst.deps.clone(),
             deps_committed: deps_committed,
         })

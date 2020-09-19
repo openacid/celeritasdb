@@ -13,14 +13,12 @@ use pretty_assertions::assert_eq;
 use prost::Message;
 
 fn new_foo_inst(leader_id: i64) -> Instance {
-    let ii = inst!(
+    inst!(
         (leader_id, 1),
         (2, 2, _),
         [("NoOp", "k1", "v1"), ("Get", "k2", "v2")],
         [(1, 10), (2, 20), (3, 30)],
-    );
-
-    ii
+    )
 }
 
 fn new_mem_sto() -> Storage {
@@ -160,7 +158,7 @@ fn test_handle_replicate_ballot_check() {
     let inst = inst!((3, 4), (1, 2, _), [("Set", "x", "1")],);
 
     let reqs = vec![
-        MakeRequest::fast_accept(0, &inst, &[]),
+        MakeRequest::prepare(0, &inst, &[]),
         MakeRequest::accept(0, &inst),
     ];
 
@@ -194,32 +192,32 @@ fn test_handle_replicate_ballot_check() {
 
 #[test]
 #[should_panic(expected = "inst.deps is unexpected to be None")]
-fn test_handle_fast_accept_request_panic_local_deps_none() {
+fn test_handle_prepare_request_panic_local_deps_none() {
     let inst = foo_inst!((0, 0));
     let req_inst = foo_inst!((1, 0), [(0, 0)]);
 
-    _handle_fast_accept_request((0, 0), inst, req_inst);
+    _handle_prepare_request((0, 0), inst, req_inst);
 }
 
 #[test]
 #[should_panic(expected = "inst.instance_id is unexpected to be None")]
-fn test_handle_fast_accept_request_panic_local_instance_id_none() {
+fn test_handle_prepare_request_panic_local_instance_id_none() {
     let inst = foo_inst!(None, [(2, 0)]);
     let req_inst = foo_inst!((1, 0), [(0, 0)]);
 
-    _handle_fast_accept_request((0, 0), inst, req_inst);
+    _handle_prepare_request((0, 0), inst, req_inst);
 }
 
-fn _handle_fast_accept_request(iid: (i64, i64), mut inst: Instance, req_inst: Instance) {
+fn _handle_prepare_request(iid: (i64, i64), mut inst: Instance, req_inst: Instance) {
     let replica = new_foo_replica(1, new_mem_sto(), &[(iid, &inst)]);
 
-    let req = MakeRequest::fast_accept(1, &req_inst, &vec![false]);
-    let req: FastAcceptRequest = req.phase.unwrap().try_into().unwrap();
-    let _ = replica.handle_fast_accept(&req, &mut inst);
+    let req = MakeRequest::prepare(1, &req_inst, &vec![false]);
+    let req: PrepareRequest = req.phase.unwrap().try_into().unwrap();
+    let _ = replica.handle_prepare(&req, &mut inst);
 }
 
 #[test]
-fn test_handle_fast_accept_normal() {
+fn test_handle_prepare_normal() {
     let replica_id = 1;
     let replica = new_foo_replica(replica_id, new_mem_sto(), &vec![]);
 
@@ -229,13 +227,13 @@ fn test_handle_fast_accept_normal() {
         let _blt = inst.ballot;
 
         let deps_committed = vec![false, false, false];
-        let req = MakeRequest::fast_accept(replica_id, &inst, &deps_committed);
-        let req: FastAcceptRequest = req.phase.unwrap().try_into().unwrap();
+        let req = MakeRequest::prepare(replica_id, &inst, &deps_committed);
+        let req: PrepareRequest = req.phase.unwrap().try_into().unwrap();
         let mut local_inst = Instance {
             instance_id: Some(iid),
             ..Default::default()
         };
-        let repl = replica.handle_fast_accept(&req, &mut local_inst);
+        let repl = replica.handle_prepare(&req, &mut local_inst);
         let repl = repl.unwrap();
 
         // assert_eq!(None, repl.err);
@@ -299,15 +297,15 @@ fn test_handle_fast_accept_normal() {
         );
 
         let deps_committed = vec![false, true, false];
-        let req = MakeRequest::fast_accept(replica_id, &insta, &deps_committed);
-        let req: FastAcceptRequest = req.phase.unwrap().try_into().unwrap();
+        let req = MakeRequest::prepare(replica_id, &insta, &deps_committed);
+        let req: PrepareRequest = req.phase.unwrap().try_into().unwrap();
 
         let mut local_inst = Instance {
             instance_id: Some(a_iid),
             ..Default::default()
         };
 
-        let repl = replica.handle_fast_accept(&req, &mut local_inst);
+        let repl = replica.handle_prepare(&req, &mut local_inst);
         let repl = repl.unwrap();
 
         let wantdeps: Deps = vec![x_iid, b_iid, z_iid].into();

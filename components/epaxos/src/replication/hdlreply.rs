@@ -45,19 +45,19 @@ pub fn handle_prepare_reply(
 
     let phase = check_repl_common(&st.instance, repl)?;
 
-    let frepl: FastAcceptReply = phase
+    let frepl: PrepareReply = phase
         .try_into()
-        .or(Err(ProtocolError::LackOf("phase::Fast".into())))?;
+        .or(Err(ProtocolError::LackOf("phase::Prepare".into())))?;
 
     let deps = frepl
         .deps
         .as_ref()
-        .ok_or(ProtocolError::LackOf("phase::Fast.deps".into()))?;
+        .ok_or(ProtocolError::LackOf("phase::Prepare.deps".into()))?;
 
     // TODO choose the appropriate data structure to reduce needless error checking
     if frepl.deps_committed.len() < deps.len() {
         return Err(ProtocolError::Incomplete(
-            "phase::Fast.deps_committed".into(),
+            "phase::Prepare.deps_committed".into(),
             deps.len() as i32,
             frepl.deps_committed.len() as i32,
         )

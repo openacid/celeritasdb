@@ -231,10 +231,10 @@ fn test_request_fast_accpt_pb() {
     let inst = new_foo_inst();
 
     let deps_committed = &[true, false];
-    let pp = MakeRequest::fast_accept(100, &inst, deps_committed);
+    let pp = MakeRequest::prepare(100, &inst, deps_committed);
     test_enc_dec!(pp, ReplicateRequest);
 
-    let req: FastAcceptRequest = pp.phase.unwrap().try_into().unwrap();
+    let req: PrepareRequest = pp.phase.unwrap().try_into().unwrap();
 
     test_request_common!(pp, inst, 100);
     assert_eq!(inst.cmds, req.cmds);
@@ -276,7 +276,7 @@ fn test_replicate_reply_pb() {
         last_ballot: Some((1, 2, 3).into()),
         instance_id: Some(instid!(1, 2)),
         phase: Some(
-            FastAcceptReply {
+            PrepareReply {
                 deps: Some(instidvec![(1, 2), (3, 4)].into()),
                 deps_committed: vec![true],
             }

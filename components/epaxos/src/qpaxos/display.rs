@@ -8,8 +8,8 @@ use crate::qpaxos::CommitReply;
 use crate::qpaxos::CommitRequest;
 use crate::qpaxos::Dep;
 use crate::qpaxos::Deps;
-use crate::qpaxos::FastAcceptReply;
-use crate::qpaxos::FastAcceptRequest;
+use crate::qpaxos::PrepareReply;
+use crate::qpaxos::PrepareRequest;
 use crate::qpaxos::Instance;
 use crate::qpaxos::InstanceId;
 use crate::qpaxos::InstanceIdVec;
@@ -87,7 +87,7 @@ impl ToStringExt for Command {
 impl ToStringExt for replicate_request::Phase {
     fn tostr_ext(&self) -> String {
         match self {
-            Self::Fast(v) => format!("Fast{}", v),
+            Self::Prepare(v) => format!("Prepare{}", v),
             Self::Accept(v) => format!("Accept{}", v),
             Self::Commit(v) => format!("Commit{}", v),
         }
@@ -97,7 +97,7 @@ impl ToStringExt for replicate_request::Phase {
 impl ToStringExt for replicate_reply::Phase {
     fn tostr_ext(&self) -> String {
         match self {
-            Self::Fast(v) => format!("Fast{}", v),
+            Self::Prepare(v) => format!("Prepare{}", v),
             Self::Accept(v) => format!("Accept{}", v),
             Self::Commit(v) => format!("Commit{}", v),
         }
@@ -152,7 +152,7 @@ impl_tostr_ext!(
 );
 
 impl_tostr_ext!(
-    FastAcceptRequest,
+    PrepareRequest,
     "{{cmds:{}, deps:{}, c:{}}}",
     cmds,
     deps,
@@ -174,7 +174,7 @@ impl_tostr_ext!(
 );
 
 impl_tostr_ext!(
-    FastAcceptReply,
+    PrepareReply,
     "{{deps[1]:{}, c:{}}}",
     deps,
     deps_committed
@@ -206,12 +206,12 @@ impl_display!(BallotNum);
 impl_display!(Instance);
 
 impl_display!(ReplicateRequest);
-impl_display!(FastAcceptRequest);
+impl_display!(PrepareRequest);
 impl_display!(AcceptRequest);
 impl_display!(CommitRequest);
 
 impl_display!(ReplicateReply);
-impl_display!(FastAcceptReply);
+impl_display!(PrepareReply);
 impl_display!(AcceptReply);
 impl_display!(CommitReply);
 

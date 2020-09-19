@@ -46,7 +46,7 @@ macro_rules! frepl {
     () => {
         ReplicateReply {
             phase: Some(
-                FastAcceptReply {
+                PrepareReply {
                     ..Default::default()
                 }
                 .into(),
@@ -59,7 +59,7 @@ macro_rules! frepl {
             last_ballot: blt!($blt),
             instance_id: iid!($id),
             phase: Some(
-                FastAcceptReply {
+                PrepareReply {
                     ..Default::default()
                 }
                 .into(),
@@ -80,7 +80,7 @@ macro_rules! frepl {
             last_ballot: blt!($blt),
             instance_id: iid!($id),
             phase: Some(
-                FastAcceptReply {
+                PrepareReply {
                     deps: deps!($deps),
                     ..Default::default()
                 }
@@ -94,7 +94,7 @@ macro_rules! frepl {
             last_ballot: blt!($blt),
             instance_id: iid!($id),
             phase: Some(
-                FastAcceptReply {
+                PrepareReply {
                     deps: deps!($deps),
                     deps_committed: $cmts,
                     ..Default::default()
@@ -107,7 +107,7 @@ macro_rules! frepl {
 }
 
 #[test]
-fn test_handle_fast_accept_reply_err() {
+fn test_handle_prepare_reply_err() {
     let inst = inst!((1, 2), (0, 0, _), [(x = "1")], [(1, 1)]);
 
     let cases: Vec<(ReplicateReply, RpcHandlerError)> = vec![
@@ -135,27 +135,27 @@ fn test_handle_fast_accept_reply_err() {
                 ),
                 ..Default::default()
             },
-            ProtocolError::LackOf("phase::Fast".into()).into(),
+            ProtocolError::LackOf("phase::Prepare".into()).into(),
         ),
         (
             frepl!(((0, 0, 1), (1, 2)), (None)),
-            ProtocolError::LackOf("phase::Fast.deps".into()).into(),
+            ProtocolError::LackOf("phase::Prepare.deps".into()).into(),
         ),
         (
             frepl!(((0, 0, 1), (1, 2)), ([(1, 2), (2, 3)], vec![true])),
-            ProtocolError::Incomplete("phase::Fast.deps_committed".into(), 2, 1).into(),
+            ProtocolError::Incomplete("phase::Prepare.deps_committed".into(), 2, 1).into(),
         ),
     ];
 
     for (repl, want) in cases.iter() {
         let mut st = ReplicationStatus::new(3, inst.clone());
         let r = handle_prepare_reply(&mut st, 3, repl.clone());
-        assert_eq!(r.err().unwrap(), *want, "fast-reply: {:?}", repl);
+        assert_eq!(r.err().unwrap(), *want, "Prepare-reply: {:?}", repl);
     }
 }
 
 #[test]
-fn test_handle_fast_accept_reply() {
+fn test_handle_prepare_reply() {
     let inst = inst!((1, 2), (0, 0, _), [(x = "1")], []);
     let mut st = ReplicationStatus::new(3, inst.clone());
 
@@ -167,7 +167,6 @@ fn test_handle_fast_accept_reply() {
 
         let r = handle_prepare_reply(&mut st, from_rid, repl.clone());
         assert_eq!(r.unwrap(), ());
-        // assert_eq!(st.fast_replied[&from_rid], true);
         assert!(st.prepared[&1].replied.contains(&from_rid));
 
         assert_eq!(

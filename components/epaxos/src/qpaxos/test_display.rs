@@ -10,7 +10,7 @@ use crate::qpaxos::OpCode;
 use crate::qpaxos::replicate_reply;
 use crate::qpaxos::AcceptReply;
 use crate::qpaxos::CommitReply;
-use crate::qpaxos::FastAcceptReply;
+use crate::qpaxos::PrepareReply;
 use crate::qpaxos::InvalidRequest;
 use crate::qpaxos::QError;
 use crate::qpaxos::ReplicateReply;
@@ -122,12 +122,12 @@ fn test_display_replicate_request() {
 
     let r = "to:10, blt:(2, 3, 4), iid:(1, 2), phase";
 
-    let fast = "Fast{cmds:[Set:a=b, Get:c], deps:[(2, 3, 0), (3, 4, 0)], c:[true, false]}";
+    let prepare = "Prepare{cmds:[Set:a=b, Get:c], deps:[(2, 3, 0), (3, 4, 0)], c:[true, false]}";
     let accept = "Accept{deps:[(2, 3, 0), (3, 4, 0)]}";
     let commit = "Commit{cmds:[Set:a=b, Get:c], deps:[(2, 3, 0), (3, 4, 0)]}";
 
-    let f = MakeRequest::fast_accept(10, &inst, &[true, false]);
-    assert_eq!(format!("{{{}:{}}}", r, fast), format!("{}", f));
+    let f = MakeRequest::prepare(10, &inst, &[true, false]);
+    assert_eq!(format!("{{{}:{}}}", r, prepare), format!("{}", f));
 
     let a = MakeRequest::accept(10, &inst);
     assert_eq!(format!("{{{}:{}}}", r, accept), format!("{}", a));
@@ -190,11 +190,11 @@ fn test_display_replicate_reply_normal() {
     };
 
     {
-        r.phase = Some(replicate_reply::Phase::Fast(FastAcceptReply {
+        r.phase = Some(replicate_reply::Phase::Prepare(PrepareReply {
             deps: Some(instidvec![(1, 2), (3, 4)].into()),
             deps_committed: vec![true, false],
         }));
-        let ph = "Fast{deps[1]:[(1, 2, 0), (3, 4, 0)], c:[true, false]}";
+        let ph = "Prepare{deps[1]:[(1, 2, 0), (3, 4, 0)], c:[true, false]}";
 
         assert_eq!(format!("{{err:None, {}:{}}}", cmn, ph), format!("{}", r));
     }

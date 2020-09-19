@@ -327,12 +327,12 @@ macro_rules! make_req {
 /// let req = MakeRequest::prepare(1, some_instance);
 /// ```
 impl MakeRequest {
-    pub fn fast_accept(
+    pub fn prepare(
         to_replica_id: i64,
         inst: &Instance,
         deps_committed: &[bool],
     ) -> ReplicateRequest {
-        let p = FastAcceptRequest {
+        let p = PrepareRequest {
             cmds: inst.cmds.clone(),
             deps: inst.deps.clone(),
             deps_committed: deps_committed.into(),
