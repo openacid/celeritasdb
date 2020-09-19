@@ -137,7 +137,7 @@ impl_tostr_ext!(
     "{{id:{}, blt:{}, ablt:{}, cmds:{}, deps:{}, c/e:{}/{}}}",
     instance_id,
     ballot,
-    accepted_ballot,
+    vballot,
     cmds,
     deps,
     committed,

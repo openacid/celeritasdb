@@ -35,7 +35,7 @@ pub fn check_repl_common(inst: &Instance, reply: ReplicateReply) -> Result<Phase
 }
 
 pub fn handle_fast_accept_reply(
-    st: &mut Status,
+    st: &mut ReplicationStatus,
     from_rid: ReplicaId,
     repl: ReplicateReply,
 ) -> Result<(), RpcHandlerError> {
@@ -98,7 +98,7 @@ pub fn handle_fast_accept_reply(
 }
 
 pub fn handle_accept_reply(
-    st: &mut Status,
+    st: &mut ReplicationStatus,
     from_rid: ReplicaId,
     repl: ReplicateReply,
 ) -> Result<(), RpcHandlerError> {
@@ -122,7 +122,7 @@ pub fn handle_accept_reply(
         ));
     }
 
-    if st.accept_oks.insert(from_rid) {
+    if st.accepted.insert(from_rid) {
 
     } else {
         return Err(RpcHandlerError::DupRpc(

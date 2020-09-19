@@ -3,7 +3,7 @@ use crate::qpaxos::Command;
 use crate::qpaxos::MakeRequest;
 use crate::replica::InstanceStatus;
 use crate::replica::Replica;
-use crate::replica::Status;
+use crate::replica::ReplicationStatus;
 use crate::replication::bcast_msg;
 use crate::replication::handle_accept_reply;
 use crate::replication::handle_fast_accept_reply;
@@ -18,14 +18,14 @@ pub async fn replicate(
     cmds: &[Command],
     g: &GroupInfo,
     r: &Replica,
-) -> Result<Status, ReplicationError> {
+) -> Result<ReplicationStatus, ReplicationError> {
     let grids: Vec<_> = g.replicas.keys().cloned().collect();
     println!("grids:{:?}", grids);
 
     let inst = r.new_instance(cmds)?;
 
     let n = grids.len();
-    let mut st = Status::new(n as i32, inst);
+    let mut st = ReplicationStatus::new(n as i32, inst);
     println!("st:{:?}", st);
 
     // a special path for n = 1
@@ -90,7 +90,7 @@ pub async fn replicate(
 
     for (from_rid, repl) in repls.iter() {
         handle_accept_reply(&mut st, *from_rid, repl.get_ref().clone())?;
-        if st.accept_oks.len() as i32 >= st.quorum {
+        if st.accepted.len() as i32 >= st.quorum {
             // instance is safe to commit.
             return Ok(st);
         }
@@ -101,6 +101,6 @@ pub async fn replicate(
     Err(ReplicationError::NotEnoughQuorum(
         InstanceStatus::Accepted,
         st.quorum,
-        st.accept_oks.len() as i32,
+        st.accepted.len() as i32,
     ))
 }

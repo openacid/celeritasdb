@@ -21,7 +21,7 @@ impl Instance {
             return InstanceStatus::Committed;
         }
 
-        if self.accepted_ballot != None {
+        if self.vballot != None {
             return InstanceStatus::Accepted;
         }
 
@@ -36,20 +36,29 @@ impl Instance {
 /// RepliedDep stores a dependency replied from replica-j that is proposed by replica-i
 #[derive(Debug, Default, PartialEq, PartialOrd, Eq, Ord, Clone)]
 pub struct RepliedDep {
+    /// idx is the index of an instance.
     pub idx: i64,
+
+    /// seq number of the dependent instance.
     pub seq: i64,
+
+    /// committed indicate if the dependent instance is committed.
     pub committed: bool,
 }
 
+/// DepStatus tracks dependent instances proposed by a certain replica.
 #[derive(Debug, Default, Clone)]
 pub struct DepStatus {
+    /// replied track which replica has replied positive response.
     pub replied: HashSet<ReplicaId>,
+
+    /// rdeps stores positive replies.
     pub rdeps: Vec<RepliedDep>,
 }
 
 /// Status tracks replication status during fast-accept, accept and commit phase.
 #[derive(Debug, Default)]
-pub struct Status {
+pub struct ReplicationStatus {
     // TODO: to work with cluster membership updating, a single number quorum is not enough in future.
     pub fast_quorum: i32,
     pub quorum: i32,
@@ -65,10 +74,10 @@ pub struct Status {
 
     /// accept_oks tracks positive accept-replies.
     /// AcceptReply with error, delayed, or with lower ballot does not count.
-    pub accept_oks: HashSet<ReplicaId>,
+    pub accepted: HashSet<ReplicaId>,
 }
 
-impl Status {
+impl ReplicationStatus {
     /// new creates a Status with initial deps filled, as if it already fast-accepted from the
     /// instnace it serves.
     pub fn new(n_replica: i32, instance: Instance) -> Self {
@@ -79,16 +88,16 @@ impl Status {
 
             prepared: HashMap::new(),
 
-            accept_oks: HashSet::new(),
+            accepted: HashSet::new(),
         };
 
-        st.start_fast_accept();
+        st.start_prepare();
 
         st
     }
 
-    /// start_fast_accept performs a handle-fast-accept-reply for the instance it serves.
-    pub fn start_fast_accept(&mut self) -> &mut Self {
+    /// start_prepare performs a handle-prepare-reply for the instance it proposed.
+    pub fn start_prepare(&mut self) -> &mut Self {
         let iid = self.instance.instance_id.unwrap();
 
         let deps = self.instance.deps.as_ref().unwrap();
@@ -118,7 +127,7 @@ impl Status {
         // local instance accepts it.
         let iid = self.instance.instance_id.unwrap();
         let rid = iid.replica_id;
-        self.accept_oks.insert(rid);
+        self.accepted.insert(rid);
 
         self
     }

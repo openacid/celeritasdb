@@ -50,14 +50,14 @@ message Instance {
     // An instance has several status.
     // To determine the instance status:
     //
-    // - is-accepted:     if Instance.accepted_ballot is not None
+    // - is-accepted:     if Instance.vballot is not None
     // - is-committed:    if Instance.committed
     // - is-executed:     if Instance.executed
 
     bool      committed              = 51;
     bool      executed               = 52;
 
-    // The highest ballot of all accepted Accept request.
-    BallotNum accepted_ballot        = 53;
+    // The ballot at which this instance is Accept-ed.
+    BallotNum vballot        = 53;
 
 };

@@ -3,7 +3,7 @@ use crate::replica::get_accept_dep;
 use crate::replica::get_fast_commit_dep;
 use crate::replica::DepStatus;
 use crate::replica::RepliedDep;
-use crate::replica::Status;
+use crate::replica::ReplicationStatus;
 use std::collections::HashMap;
 
 #[cfg(test)]
@@ -23,7 +23,7 @@ macro_rules! get {
 fn test_status_new() {
     let inst = inst!((1, 2), (3, 4, _), [("Set", "x", "1")], [(1, 1), (2, 0)],);
 
-    let st = Status::new(7, inst.clone());
+    let st = ReplicationStatus::new(7, inst.clone());
 
     assert_eq!(4, st.quorum);
     assert_eq!(5, st.fast_quorum);
@@ -50,20 +50,20 @@ fn test_status_new() {
         st.prepared[&2].rdeps
     );
 
-    get!(st.accept_oks, &1, None);
-    get!(st.accept_oks, &2, None);
+    get!(st.accepted, &1, None);
+    get!(st.accepted, &2, None);
 }
 
 #[test]
 fn test_status_start_accept() {
     let inst = inst!((1, 2), (3, 4, _), [("Set", "x", "1")], [(1, 1), (2, 0)],);
-    let mut st = Status::new(7, inst.clone());
+    let mut st = ReplicationStatus::new(7, inst.clone());
 
-    get!(st.accept_oks, &1, None);
+    get!(st.accepted, &1, None);
 
     st.start_accept();
 
-    assert!(st.accept_oks.contains(&1));
+    assert!(st.accepted.contains(&1));
 }
 
 #[test]
@@ -238,7 +238,7 @@ fn test_status_get_fast_commit_deps() {
 
     for (n, deps, want) in cases.iter_mut() {
         let fq = fast_quorum(*n);
-        let mut st = Status {
+        let mut st = ReplicationStatus {
             fast_quorum: fq,
             prepared: deps.clone(),
             ..Default::default()
@@ -292,7 +292,7 @@ fn test_status_get_accept_deps() {
 
     for (n, deps, want) in cases.iter_mut() {
         let q = quorum(*n);
-        let mut st = Status {
+        let mut st = ReplicationStatus {
             quorum: q,
             prepared: deps.clone(),
             ..Default::default()

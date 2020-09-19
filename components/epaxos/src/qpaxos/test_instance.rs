@@ -42,7 +42,7 @@ fn test_macro_inst_all_arg() {
         deps: Some(Deps {
             dep_vec: vec![(12, 13).into(), (14, 15).into()],
         }),
-        accepted_ballot: Some((1, 2, 3).into()),
+        vballot: Some((1, 2, 3).into()),
         committed: true,
         executed: true,
     };
@@ -84,7 +84,7 @@ fn test_macro_inst() {
         deps: Some(Deps {
             dep_vec: vec![(11, 12).into(), (13, 14).into()],
         }),
-        accepted_ballot: None,
+        vballot: None,
         committed: false,
         executed: false,
     };

@@ -148,7 +148,7 @@ fn test_handle_fast_accept_reply_err() {
     ];
 
     for (repl, want) in cases.iter() {
-        let mut st = Status::new(3, inst.clone());
+        let mut st = ReplicationStatus::new(3, inst.clone());
         let r = handle_fast_accept_reply(&mut st, 3, repl.clone());
         assert_eq!(r.err().unwrap(), *want, "fast-reply: {:?}", repl);
     }
@@ -157,7 +157,7 @@ fn test_handle_fast_accept_reply_err() {
 #[test]
 fn test_handle_fast_accept_reply() {
     let inst = inst!((1, 2), (0, 0, _), [(x = "1")], []);
-    let mut st = Status::new(3, inst.clone());
+    let mut st = ReplicationStatus::new(3, inst.clone());
 
     {
         // positive reply updates the Status.
@@ -209,7 +209,7 @@ fn test_handle_fast_accept_reply() {
         // duplicated message
 
         let inst = inst!((1, 2), (0, 0, _), [(x = "1")], []);
-        let mut st = Status::new(3, inst.clone());
+        let mut st = ReplicationStatus::new(3, inst.clone());
 
         let repl: ReplicateReply = frepl!(((0, 0, 1), (1, 2)), ([(3, 4)], vec![true]));
         let from_rid = 4;
@@ -262,7 +262,7 @@ fn test_handle_accept_reply() {
 
     {
         // with high ballot num
-        let mut st = Status::new(n, inst.clone());
+        let mut st = ReplicationStatus::new(n, inst.clone());
         st.start_accept();
         let repl = ReplicateReply {
             last_ballot: Some((10, 2, replica_id).into()),
@@ -273,12 +273,12 @@ fn test_handle_accept_reply() {
         assert!(r.is_err());
 
         assert_eq!(st.get_accept_deps(&rp.group_replica_ids), None);
-        assert_eq!(1, st.accept_oks.len());
+        assert_eq!(1, st.accepted.len());
     }
 
     {
         // with reply err
-        let mut st = Status::new(n, inst.clone());
+        let mut st = ReplicationStatus::new(n, inst.clone());
         st.start_accept();
         let repl = ReplicateReply {
             err: Some(ProtocolError::LackOf("test".to_string()).into()),
@@ -290,13 +290,13 @@ fn test_handle_accept_reply() {
 
         assert_eq!(st.get_accept_deps(&rp.group_replica_ids), None);
 
-        assert_eq!(1, st.accept_oks.len());
+        assert_eq!(1, st.accepted.len());
     }
 
     {
         // success
-        inst.accepted_ballot = Some((1, 2, 3).into());
-        let mut st = Status::new(n, inst.clone());
+        inst.vballot = Some((1, 2, 3).into());
+        let mut st = ReplicationStatus::new(n, inst.clone());
         st.start_accept();
         let repl = ReplicateReply {
             err: None,
@@ -308,6 +308,6 @@ fn test_handle_accept_reply() {
         println!("{:?}", r);
         assert!(r.is_ok());
 
-        assert_eq!(2, st.accept_oks.len());
+        assert_eq!(2, st.accepted.len());
     }
 }
