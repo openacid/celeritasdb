@@ -6,7 +6,7 @@ use crate::replica::Replica;
 use crate::replica::ReplicationStatus;
 use crate::replication::bcast_msg;
 use crate::replication::handle_accept_reply;
-use crate::replication::handle_fast_accept_reply;
+use crate::replication::handle_prepare_reply;
 use crate::ReplicationError;
 
 /// replicate runs replication algo to forward instance to other replica in leader's group.
@@ -29,7 +29,7 @@ pub async fn replicate(
     println!("st:{:?}", st);
 
     // a special path for n = 1
-    let fast = st.get_fast_commit_deps(&grids);
+    let fast = st.get_fastpath_deps(&grids);
     match fast {
         Some(fdeps) => {
             st.instance.deps = Some(fdeps.into());
@@ -55,8 +55,8 @@ pub async fn replicate(
     for (from_rid, repl) in repls.iter() {
         println!("fast-reply from:{} {}", from_rid, repl.get_ref());
         // TODO  consume repl do not clone
-        handle_fast_accept_reply(&mut st, *from_rid, repl.get_ref().clone())?;
-        let fast = st.get_fast_commit_deps(&grids);
+        handle_prepare_reply(&mut st, *from_rid, repl.get_ref().clone())?;
+        let fast = st.get_fastpath_deps(&grids);
         match fast {
             Some(fdeps) => {
                 st.instance.deps = Some(fdeps.into());
@@ -69,12 +69,12 @@ pub async fn replicate(
         };
     }
 
-    let adeps = st.get_accept_deps(&grids);
+    let adeps = st.get_slowpath_deps(&grids);
     // println!("st.fast_deps: {:?}", st.fast_deps);
     println!("got accept deps:{:?}", adeps);
 
     let adeps = adeps.ok_or(ReplicationError::NotEnoughQuorum(
-        InstanceStatus::FastAccepted,
+        InstanceStatus::Prepared,
         st.quorum,
         st.prepared[&0].replied.len() as i32,
     ))?;

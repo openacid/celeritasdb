@@ -5,14 +5,14 @@ use std::collections::HashSet;
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum InstanceStatus {
     Na,
-    FastAccepted,
+    Prepared,
     Accepted,
     Committed,
     Executed,
 }
 
 impl Instance {
-    pub fn status(&self) -> InstanceStatus {
+    pub fn get_status(&self) -> InstanceStatus {
         if self.executed {
             return InstanceStatus::Executed;
         }
@@ -26,7 +26,7 @@ impl Instance {
         }
 
         if self.deps.is_some() {
-            return InstanceStatus::FastAccepted;
+            return InstanceStatus::Prepared;
         }
 
         InstanceStatus::Na
@@ -78,16 +78,18 @@ pub struct ReplicationStatus {
 }
 
 impl ReplicationStatus {
-    /// new creates a Status with initial deps filled, as if it already fast-accepted from the
+    /// new creates a ReplicationStatus with initial deps filled, as if it already Prepare-ed from the
     /// instnace it serves.
     pub fn new(n_replica: i32, instance: Instance) -> Self {
+
         let mut st = Self {
+
             quorum: quorum(n_replica),
             fast_quorum: fast_quorum(n_replica),
+
             instance,
 
             prepared: HashMap::new(),
-
             accepted: HashSet::new(),
         };
 
@@ -132,9 +134,9 @@ impl ReplicationStatus {
         self
     }
 
-    /// get_fast_commit_deps returns a InstanceId Vec if current status satisfies fast-commit
+    /// get_fastpath_deps returns a Dep Vec if current status satisfies FastPath
     /// condition. Otherwise it returns None.
-    pub fn get_fast_commit_deps(&mut self, cluster: &[ReplicaId]) -> Option<Vec<Dep>> {
+    pub fn get_fastpath_deps(&mut self, cluster: &[ReplicaId]) -> Option<Vec<Dep>> {
         let mut rst: Vec<Dep> = Vec::with_capacity(cluster.len());
         for rid in cluster.iter() {
             // TODO do not need to sort every time calling this function.
@@ -142,15 +144,15 @@ impl ReplicationStatus {
 
             deps.sort();
 
-            let fdep = get_fast_commit_dep(*rid, deps, self.fast_quorum)?;
+            let fdep = get_fastpath_dep(*rid, deps, self.fast_quorum)?;
             rst.push(fdep);
         }
         Some(rst)
     }
 
-    /// get_accept_deps returns a InstanceId Vec for accept request.
+    /// get_slowpath_deps returns a Dep Vec for accept request.
     /// If current status accumulated enough fast-accept-replies. Otherwise it returns None.
-    pub fn get_accept_deps(&mut self, cluster: &[ReplicaId]) -> Option<Vec<Dep>> {
+    pub fn get_slowpath_deps(&mut self, cluster: &[ReplicaId]) -> Option<Vec<Dep>> {
         let mut rst: Vec<Dep> = Vec::with_capacity(cluster.len());
         for rid in cluster.iter() {
             // TODO do not need to sort every time calling this function.
@@ -158,14 +160,14 @@ impl ReplicationStatus {
 
             deps.sort();
 
-            let fdep = get_accept_dep(*rid, deps, self.quorum)?;
+            let fdep = get_slowpath_dep(*rid, deps, self.quorum)?;
             rst.push(fdep);
         }
         Some(rst)
     }
 }
 
-/// `get_fast_commit_dep` finds out the safe dependency by a leader for fast commit.
+/// `get_fastpath_dep` finds out the safe dependency by a leader for fast commit.
 ///
 /// `rdeps`: replied dependent instances proposed by replica `rid`.
 /// `rdeps` must be sorted.
@@ -175,7 +177,7 @@ impl ReplicationStatus {
 /// - and this dep is committed.
 ///
 /// If there is no safe dep for fast-commit, it returns None.
-pub fn get_fast_commit_dep(
+pub fn get_fastpath_dep(
     rid: ReplicaId,
     rdeps: &Vec<RepliedDep>,
     fast_quorum: i32,
@@ -213,7 +215,7 @@ pub fn get_fast_commit_dep(
     return None;
 }
 
-/// get_accept_dep returns the dep for accept-request if a quorum of replies received.
+/// get_slowpath_dep returns the dep for accept-request if a quorum of replies received.
 /// Otherwise it returns None.
 /// It always choose an as low instance as possible to reduce conflict.
 ///
@@ -227,7 +229,7 @@ pub fn get_fast_commit_dep(
 /// `rdeps` in Accept Request is the union of `rdeps` replied in fast-accept phase.
 ///
 /// `rdeps` must be sorted.
-pub fn get_accept_dep(rid: ReplicaId, rdeps: &Vec<RepliedDep>, quorum: i32) -> Option<Dep> {
+pub fn get_slowpath_dep(rid: ReplicaId, rdeps: &Vec<RepliedDep>, quorum: i32) -> Option<Dep> {
     let quorum = quorum as usize;
 
     // the first elt in rdeps is the initial dep.

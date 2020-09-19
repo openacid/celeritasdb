@@ -58,6 +58,8 @@ message Instance {
     bool      executed               = 52;
 
     // The ballot at which this instance is Accept-ed.
+    // epaxos has a bug that it does not track the ballot when an instance is
+    // accepted.
     BallotNum vballot        = 53;
 
 };

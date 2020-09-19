@@ -162,7 +162,6 @@ fn test_handle_replicate_ballot_check() {
     let reqs = vec![
         MakeRequest::fast_accept(0, &inst, &[]),
         MakeRequest::accept(0, &inst),
-        MakeRequest::prepare(0, &inst),
     ];
 
     for req in reqs {

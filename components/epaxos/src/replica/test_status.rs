@@ -1,6 +1,6 @@
 use crate::qpaxos::*;
-use crate::replica::get_accept_dep;
-use crate::replica::get_fast_commit_dep;
+use crate::replica::get_slowpath_dep;
+use crate::replica::get_fastpath_dep;
 use crate::replica::DepStatus;
 use crate::replica::RepliedDep;
 use crate::replica::ReplicationStatus;
@@ -125,7 +125,7 @@ fn test_get_fast_commit_dep() {
     ];
 
     for (fast_quorum, deps, want) in cases.iter_mut() {
-        let fdep = get_fast_commit_dep(1, deps, *fast_quorum);
+        let fdep = get_fastpath_dep(1, deps, *fast_quorum);
         assert_eq!(*want, fdep, "deps:{:?}, qf:{}", deps, fast_quorum);
     }
 }
@@ -159,7 +159,7 @@ fn test_get_accept_dep() {
     ];
 
     for (quorum, deps, want) in cases.iter_mut() {
-        let adep = get_accept_dep(1, deps, *quorum);
+        let adep = get_slowpath_dep(1, deps, *quorum);
         assert_eq!(*want, adep, "deps:{:?}, f:{}", deps, quorum);
     }
 }
@@ -244,7 +244,7 @@ fn test_status_get_fast_commit_deps() {
             ..Default::default()
         };
         let cluster: Vec<i64> = (1..(*n + 1) as i64).map(|x| x).collect();
-        let adep = st.get_fast_commit_deps(&cluster);
+        let adep = st.get_fastpath_deps(&cluster);
         assert_eq!(*want, adep, "deps:{:?}, n:{}, fq:{}", deps, n, fq);
     }
 }
@@ -298,7 +298,7 @@ fn test_status_get_accept_deps() {
             ..Default::default()
         };
         let cluster: Vec<i64> = (1..(*n + 1) as i64).map(|x| x).collect();
-        let adep = st.get_accept_deps(&cluster);
+        let adep = st.get_slowpath_deps(&cluster);
         assert_eq!(*want, adep, "deps:{:?}, n:{}, q:{}", deps, n, q);
     }
 }

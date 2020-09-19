@@ -149,7 +149,7 @@ fn test_handle_fast_accept_reply_err() {
 
     for (repl, want) in cases.iter() {
         let mut st = ReplicationStatus::new(3, inst.clone());
-        let r = handle_fast_accept_reply(&mut st, 3, repl.clone());
+        let r = handle_prepare_reply(&mut st, 3, repl.clone());
         assert_eq!(r.err().unwrap(), *want, "fast-reply: {:?}", repl);
     }
 }
@@ -165,7 +165,7 @@ fn test_handle_fast_accept_reply() {
             frepl!(((0, 0, 1), (1, 2)), ([(1, 2), (2, 3)], vec![false, true]));
         let from_rid = 5;
 
-        let r = handle_fast_accept_reply(&mut st, from_rid, repl.clone());
+        let r = handle_prepare_reply(&mut st, from_rid, repl.clone());
         assert_eq!(r.unwrap(), ());
         // assert_eq!(st.fast_replied[&from_rid], true);
         assert!(st.prepared[&1].replied.contains(&from_rid));
@@ -192,7 +192,7 @@ fn test_handle_fast_accept_reply() {
         let repl: ReplicateReply = frepl!(((100, 0, 1), (1, 2)), ([(3, 4)], vec![true]));
         let from_rid = 4;
 
-        let r = handle_fast_accept_reply(&mut st, from_rid, repl.clone());
+        let r = handle_prepare_reply(&mut st, from_rid, repl.clone());
         assert_eq!(
             r.err().unwrap(),
             RpcHandlerError::StaleBallot((0, 0, 1).into(), (100, 0, 1).into())
@@ -214,14 +214,14 @@ fn test_handle_fast_accept_reply() {
         let repl: ReplicateReply = frepl!(((0, 0, 1), (1, 2)), ([(3, 4)], vec![true]));
         let from_rid = 4;
 
-        let r = handle_fast_accept_reply(&mut st, from_rid, repl.clone());
+        let r = handle_prepare_reply(&mut st, from_rid, repl.clone());
         assert_eq!(None, r.err());
 
-        let r = handle_fast_accept_reply(&mut st, from_rid, repl.clone());
+        let r = handle_prepare_reply(&mut st, from_rid, repl.clone());
         assert_eq!(
             r.err().unwrap(),
             RpcHandlerError::DupRpc(
-                InstanceStatus::FastAccepted,
+                InstanceStatus::Prepared,
                 Direction::Reply,
                 from_rid,
                 st.instance.instance_id.unwrap()
@@ -237,7 +237,7 @@ fn test_handle_fast_accept_reply() {
         });
         let from_rid = 6;
 
-        let r = handle_fast_accept_reply(&mut st, from_rid, repl.clone());
+        let r = handle_prepare_reply(&mut st, from_rid, repl.clone());
         assert_eq!(
             r.err().unwrap(),
             RpcHandlerError::RemoteError(repl.err.unwrap())
@@ -272,7 +272,7 @@ fn test_handle_accept_reply() {
         println!("{:?}", r);
         assert!(r.is_err());
 
-        assert_eq!(st.get_accept_deps(&rp.group_replica_ids), None);
+        assert_eq!(st.get_slowpath_deps(&rp.group_replica_ids), None);
         assert_eq!(1, st.accepted.len());
     }
 
@@ -288,7 +288,7 @@ fn test_handle_accept_reply() {
         println!("{:?}", r);
         assert!(r.is_err());
 
-        assert_eq!(st.get_accept_deps(&rp.group_replica_ids), None);
+        assert_eq!(st.get_slowpath_deps(&rp.group_replica_ids), None);
 
         assert_eq!(1, st.accepted.len());
     }

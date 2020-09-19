@@ -34,7 +34,7 @@ pub fn check_repl_common(inst: &Instance, reply: ReplicateReply) -> Result<Phase
     Ok(phase)
 }
 
-pub fn handle_fast_accept_reply(
+pub fn handle_prepare_reply(
     st: &mut ReplicationStatus,
     from_rid: ReplicaId,
     repl: ReplicateReply,
@@ -86,7 +86,7 @@ pub fn handle_fast_accept_reply(
             });
         } else {
             return Err(RpcHandlerError::DupRpc(
-                InstanceStatus::FastAccepted,
+                InstanceStatus::Prepared,
                 Direction::Reply,
                 from_rid,
                 st.instance.instance_id.unwrap(),
@@ -114,7 +114,7 @@ pub fn handle_accept_reply(
 
     // TODO is it necessary to check status?
     // ignore delay reply
-    let status = inst.status();
+    let status = inst.get_status();
     if status != InstanceStatus::Accepted {
         return Err(RpcHandlerError::DelayedReply(
             InstanceStatus::Accepted,

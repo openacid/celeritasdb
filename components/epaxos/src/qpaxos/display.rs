@@ -15,8 +15,6 @@ use crate::qpaxos::InstanceId;
 use crate::qpaxos::InstanceIdVec;
 use crate::qpaxos::InvalidRequest;
 use crate::qpaxos::OpCode;
-use crate::qpaxos::PrepareReply;
-use crate::qpaxos::PrepareRequest;
 use crate::qpaxos::QError;
 use crate::qpaxos::ReplicateReply;
 use crate::qpaxos::ReplicateRequest;
@@ -92,7 +90,6 @@ impl ToStringExt for replicate_request::Phase {
             Self::Fast(v) => format!("Fast{}", v),
             Self::Accept(v) => format!("Accept{}", v),
             Self::Commit(v) => format!("Commit{}", v),
-            Self::Prepare(v) => format!("Prepare{}", v),
         }
     }
 }
@@ -103,7 +100,6 @@ impl ToStringExt for replicate_reply::Phase {
             Self::Fast(v) => format!("Fast{}", v),
             Self::Accept(v) => format!("Accept{}", v),
             Self::Commit(v) => format!("Commit{}", v),
-            Self::Prepare(v) => format!("Prepare{}", v),
         }
     }
 }
@@ -165,7 +161,6 @@ impl_tostr_ext!(
 
 impl_tostr_ext!(AcceptRequest, "{{deps:{}}}", deps);
 impl_tostr_ext!(CommitRequest, "{{cmds:{}, deps:{}}}", cmds, deps);
-impl_tostr_ext!(PrepareRequest, "{{}}",);
 
 // replication replies
 
@@ -187,7 +182,6 @@ impl_tostr_ext!(
 
 impl_tostr_ext!(AcceptReply, "{{}}",);
 impl_tostr_ext!(CommitReply, "{{}}",);
-impl_tostr_ext!(PrepareReply, "{{deps:{}, c:{}}}", deps, committed);
 
 // replication errors
 
@@ -215,13 +209,11 @@ impl_display!(ReplicateRequest);
 impl_display!(FastAcceptRequest);
 impl_display!(AcceptRequest);
 impl_display!(CommitRequest);
-impl_display!(PrepareRequest);
 
 impl_display!(ReplicateReply);
 impl_display!(FastAcceptReply);
 impl_display!(AcceptReply);
 impl_display!(CommitReply);
-impl_display!(PrepareReply);
 
 impl_display!(QError);
 impl_display!(StorageFailure);

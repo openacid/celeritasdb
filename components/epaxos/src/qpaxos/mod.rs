@@ -354,9 +354,4 @@ impl MakeRequest {
         };
         make_req!(to_replica_id, inst, p)
     }
-
-    pub fn prepare(to_replica_id: i64, inst: &Instance) -> ReplicateRequest {
-        let p = PrepareRequest {};
-        make_req!(to_replica_id, inst, p)
-    }
 }

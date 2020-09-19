@@ -14,8 +14,6 @@ use crate::qpaxos::FastAcceptRequest;
 use crate::qpaxos::Instance;
 use crate::qpaxos::InstanceId;
 use crate::qpaxos::InstanceIdVec;
-use crate::qpaxos::PrepareReply;
-use crate::qpaxos::PrepareRequest;
 use crate::qpaxos::ProtocolError;
 use crate::qpaxos::ReplicaId;
 use crate::qpaxos::ReplicateReply;
@@ -200,7 +198,7 @@ impl Replica {
             .ok_or(ProtocolError::LackOf("phase".into()))?;
 
         match phase {
-            Phase::Fast(_) | Phase::Accept(_) | Phase::Prepare(_) => {
+            Phase::Fast(_) | Phase::Accept(_) => {
                 if req.ballot < inst.ballot {
                     return Ok(ReplicateReply {
                         err: None,
@@ -218,7 +216,6 @@ impl Replica {
             Phase::Fast(r) => self.handle_fast_accept(r, &mut inst)?.into(),
             Phase::Accept(r) => self.handle_accept(r, &mut inst)?.into(),
             Phase::Commit(r) => self.handle_commit(r, &mut inst)?.into(),
-            Phase::Prepare(r) => self.handle_prepare(r, &mut inst)?.into(),
         };
 
         self.storage.set_instance(&inst)?;
@@ -228,18 +225,6 @@ impl Replica {
             last_ballot,
             instance_id: Some(iid),
             phase: Some(reply_phase),
-        })
-    }
-
-    pub fn handle_prepare(
-        &self,
-        req: &PrepareRequest,
-        inst: &mut Instance,
-    ) -> Result<PrepareReply, RpcHandlerError> {
-        let _ = req;
-        let _ = inst;
-        Ok(PrepareReply {
-            ..Default::default()
         })
     }
 

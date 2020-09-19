@@ -227,17 +227,6 @@ fn test_instance_after() {
 }
 
 #[test]
-fn test_request_prepare_pb() {
-    let inst = new_foo_inst();
-
-    let pp = MakeRequest::prepare(100, &inst);
-    test_enc_dec!(pp, ReplicateRequest);
-
-    test_request_common!(pp, inst, 100);
-    // prepare has no other fields.
-}
-
-#[test]
 fn test_request_fast_accpt_pb() {
     let inst = new_foo_inst();
 
