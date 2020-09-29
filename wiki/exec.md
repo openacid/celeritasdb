@@ -1,3 +1,4 @@
+<!-- built with "make i18n", do not edit-->
 > `instance` and `vertex` are equivalent concepts in this doc.
 >
 > DAG: directed acyclic graph.
@@ -91,7 +92,6 @@ Besides the linearizability, consistency, and avoiding the livelock naturally, i
 
 -   `|G|`:
     the number of vertices in a set or a graph `G`.
-
 
 -   With given instances `x, y`, if x depends on y, there is an edge: `(x, y)`, the weight of the edge is: `(x.seq, y.seq)`.
 
@@ -471,7 +471,7 @@ And approximated by [Stirling-approximation]:
 
 ```
        k       √(2n+2i)
-E(s) = ∑   -----------------  (1-n/(2n+i))²ⁿ⁺²ⁱ (1+n/i)ⁱ
+E(s) = ∑   ----------------- (1-n/(2n+i))²ⁿ⁺²ⁱ (1+n/i)ⁱ
        i=0  √(2π) √(2n+i) √i
 ```
 

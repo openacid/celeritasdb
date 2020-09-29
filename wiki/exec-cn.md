@@ -1,7 +1,7 @@
+<!-- built with "make i18n", do not edit-->
 > `instance` and `vertex` are equivalent concepts in this doc.
 >
 > DAG: directed acyclic graph.
-
 
 # Algorithm
 
@@ -22,6 +22,7 @@
     从环中删掉以`y`起始的边.
 
     然后从`y`继续。
+
 
 ## Example of execution
 
@@ -66,11 +67,14 @@
 这个算法也适用于不使用seq的场景, 只需要实现满足以下条件:
 
 -   可以区分出哪些边是可以删除的, 以保证linearizability不被破坏.
+
+
 -   在不同的replica上有确定的方式决定删除哪些边(例如选择instance-id最小的).
     并且选择的方式需要让遍历趋向于优先遍历到较早被propose的instance.
 
 只要满足以上条件, 就可以使用同样的算法确定执行顺序.
 本文档中是通过`seq`来实现以上保证.
+
 
 # Properties
 
@@ -93,12 +97,12 @@
     表示集合G或图G中的顶点数。
 
 -   对2个instance`x, y`, 如果x依赖y:
-
     则定义一条边edge: `(x, y)`,
     边的权重为: `(x.seq, y.seq)`.
 
 -   **min-edge**:
     具有最小权重的边:
+
     - 对一个vertex, 它是所有出向边中最小的:
       `MinEdge(x) = MinEdge(x.edges) = e: e ∈ x.edges ∧ weight(e) is smallest`
 
@@ -110,6 +114,7 @@
 
     `C(G)`图`G`中所有 **不相关** 的环的集合:
     `C(G) = {C₁(x, G) | x ∈ G.vertices}`
+
     环的相关性参考**Lemma-cycle-DAG**.
 
 -   key-vertex: `Kᵢ(x, G)`:
@@ -119,7 +124,6 @@
     `Kᵢ(x, G) = u: (u, v) = MinEdge(Cᵢ(x, G))`
 
 -   `Gᵢ`: 从`Gᵢ₋₁`中删掉所有没有出向边, 和所有环`C(Gᵢ₋₁)`中的min-edge后得到的图.
-
     其中`G₀ = G`.
 
 -   `N₀(G)`: non-key-vertex: key-vertex之外的其他顶点集合:
@@ -129,7 +133,6 @@
 
     有效路径, effective path: `Pe(x, G)`:
     从`P(x, G)`中去掉经过的环得到的路径.
-
 
 关于以上概念的一个例子, 图中顶点以`seq`命名:
 
@@ -182,6 +185,7 @@ QED.
 
 ## Lemma-cycle-DAG
 
+
 从任一vertex出发的遍历, 发现环的顺序都满足一个的拓扑顺序`DAG(C)`.
 
 首先找到这个DAG:
@@ -214,7 +218,7 @@ QED.
 
 QED.
 
-例如:
+Example:
 ```
      .-4<-.           .> 9
      v    |          /
@@ -252,7 +256,7 @@ c2 -> c1
 
 QED.
 
-例如:
+Example:
 ```
      .-4<-.           .> 9
      v    |          /
@@ -275,9 +279,11 @@ DAG(G):
 1 -> 6 -> 3 -> 5 -> 2 -> 8
 ```
 
+
 ## Proof: execution concurrency
 
 两个并发的遍历不会相互影响。
+
 
 根据 **Lemma-dep-DAG**，
 对SCC的遍历可以看做对`DAG(G)`的遍历.
@@ -396,9 +402,10 @@ QED.
 
 ∴  key-vertex 和 non-key-vertex 之间存在一个一一映射.
 
-∴ `|N₀| >= 0.5 * |G|`
+∴ `|N₀(G)| >= 0.5 * |G|`
 
 QED.
+
 
 
 ## Proof: execution in finite number of steps
@@ -407,12 +414,11 @@ QED.
 总是能在有限步数内找到第一个执行的instance.
 
 **Define**:
-`Seqs(x) = {y.seq | x -> y}`:
+`Seqs(x) = {y.seq | x -> y}`
 
 通过 **Lemma-key-vertex-mapping**,
 在最差情况下,
 当遍历到下一个节点时, 它有相同的几率选择到一个key-vertex 或 non-key-vertex.
-
 
 假设`Seqs(x)`的值在`x.seq`附近两侧均匀分布，
 一个顶点的`seq`有50%的概率是`min(Seqs(x))`(选到non-key-vertex),
@@ -433,7 +439,6 @@ QED.
 然后在这个区域继续遍历，直到找到一个要执行的instance。
 
 QED.
-
 
 ### Random walk guarantees that it only takes a finite number of steps to get to a point within a finite distance
 
@@ -469,6 +474,7 @@ E(s) = ∑  C(2n+2i, 2n+i)/2²ⁿ⁺²ⁱ
 ```
 
 通过[Stirling-approximation]近似得到:
+
 
 ```
        k       √(2n+2i)

@@ -16,3 +16,7 @@ clean-tmp:
 fmt:
 	# nmp install -g prettier
 	prettier --write --print-width 80 --prose-wrap preserve **/*.md
+
+i18n:
+	# build en/cn docs from *.tmpl
+	python build-en-cn.py exec

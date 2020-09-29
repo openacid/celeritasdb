@@ -140,15 +140,22 @@ type Dep {
 
 type Instance {
 
-    id:        InstanceID;
-    cmds:      Vec<Commands>;
+    id:              InstanceID;
+    ballot:          Ballot;
+    accepted_ballot: Ballot;
+    cmds:            Vec<Commands>;
 
     view:     View;
     deps:      HashMap<InstanceID, Dep>;
+
 }
 ```
 
 - `id`: is the instance id.
+
+- `ballot`: is the highest seen ballot, 
+
+- `accepted_ballot`: is the highest ballot of Accept-ed request. 
 
 - `cmds` is the commands a client wants to execute.
 
@@ -161,6 +168,11 @@ type Instance {
 
   Two dependencies are different if:
     `x.id != y.id or x.view != y.view`
+
+TODO when handling Prepare, the seq must be the max of all interfering
+instances,  not only the max one.
+Because former instance may be committed with a higher seq than latter instance.
+This would break the G-exec-linearizability.
 
 
 ## Def-leader-order
