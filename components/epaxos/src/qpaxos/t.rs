@@ -14,7 +14,7 @@ fn new_foo_inst() -> Instance {
     let inst_id2 = InstanceId::from((2, 20));
 
     let cmds = cmdvec![("NoOp", "k1", "v1"), ("Get", "k2", "v2")];
-    let ballot = (0, 0, replica).into();
+    let ballot = (0, replica).into();
 
     let mut inst = Instance::of(&cmds[..], ballot, &[]);
     // TODO move these to Instance::new_instance
@@ -42,7 +42,7 @@ fn test_instance_protobuf() {
     let deps = vec![inst_id1, inst_id2, inst_id3];
 
     let cmds = cmdvec![("NoOp", "k1", "v1"), ("Get", "k2", "v2")];
-    let ballot = (1, 2, 3).into();
+    let ballot = (2, 3).into();
 
     let inst1 = Instance::of(&cmds[..], ballot, &deps[..]);
 
@@ -65,15 +65,14 @@ fn test_instanceid_derived() {
 #[test]
 fn test_ballotnum_derived() {
     let b1 = BallotNum {
-        epoch: 1,
         num: 10,
         replica_id: 5,
     };
     let b2 = b1;
 
     assert_eq!(b1, b2);
-    assert_eq!(b1, (1, 10, 5).into());
-    assert_eq!(b1, BallotNum::from((1, 10, 5)));
+    assert_eq!(b1, (10, 5).into());
+    assert_eq!(b1, BallotNum::from((10, 5)));
 }
 
 #[test]
@@ -273,7 +272,7 @@ fn test_request_commit_pb() {
 fn test_replicate_reply_pb() {
     let reply = ReplicateReply {
         err: None,
-        last_ballot: Some((1, 2, 3).into()),
+        last_ballot: Some((2, 3).into()),
         instance_id: Some(instid!(1, 2)),
         phase: Some(
             PrepareReply {

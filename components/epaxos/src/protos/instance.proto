@@ -31,9 +31,8 @@ message InstanceIdVec {
 }
 
 message BallotNum {
-    int32 epoch = 1;
-    int32 num = 2;
-    int64 replica_id = 3;
+    int32 num = 1;
+    int64 replica_id = 2;
 };
 
 // Instance is the internal representation of a client request.

@@ -8,13 +8,13 @@ use crate::qpaxos::CommitReply;
 use crate::qpaxos::CommitRequest;
 use crate::qpaxos::Dep;
 use crate::qpaxos::Deps;
-use crate::qpaxos::PrepareReply;
-use crate::qpaxos::PrepareRequest;
 use crate::qpaxos::Instance;
 use crate::qpaxos::InstanceId;
 use crate::qpaxos::InstanceIdVec;
 use crate::qpaxos::InvalidRequest;
 use crate::qpaxos::OpCode;
+use crate::qpaxos::PrepareReply;
+use crate::qpaxos::PrepareRequest;
 use crate::qpaxos::QError;
 use crate::qpaxos::ReplicateReply;
 use crate::qpaxos::ReplicateRequest;
@@ -127,7 +127,7 @@ impl_tostr_ext!(i64);
 impl_tostr_ext!(i32);
 impl_tostr_ext!(InstanceId, "({}, {})", replica_id, idx);
 impl_tostr_ext!(Dep, "({}, {}, {})", replica_id, idx, seq);
-impl_tostr_ext!(BallotNum, "({}, {}, {})", epoch, num, replica_id);
+impl_tostr_ext!(BallotNum, "({}, {})", num, replica_id);
 impl_tostr_ext!(
     Instance,
     "{{id:{}, blt:{}, ablt:{}, cmds:{}, deps:{}, c/e:{}/{}}}",
@@ -173,12 +173,7 @@ impl_tostr_ext!(
     phase
 );
 
-impl_tostr_ext!(
-    PrepareReply,
-    "{{deps[1]:{}, c:{}}}",
-    deps,
-    deps_committed
-);
+impl_tostr_ext!(PrepareReply, "{{deps[1]:{}, c:{}}}", deps, deps_committed);
 
 impl_tostr_ext!(AcceptReply, "{{}}",);
 impl_tostr_ext!(CommitReply, "{{}}",);

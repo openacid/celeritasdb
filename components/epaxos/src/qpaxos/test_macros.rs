@@ -99,7 +99,7 @@ fn test_macro_inst() {
     // instance_id, ballot, cmds
     let want = Instance {
         instance_id: Some((1, 2).into()),
-        ballot: Some((3, 4, 1).into()),
+        ballot: Some((4, 1).into()),
         cmds: vec![("Set", "x", "y").into(), ("Get", "a", "b").into()],
         deps: None,
         vballot: None,
@@ -109,7 +109,7 @@ fn test_macro_inst() {
 
     assert_eq!(
         want,
-        inst!((1, 2), (3, 4, _), [("Set", "x", "y"), ("Get", "a", "b")])
+        inst!((1, 2), (4, _), [("Set", "x", "y"), ("Get", "a", "b")])
     );
 
     // instance_id, cmds
@@ -143,7 +143,7 @@ fn test_macro_inst() {
     // instance_id, ballot, cmds, deps
     let want = Instance {
         instance_id: Some((1, 2).into()),
-        ballot: Some((3, 4, 1).into()),
+        ballot: Some((4, 1).into()),
         cmds: vec![("Set", "x", "y").into(), ("Get", "a", "b").into()],
         deps: Some(Deps {
             dep_vec: vec![(11, 12).into(), (13, 14).into()],
@@ -157,7 +157,7 @@ fn test_macro_inst() {
         want,
         inst!(
             (1, 2),
-            (3, 4, _),
+            (4, _),
             [("Set", "x", "y"), ("Get", "a", "b")],
             [(11, 12), (13, 14)]
         )
@@ -166,12 +166,12 @@ fn test_macro_inst() {
     // all arg
     let want = Instance {
         instance_id: Some((1, 2).into()),
-        ballot: Some((3, 4, 3).into()),
+        ballot: Some((4, 3).into()),
         cmds: vec![("Set", "x", "y").into(), ("Get", "a", "b").into()],
         deps: Some(Deps {
             dep_vec: vec![(11, 12).into(), (13, 14).into()],
         }),
-        vballot: Some((1, 2, 3).into()),
+        vballot: Some((2, 3).into()),
         committed: true,
         executed: true,
     };
@@ -180,10 +180,10 @@ fn test_macro_inst() {
         want,
         inst!(
             (1, 2),
-            (3, 4, 3),
+            (4, 3),
             [("Set", "x", "y"), ("Get", "a", "b")],
             [(11, 12), (13, 14)],
-            (1, 2, 3),
+            (2, 3),
             true,
             true
         )
@@ -220,18 +220,18 @@ fn test_macro_inst_kv() {
 
     assert_eq!(
         Instance {
-            ballot: Some((1, 2, 3).into()),
+            ballot: Some((2, 3).into()),
             ..Default::default()
         },
-        inst!(ballot:(1, 2, 3))
+        inst!(ballot:(2, 3))
     );
 
     assert_eq!(
         Instance {
-            vballot: Some((1, 2, 3).into()),
+            vballot: Some((2, 3).into()),
             ..Default::default()
         },
-        inst!(vballot:(1, 2, 3))
+        inst!(vballot:(2, 3))
     );
 
     assert_eq!(

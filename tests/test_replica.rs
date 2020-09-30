@@ -19,19 +19,19 @@ async fn test_replica_exec_thread() {
     let cases = [
         inst!(
             (1, 0),
-            (3, 4, 2),
+            (4, 2),
             [("Set", "x", "y")],
             [(1, 0)],
-            (1, 2, 3),
+            (2, 3),
             true,
             false,
         ),
         inst!(
             (1, 1),
-            (3, 4, 2),
+            (4, 2),
             [("Set", "z", "a")],
             [(1, 0)],
-            (1, 2, 3),
+            (2, 3),
             true,
             false,
         ),

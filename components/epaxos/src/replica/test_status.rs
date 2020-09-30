@@ -1,9 +1,9 @@
 use crate::qpaxos::*;
-use crate::replica::get_slowpath_dep;
 use crate::replica::get_fastpath_dep;
+use crate::replica::get_slowpath_dep;
 use crate::replica::DepStatus;
-use crate::replica::RepliedDep;
 use crate::replica::ReplicationStatus;
+use crate::replica::RepliedDep;
 use std::collections::HashMap;
 
 #[cfg(test)]
@@ -21,7 +21,7 @@ macro_rules! get {
 
 #[test]
 fn test_status_new() {
-    let inst = inst!((1, 2), (3, 4, _), [("Set", "x", "1")], [(1, 1), (2, 0)],);
+    let inst = inst!((1, 2), (4, _), [("Set", "x", "1")], [(1, 1), (2, 0)],);
 
     let st = ReplicationStatus::new(7, inst.clone());
 
@@ -56,7 +56,7 @@ fn test_status_new() {
 
 #[test]
 fn test_status_start_accept() {
-    let inst = inst!((1, 2), (3, 4, _), [("Set", "x", "1")], [(1, 1), (2, 0)],);
+    let inst = inst!((1, 2), (4, _), [("Set", "x", "1")], [(1, 1), (2, 0)],);
     let mut st = ReplicationStatus::new(7, inst.clone());
 
     get!(st.accepted, &1, None);

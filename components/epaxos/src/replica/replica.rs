@@ -9,11 +9,11 @@ use crate::qpaxos::Command;
 use crate::qpaxos::CommitReply;
 use crate::qpaxos::CommitRequest;
 use crate::qpaxos::Conflict;
-use crate::qpaxos::PrepareReply;
-use crate::qpaxos::PrepareRequest;
 use crate::qpaxos::Instance;
 use crate::qpaxos::InstanceId;
 use crate::qpaxos::InstanceIdVec;
+use crate::qpaxos::PrepareReply;
+use crate::qpaxos::PrepareRequest;
 use crate::qpaxos::ProtocolError;
 use crate::qpaxos::ReplicaId;
 use crate::qpaxos::ReplicateReply;
@@ -146,7 +146,7 @@ impl Replica {
             deps.push(did.into());
         }
 
-        let mut inst = Instance::of(cmds, (0, 0, rid).into(), &deps);
+        let mut inst = Instance::of(cmds, (0, rid).into(), &deps);
         inst.instance_id = Some(iid);
 
         self.storage.set_instance(&inst)?;

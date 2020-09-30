@@ -63,7 +63,7 @@ fn test_instance_iter() {
                 format!("v1{:}", rid * idx).as_bytes(),
             ))];
 
-            let ballot = (rid as i32, idx as i32, 0).into();
+            let ballot = (idx as i32, 0).into();
             let depvec = vec![Dep::from((rid + 1, idx + 1))];
             let mut inst = Instance::of(&cmds[..], ballot, &depvec[..]);
             inst.instance_id = Some(iid);

@@ -35,7 +35,7 @@ macro_rules! foo_inst {
      [$( ($op:expr, $key:expr, $val:expr)),*],
      [$(($dep_rid:expr, $dep_idx:expr)),* $(,)*]
     ) => {
-        inst!($id, (0, 0, _),
+        inst!($id, (0, _),
               [$( ($op, $key, $val)),*],
               [$(($dep_rid, $dep_idx)),*],
               "withdeps"
@@ -46,7 +46,7 @@ macro_rules! foo_inst {
      $key:expr,
      [$(($dep_rid:expr, $dep_idx:expr)),* $(,)*]
     ) => {
-        inst!($id, (0, 0, _),
+        inst!($id, (0, _),
               [("Set", $key, $key)],
               [$(($dep_rid, $dep_idx)),*]
         )
@@ -57,7 +57,7 @@ macro_rules! foo_inst {
     ) => {
         Instance {
             instance_id: None,
-            ..inst!((0, 0), (0, 0, _),
+            ..inst!((0, 0), (0, _),
                       [("Set", "x", "y")],
                       [$(($dep_rid, $dep_idx)),*]
                      )
@@ -67,7 +67,7 @@ macro_rules! foo_inst {
     ($id:expr,
      [$(($dep_rid:expr, $dep_idx:expr)),* $(,)*]
     ) => {
-        inst!($id, (0, 0, _),
+        inst!($id, (0, _),
               [("Set", "x", "y")],
               [$(($dep_rid, $dep_idx)),*]
         )
@@ -75,7 +75,7 @@ macro_rules! foo_inst {
 
     ($id:expr
     ) => {
-        inst!($id, (0, 0, _),
+        inst!($id, (0, _),
               [("Set", "x", "y")],
         )
     };

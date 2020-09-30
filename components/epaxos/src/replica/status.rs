@@ -81,9 +81,7 @@ impl ReplicationStatus {
     /// new creates a ReplicationStatus with initial deps filled, as if it already Prepare-ed from the
     /// instnace it serves.
     pub fn new(n_replica: i32, instance: Instance) -> Self {
-
         let mut st = Self {
-
             quorum: quorum(n_replica),
             fast_quorum: fast_quorum(n_replica),
 
@@ -177,11 +175,7 @@ impl ReplicationStatus {
 /// - and this dep is committed.
 ///
 /// If there is no safe dep for fast-commit, it returns None.
-pub fn get_fastpath_dep(
-    rid: ReplicaId,
-    rdeps: &Vec<RepliedDep>,
-    fast_quorum: i32,
-) -> Option<Dep> {
+pub fn get_fastpath_dep(rid: ReplicaId, rdeps: &Vec<RepliedDep>, fast_quorum: i32) -> Option<Dep> {
     let fast_quorum = fast_quorum as usize;
     let n = rdeps.len();
 

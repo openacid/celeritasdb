@@ -108,9 +108,8 @@ macro_rules! instidvec {
 #[macro_export]
 #[allow(unused_macros)]
 macro_rules! ballot {
-    ($epoch:expr, $num:expr, $replica_id:expr) => {
+    ($num:expr, $replica_id:expr) => {
         BallotNum {
-            epoch: $epoch as i32,
             num: $num as i32,
             replica_id: $replica_id as i64,
         }
@@ -213,13 +212,13 @@ macro_rules! inst {
 
     // instance_id, ballot, cmds
     ($id:expr,
-     ($epoch:expr, $num:expr, _),
+     ($num:expr, _),
      [$( ($op:expr, $key:expr, $val:expr)),*]
      $(,)*
      ) => {
         Instance {
             instance_id: Some($id.into()),
-            ballot: Some(($epoch, $num, InstanceId::from($id).replica_id).into()),
+            ballot: Some(($num, InstanceId::from($id).replica_id).into()),
             cmds: $crate::cmdvec![$( ($op, $key, $val)),*].into(),
             ..Default::default()
         }
@@ -227,14 +226,14 @@ macro_rules! inst {
 
     // instance_id, ballot, cmds, deps
     ($id:expr,
-     ($epoch:expr, $num:expr, _),
+     ($num:expr, _),
      [$($cmd:tt),*],
      $deps:tt
      $(,)*
      ) => {
         Instance {
             instance_id: Some($id.into()),
-            ballot: Some(($epoch, $num, InstanceId::from($id).replica_id).into()),
+            ballot: Some(($num, InstanceId::from($id).replica_id).into()),
             cmds: $crate::cmdvec![$($cmd),*].into(),
             deps: Some($crate::depvec!$deps.into()),
             ..Default::default()
@@ -243,7 +242,7 @@ macro_rules! inst {
 
     // all arg
     ($id:expr,
-     ($epoch:expr, $num:expr, $brid:expr),
+     ($num:expr, $brid:expr),
      [$( ($op:expr, $key:expr, $val:expr)),*],
      [$( ($dep_rid:expr, $dep_idx:expr)),*],
      $vballot:expr,
@@ -253,7 +252,7 @@ macro_rules! inst {
      ) => {
         Instance {
             instance_id: Some($id.into()),
-            ballot: Some(($epoch, $num, $brid).into()),
+            ballot: Some(($num, $brid).into()),
             cmds: cmdvec![$( ($op, $key, $val)),*].into(),
             deps: Some(
                 depvec![$( ($dep_rid, $dep_idx)),*].into()

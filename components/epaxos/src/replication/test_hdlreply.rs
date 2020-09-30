@@ -108,7 +108,7 @@ macro_rules! frepl {
 
 #[test]
 fn test_handle_prepare_reply_err() {
-    let inst = inst!((1, 2), (0, 0, _), [(x = "1")], [(1, 1)]);
+    let inst = inst!((1, 2), (0, _), [(x = "1")], [(1, 1)]);
 
     let cases: Vec<(ReplicateReply, RpcHandlerError)> = vec![
         (
@@ -116,16 +116,16 @@ fn test_handle_prepare_reply_err() {
             ProtocolError::LackOf("instance_id".into()).into(),
         ),
         (
-            frepl!(((1, 2, 3), None)),
+            frepl!(((2, 3), None)),
             ProtocolError::LackOf("instance_id".into()).into(),
         ),
         (
-            frepl!(((1, 2, 3), (1, 2)), None),
+            frepl!(((2, 3), (1, 2)), None),
             ProtocolError::LackOf("phase".into()).into(),
         ),
         (
             ReplicateReply {
-                last_ballot: blt!((0, 0, 1)),
+                last_ballot: blt!((0, 1)),
                 instance_id: iid!((1, 2)),
                 phase: Some(
                     CommitReply {
@@ -138,11 +138,11 @@ fn test_handle_prepare_reply_err() {
             ProtocolError::LackOf("phase::Prepare".into()).into(),
         ),
         (
-            frepl!(((0, 0, 1), (1, 2)), (None)),
+            frepl!(((0, 1), (1, 2)), (None)),
             ProtocolError::LackOf("phase::Prepare.deps".into()).into(),
         ),
         (
-            frepl!(((0, 0, 1), (1, 2)), ([(1, 2), (2, 3)], vec![true])),
+            frepl!(((0, 1), (1, 2)), ([(1, 2), (2, 3)], vec![true])),
             ProtocolError::Incomplete("phase::Prepare.deps_committed".into(), 2, 1).into(),
         ),
     ];
@@ -156,13 +156,12 @@ fn test_handle_prepare_reply_err() {
 
 #[test]
 fn test_handle_prepare_reply() {
-    let inst = inst!((1, 2), (0, 0, _), [(x = "1")], []);
+    let inst = inst!((1, 2), (0, _), [(x = "1")], []);
     let mut st = ReplicationStatus::new(3, inst.clone());
 
     {
         // positive reply updates the Status.
-        let repl: ReplicateReply =
-            frepl!(((0, 0, 1), (1, 2)), ([(1, 2), (2, 3)], vec![false, true]));
+        let repl: ReplicateReply = frepl!(((0, 1), (1, 2)), ([(1, 2), (2, 3)], vec![false, true]));
         let from_rid = 5;
 
         let r = handle_prepare_reply(&mut st, from_rid, repl.clone());
@@ -188,13 +187,13 @@ fn test_handle_prepare_reply() {
     }
     {
         // greater ballot should be ignored
-        let repl: ReplicateReply = frepl!(((100, 0, 1), (1, 2)), ([(3, 4)], vec![true]));
+        let repl: ReplicateReply = frepl!(((100, 1), (1, 2)), ([(3, 4)], vec![true]));
         let from_rid = 4;
 
         let r = handle_prepare_reply(&mut st, from_rid, repl.clone());
         assert_eq!(
             r.err().unwrap(),
-            RpcHandlerError::StaleBallot((0, 0, 1).into(), (100, 0, 1).into())
+            RpcHandlerError::StaleBallot((0, 1).into(), (100, 1).into())
         );
         assert_eq!(
             false,
@@ -207,10 +206,10 @@ fn test_handle_prepare_reply() {
     {
         // duplicated message
 
-        let inst = inst!((1, 2), (0, 0, _), [(x = "1")], []);
+        let inst = inst!((1, 2), (0, _), [(x = "1")], []);
         let mut st = ReplicationStatus::new(3, inst.clone());
 
-        let repl: ReplicateReply = frepl!(((0, 0, 1), (1, 2)), ([(3, 4)], vec![true]));
+        let repl: ReplicateReply = frepl!(((0, 1), (1, 2)), ([(3, 4)], vec![true]));
         let from_rid = 4;
 
         let r = handle_prepare_reply(&mut st, from_rid, repl.clone());
@@ -230,7 +229,7 @@ fn test_handle_prepare_reply() {
 
     {
         // reply contains `err` is ignored
-        let mut repl: ReplicateReply = frepl!(((0, 0, 1), (1, 2)), ([(3, 4)], vec![true]));
+        let mut repl: ReplicateReply = frepl!(((0, 1), (1, 2)), ([(3, 4)], vec![true]));
         repl.err = Some(QError {
             ..Default::default()
         });
@@ -254,7 +253,7 @@ fn test_handle_accept_reply() {
         Arc::new(MemEngine::new().unwrap()),
     );
 
-    let mut inst = inst!((1, 2), (0, 0, _), [(x = "1")], []);
+    let mut inst = inst!((1, 2), (0, _), [(x = "1")], []);
     inst.deps = Some(depvec![].into());
     rp.storage.set_instance(&inst).unwrap();
     let n = rp.group_replica_ids.len() as i32;
@@ -264,7 +263,7 @@ fn test_handle_accept_reply() {
         let mut st = ReplicationStatus::new(n, inst.clone());
         st.start_accept();
         let repl = ReplicateReply {
-            last_ballot: Some((10, 2, replica_id).into()),
+            last_ballot: Some((10, replica_id).into()),
             ..Default::default()
         };
         let r = handle_accept_reply(&mut st, 0, repl.clone());
@@ -294,12 +293,12 @@ fn test_handle_accept_reply() {
 
     {
         // success
-        inst.vballot = Some((1, 2, 3).into());
+        inst.vballot = Some((2, 3).into());
         let mut st = ReplicationStatus::new(n, inst.clone());
         st.start_accept();
         let repl = ReplicateReply {
             err: None,
-            last_ballot: Some((0, 0, 0).into()),
+            last_ballot: Some((0, 0).into()),
             instance_id: inst.instance_id,
             phase: Some(AcceptReply {}.into()),
         };

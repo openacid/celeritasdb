@@ -10,8 +10,8 @@ use crate::qpaxos::OpCode;
 use crate::qpaxos::replicate_reply;
 use crate::qpaxos::AcceptReply;
 use crate::qpaxos::CommitReply;
-use crate::qpaxos::PrepareReply;
 use crate::qpaxos::InvalidRequest;
+use crate::qpaxos::PrepareReply;
 use crate::qpaxos::QError;
 use crate::qpaxos::ReplicateReply;
 use crate::qpaxos::StorageFailure;
@@ -32,7 +32,7 @@ fn test_display_instance_id() {
 
 #[test]
 fn test_display_ballot() {
-    assert_eq!("(1, 2, 3)", format!("{}", BallotNum::from((1, 2, 3))));
+    assert_eq!("(2, 3)", format!("{}", BallotNum::from((2, 3))));
 }
 
 #[test]
@@ -97,14 +97,14 @@ fn test_display_instance_id_vec() {
 fn test_display_instance() {
     let inst = inst!(
         (1, 2),
-        (2, 3, 4),
+        (3, 4),
         [("Set", "a", "b"), ("Get", "c", "d")],
         [(3, 4), (4, 5)],
-        (5, 6, 7),
+        (6, 7),
         false,
         true,
     );
-    assert_eq!("{id:(1, 2), blt:(2, 3, 4), ablt:(5, 6, 7), cmds:[Set:a=b, Get:c], deps:[(3, 4, 0), (4, 5, 0)], c/e:false/true}",
+    assert_eq!("{id:(1, 2), blt:(3, 4), ablt:(6, 7), cmds:[Set:a=b, Get:c], deps:[(3, 4, 0), (4, 5, 0)], c/e:false/true}",
     format!("{}", inst));
 }
 
@@ -112,15 +112,15 @@ fn test_display_instance() {
 fn test_display_replicate_request() {
     let inst = inst!(
         (1, 2),
-        (2, 3, 4),
+        (3, 4),
         [("Set", "a", "b"), ("Get", "c", "d")],
         [(2, 3), (3, 4)],
-        (1, 2, 3),
+        (2, 3),
         false,
         true,
     );
 
-    let r = "to:10, blt:(2, 3, 4), iid:(1, 2), phase";
+    let r = "to:10, blt:(3, 4), iid:(1, 2), phase";
 
     let prepare = "Prepare{cmds:[Set:a=b, Get:c], deps:[(2, 3, 0), (3, 4, 0)], c:[true, false]}";
     let accept = "Accept{deps:[(2, 3, 0), (3, 4, 0)]}";
@@ -180,11 +180,11 @@ fn test_display_replicate_reply_err() {
 
 #[test]
 fn test_display_replicate_reply_normal() {
-    let cmn = "last:(2, 3, 4), iid:(1, 2), phase";
+    let cmn = "last:(3, 4), iid:(1, 2), phase";
 
     let mut r = ReplicateReply {
         err: None,
-        last_ballot: Some((2, 3, 4).into()),
+        last_ballot: Some((3, 4).into()),
         instance_id: Some((1, 2).into()),
         phase: None,
     };

@@ -123,7 +123,6 @@ pub fn handle_accept_reply(
     }
 
     if st.accepted.insert(from_rid) {
-
     } else {
         return Err(RpcHandlerError::DupRpc(
             InstanceStatus::Accepted,

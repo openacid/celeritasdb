@@ -15,7 +15,7 @@ use prost::Message;
 fn new_foo_inst(leader_id: i64) -> Instance {
     inst!(
         (leader_id, 1),
-        (2, 2, _),
+        (2, _),
         [("NoOp", "k1", "v1"), ("Get", "k2", "v2")],
         [(1, 10), (2, 20), (3, 30)],
     )
@@ -61,7 +61,7 @@ fn test_new_instance() {
     let i10 = r1.new_instance(&cmds).unwrap();
     assert_eq!(
         i10,
-        inst!((rid1, 0), (0, 0, _), [(x = "1")], (0, [-1, -1, -1]))
+        inst!((rid1, 0), (0, _), [(x = "1")], (0, [-1, -1, -1]))
     );
     assert_eq!(
         i10,
@@ -70,10 +70,7 @@ fn test_new_instance() {
 
     // (2, 0) -> [(1, 0)]
     let i20 = r2.new_instance(&cmds).unwrap();
-    assert_eq!(
-        i20,
-        inst!((rid2, 0), (0, 0, _), [(x = "1")], (0, [-1, 0, -1]))
-    );
+    assert_eq!(i20, inst!((rid2, 0), (0, _), [(x = "1")], (0, [-1, 0, -1])));
     assert_eq!(
         i20,
         r1.storage.get_instance((rid2, 0).into()).unwrap().unwrap()
@@ -81,10 +78,7 @@ fn test_new_instance() {
 
     // (2, 1) -> [(1, 0), (2, 0)]
     let i21 = r2.new_instance(&cmds).unwrap();
-    assert_eq!(
-        i21,
-        inst!((rid2, 1), (0, 0, _), [(x = "1")], (0, [-1, 0, 0]))
-    );
+    assert_eq!(i21, inst!((rid2, 1), (0, _), [(x = "1")], (0, [-1, 0, 0])));
     assert_eq!(
         i21,
         r1.storage.get_instance((rid2, 1).into()).unwrap().unwrap()
@@ -123,7 +117,7 @@ fn test_handle_replicate_request_invalid() {
         (
             ReplicateRequest {
                 to_replica_id: replica_id,
-                ballot: Some((0, 0, 1).into()),
+                ballot: Some((0, 1).into()),
                 instance_id: None,
                 ..Default::default()
             },
@@ -132,7 +126,7 @@ fn test_handle_replicate_request_invalid() {
         (
             ReplicateRequest {
                 to_replica_id: replica_id,
-                ballot: Some((0, 0, 1).into()),
+                ballot: Some((0, 1).into()),
                 instance_id: Some((1, 2).into()),
                 ..Default::default()
             },
@@ -152,10 +146,10 @@ fn test_handle_replicate_ballot_check() {
     let replica_id = 2;
     let replica = new_foo_replica(replica_id, new_mem_sto(), &vec![]);
 
-    let local_inst = inst!((3, 4), (2, 2, _), [("Set", "x", "0")]);
+    let local_inst = inst!((3, 4), (2, _), [("Set", "x", "0")]);
     replica.storage.set_instance(&local_inst).unwrap();
 
-    let inst = inst!((3, 4), (1, 2, _), [("Set", "x", "1")],);
+    let inst = inst!((3, 4), (1, _), [("Set", "x", "1")],);
 
     let reqs = vec![
         MakeRequest::prepare(0, &inst, &[]),
@@ -168,7 +162,7 @@ fn test_handle_replicate_ballot_check() {
 
         let repl = repl.unwrap();
         assert!(repl.err.is_none());
-        assert_eq!(repl.last_ballot.unwrap(), BallotNum::from((2, 2, 3)));
+        assert_eq!(repl.last_ballot.unwrap(), BallotNum::from((2, 3)));
         assert_eq!(repl.instance_id.unwrap(), InstanceId::from((3, 4)));
 
         let notupdated = replica.get_instance((3, 4).into()).unwrap();

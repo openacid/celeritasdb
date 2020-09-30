@@ -28,21 +28,21 @@ fn test_macro_instids() {
 
 #[test]
 fn test_macro_ballot() {
-    let b = ballot!(1, 2, 3);
+    let b = ballot!(2, 3);
 
-    assert_eq!(BallotNum::from((1, 2, 3)), b);
+    assert_eq!(BallotNum::from((2, 3)), b);
 }
 
 #[test]
 fn test_macro_inst_all_arg() {
     let want = Instance {
         instance_id: Some((1, 2).into()),
-        ballot: Some((3, 4, 2).into()),
+        ballot: Some((4, 2).into()),
         cmds: vec![("Set", "x", "y").into(), ("Get", "a", "b").into()],
         deps: Some(Deps {
             dep_vec: vec![(12, 13).into(), (14, 15).into()],
         }),
-        vballot: Some((1, 2, 3).into()),
+        vballot: Some((2, 3).into()),
         committed: true,
         executed: true,
     };
@@ -51,10 +51,10 @@ fn test_macro_inst_all_arg() {
         want,
         inst!(
             (1, 2),
-            (3, 4, 2),
+            (4, 2),
             [("Set", "x", "y"), ("Get", "a", "b")],
             [(12, 13), (14, 15)],
-            (1, 2, 3),
+            (2, 3),
             true,
             true,
         )
@@ -65,10 +65,10 @@ fn test_macro_inst_all_arg() {
         want,
         inst!(
             InstanceId::from((1, 2)),
-            (3, 4, 2),
+            (4, 2),
             [("Set", "x", "y"), ("Get", "a", "b")],
             [(12, 13), (14, 15)],
-            (1, 2, 3),
+            (2, 3),
             true,
             true,
         )
@@ -79,7 +79,7 @@ fn test_macro_inst_all_arg() {
 fn test_macro_inst() {
     let mut want = Instance {
         instance_id: Some((1, 2).into()),
-        ballot: Some((3, 4, 1).into()),
+        ballot: Some((4, 1).into()),
         cmds: vec![("Set", "x", "y").into(), ("Get", "a", "b").into()],
         deps: Some(Deps {
             dep_vec: vec![(11, 12).into(), (13, 14).into()],
@@ -94,7 +94,7 @@ fn test_macro_inst() {
         want,
         inst!(
             (1, 2),
-            (3, 4, _),
+            (4, _),
             [("Set", "x", "y"), ("Get", "a", "b")],
             [(11, 12), (13, 14)]
         )
@@ -106,7 +106,7 @@ fn test_macro_inst() {
         want,
         inst!(
             (1, 2),
-            (3, 4, _),
+            (4, _),
             [("Set", "x", "y"), ("Get", "a", "b")],
             [(10, 0), (11, 12)],
         )
@@ -116,7 +116,7 @@ fn test_macro_inst() {
     want.deps = None;
     assert_eq!(
         want,
-        inst!((1, 2), (3, 4, _), [("Set", "x", "y"), ("Get", "a", "b")],)
+        inst!((1, 2), (4, _), [("Set", "x", "y"), ("Get", "a", "b")],)
     );
 }
 
@@ -130,11 +130,11 @@ fn test_instance_conflict() {
     let _gy = Command::from(("Get", "y", "1"));
     let sy = Command::from(("Set", "y", "1"));
 
-    let nxny = Instance::of(&[nx.clone(), ny.clone()], (0, 0, 0).into(), &[]);
-    let gxny = Instance::of(&[gx.clone(), ny.clone()], (0, 0, 0).into(), &[]);
-    let sxny = Instance::of(&[sx.clone(), ny.clone()], (0, 0, 0).into(), &[]);
-    let sxsy = Instance::of(&[sx.clone(), sy.clone()], (0, 0, 0).into(), &[]);
-    let gxsy = Instance::of(&[gx.clone(), sy.clone()], (0, 0, 0).into(), &[]);
+    let nxny = Instance::of(&[nx.clone(), ny.clone()], (0, 0).into(), &[]);
+    let gxny = Instance::of(&[gx.clone(), ny.clone()], (0, 0).into(), &[]);
+    let sxny = Instance::of(&[sx.clone(), ny.clone()], (0, 0).into(), &[]);
+    let sxsy = Instance::of(&[sx.clone(), sy.clone()], (0, 0).into(), &[]);
+    let gxsy = Instance::of(&[gx.clone(), sy.clone()], (0, 0).into(), &[]);
 
     assert!(!nxny.conflict(&nxny));
     assert!(!nxny.conflict(&gxny));
