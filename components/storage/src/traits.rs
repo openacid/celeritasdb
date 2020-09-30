@@ -6,7 +6,7 @@ use std::sync::Arc;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
 pub enum DBColumnFamily {
-    Default,
+    KV,
     Instance,
     Status,
 }
@@ -14,7 +14,7 @@ pub enum DBColumnFamily {
 impl DBColumnFamily {
     pub fn all() -> Vec<DBColumnFamily> {
         vec![
-            DBColumnFamily::Default,
+            DBColumnFamily::KV,
             DBColumnFamily::Instance,
             DBColumnFamily::Status,
         ]
@@ -24,7 +24,7 @@ impl DBColumnFamily {
 impl From<&DBColumnFamily> for &str {
     fn from(cf: &DBColumnFamily) -> Self {
         match cf {
-            DBColumnFamily::Default => return "default",
+            DBColumnFamily::KV => return "default",
             DBColumnFamily::Instance => return "instance",
             DBColumnFamily::Status => return "status",
         }
@@ -225,23 +225,23 @@ pub trait Base: Send + Sync {
 /// KV offers functions to store user key/value.
 pub trait KV: Base {
     fn set_kv(&self, key: &[u8], value: &[u8]) -> Result<(), StorageError> {
-        self.set(DBColumnFamily::Default, key, value)
+        self.set(DBColumnFamily::KV, key, value)
     }
 
     fn get_kv(&self, key: &[u8]) -> Result<Option<Vec<u8>>, StorageError> {
-        self.get(DBColumnFamily::Default, key)
+        self.get(DBColumnFamily::KV, key)
     }
 
     fn delete_kv(&self, key: &[u8]) -> Result<(), StorageError> {
-        self.delete(DBColumnFamily::Default, key)
+        self.delete(DBColumnFamily::KV, key)
     }
 
     fn next_kv(&self, key: &[u8], include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
-        self.next(DBColumnFamily::Default, key, include)
+        self.next(DBColumnFamily::KV, key, include)
     }
 
     fn prev_kv(&self, key: &[u8], include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
-        self.prev(DBColumnFamily::Default, key, include)
+        self.prev(DBColumnFamily::KV, key, include)
     }
 }
 

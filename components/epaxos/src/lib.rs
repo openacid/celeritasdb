@@ -41,9 +41,9 @@ use prost::Message;
 impl From<&Command> for WriteEntry {
     fn from(c: &Command) -> Self {
         if OpCode::Set as i32 == c.op {
-            return WriteEntry::Set(DBColumnFamily::Default, c.key.clone(), c.value.clone());
+            return WriteEntry::Set(DBColumnFamily::KV, c.key.clone(), c.value.clone());
         } else if OpCode::Delete as i32 == c.op {
-            return WriteEntry::Delete(DBColumnFamily::Default, c.key.clone());
+            return WriteEntry::Delete(DBColumnFamily::KV, c.key.clone());
         } else {
             return WriteEntry::Nil;
         }

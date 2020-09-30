@@ -51,7 +51,7 @@ pub fn open(path: &str) -> Result<DB, String> {
         db_opt.create_if_missing(true);
 
         for x in cfs_opts {
-            if x.cf == DBColumnFamily::Default {
+            if x.cf == DBColumnFamily::KV {
                 exist_cfs_opts.push(CFOptions::new(x.cf, x.options.clone()));
             } else {
                 new_cfs_opts.push(CFOptions::new(x.cf, x.options.clone()));

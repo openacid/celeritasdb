@@ -13,18 +13,18 @@ fn test_base_iter() {
     for i in 0..100 {
         let k = format!("K{:>03}", i).as_bytes().to_vec();
         let v = format!("V{:?}", i).as_bytes().to_vec();
-        sto.set(DBColumnFamily::Default, &k, &v).unwrap();
+        sto.set(DBColumnFamily::KV, &k, &v).unwrap();
         ks.push(k);
         vs.push(v);
     }
 
     let cur = "K000".as_bytes().to_vec();
-    let it = sto.get_iter(cur, false, true, DBColumnFamily::Default);
+    let it = sto.get_iter(cur, false, true, DBColumnFamily::KV);
     let r: Vec<_> = it.collect();
     assert_eq!(0, r.len());
 
     let cur = "K099".as_bytes().to_vec();
-    let it = sto.get_iter(cur, false, false, DBColumnFamily::Default);
+    let it = sto.get_iter(cur, false, false, DBColumnFamily::KV);
     let r: Vec<_> = it.collect();
     assert_eq!(0, r.len());
 
@@ -40,7 +40,7 @@ fn test_base_iter() {
     ];
     for (cur, include, reverse, idx) in cases.iter() {
         let cur = cur.as_bytes().to_vec();
-        let it = sto.get_iter(cur.clone(), *include, *reverse, DBColumnFamily::Default);
+        let it = sto.get_iter(cur.clone(), *include, *reverse, DBColumnFamily::KV);
         for (i, kv) in it.enumerate() {
             assert_eq!(ks[idx(i)], kv.0);
             assert_eq!(vs[idx(i)], kv.1);

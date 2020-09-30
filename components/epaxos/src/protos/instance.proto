@@ -30,6 +30,25 @@ message InstanceIdVec {
     repeated InstanceId ids = 1;
 }
 
+// BallotNum is the same concept as in paxos, except:
+// The last seen ballot number is tracked by a replica, thus all instance shares
+// the same last-seen ballot.
+// TODO: replica: add last_seen_ballot.
+//
+// And every instance tracks the vballot(paxos concept), which is the ballot
+// number at which the value of instance is Accept-ed.
+// TODO: remove `ballot` from Instance.
+//
+// A ballot number protects both the instance and the relation between other
+// instances. E.g., When Prepare with `a` on a replica, if an interfering
+// instance `b` is Prepared with a higher ballot number, then the leader of `a`
+// should receive the higher ballot and re-Prepare if it needs to send Accept
+// with `a`.
+//
+// NOTE:
+// FastCommit does not need to stop if leader saw a higher ballot, because
+// FastCommit-ed value is not recovered by ballot of the value(as in classis
+// paxos), but instead by the count of a value.
 message BallotNum {
     int32 num = 1;
     int64 replica_id = 2;

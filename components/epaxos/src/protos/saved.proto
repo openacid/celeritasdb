@@ -86,3 +86,42 @@ message TryPreAcceptReply {
     instance.InstanceId conflict_instance_id = 7;
     instance.InstanceStatus conflict_status = 8;
 };
+
+
+// command impl with oneof
+
+message Cmd {
+    oneof cmd {
+        CmdGet get = 1;
+        CmdSet set = 2;
+        CmdIncr incr = 3;
+    }
+}
+
+message CmdGet {
+    Key key = 2;
+}
+
+message CmdSet {
+    Key key = 2;
+    Value value = 3;
+}
+
+message CmdIncr {
+    Key key = 2;
+    Value value = 3;
+}
+
+message Key {
+    oneof key {
+        int64 i64k = 1;
+        bytes bytesk = 2;
+    }
+}
+
+message Value {
+    oneof value {
+        int64 i64v = 1;
+        bytes bytesv = 2;
+    }
+}

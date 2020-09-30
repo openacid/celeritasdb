@@ -99,16 +99,16 @@ fn test_withns_no_overriding() {
         let k2 = "k2".as_bytes().to_vec();
 
         let batch = vec![
-            WriteEntry::Set(DBColumnFamily::Default, k1.clone(), v1.clone()),
+            WriteEntry::Set(DBColumnFamily::KV, k1.clone(), v1.clone()),
             WriteEntry::Set(DBColumnFamily::Status, k2.clone(), v1.clone()),
         ];
 
         w1.write_batch(&batch).unwrap();
 
-        let r = w1.get(DBColumnFamily::Default, &k1).unwrap();
+        let r = w1.get(DBColumnFamily::KV, &k1).unwrap();
         assert_eq!(Some(v1), r);
 
-        let r = w2.get(DBColumnFamily::Default, &k1).unwrap();
+        let r = w2.get(DBColumnFamily::KV, &k1).unwrap();
         assert!(r.is_none());
 
         let r = w2.get(DBColumnFamily::Status, &k2).unwrap();
