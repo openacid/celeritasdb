@@ -30,6 +30,14 @@ message InstanceIdVec {
     repeated InstanceId ids = 1;
 }
 
+// InstanceIds is a collection of instance ids to track replica status, such as
+// executed instances of every replica or max instance ids of every replcia.
+message InstanceIds {
+    // map-key: ReplicaId,
+    // map-value: instance idx.
+    map<int64, int64> ids = 1;
+}
+
 // BallotNum is the same concept as in paxos, except:
 // The last seen ballot number is tracked by a replica, thus all instance shares
 // the same last-seen ballot.

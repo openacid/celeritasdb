@@ -19,6 +19,7 @@ pub mod deps;
 mod display;
 pub mod errors;
 mod instance_id_vec;
+mod instance_ids;
 pub mod quorums;
 
 pub use conflict::*;
@@ -26,6 +27,7 @@ pub use deps::*;
 pub use display::*;
 pub use errors::*;
 pub use instance_id_vec::*;
+pub use instance_ids::*;
 pub use macros::*;
 pub use q_paxos_client::*;
 pub use q_paxos_server::*;
@@ -57,6 +59,9 @@ mod test_instance;
 
 #[cfg(test)]
 mod test_instance_id_vec;
+
+#[cfg(test)]
+mod test_instance_ids;
 
 pub type InstanceIdx = i64;
 pub type ReplicaId = i64;
