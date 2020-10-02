@@ -226,8 +226,8 @@ pub trait Base: Send + Sync {
     fn write_batch(&self, entrys: &Vec<WriteEntry>) -> Result<(), StorageError>;
 }
 
-/// KV offers functions to store user key/value.
-pub trait KV: Base {
+/// AccessRecord provides API to access user key/value record.
+pub trait AccessRecord: Base {
     fn set_kv(&self, key: &[u8], value: &[u8]) -> Result<(), StorageError> {
         self.set(DBColumnFamily::Record, key, value)
     }
@@ -309,8 +309,8 @@ where
     }
 }
 
-/// InstanceEngine offer functions to operate snapshot instances
-pub trait InstanceEngine<IK, IV>: Base
+/// AccessInstance provides API to access instances
+pub trait AccessInstance<IK, IV>: Base
 where
     IK: ToKey,
     IV: Message + ToKey + Default,
@@ -338,7 +338,8 @@ where
     }
 }
 
-pub trait Engine<CK, CV, IK, IV>: KV + ColumnedEngine<CK, CV> + InstanceEngine<IK, IV>
+pub trait Engine<CK, CV, IK, IV>:
+    AccessRecord + ColumnedEngine<CK, CV> + AccessInstance<IK, IV>
 where
     CK: LowerHex + Copy,
     CV: Message + Default,
@@ -347,7 +348,7 @@ where
 {
 }
 
-impl<T> KV for T where T: Base {}
+impl<T> AccessRecord for T where T: Base {}
 
 impl<T, CK, CV> ColumnedEngine<CK, CV> for T
 where
@@ -357,7 +358,7 @@ where
 {
 }
 
-impl<T, IK, IV> InstanceEngine<IK, IV> for T
+impl<T, IK, IV> AccessInstance<IK, IV> for T
 where
     T: Base,
     IK: ToKey,

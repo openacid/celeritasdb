@@ -130,7 +130,7 @@ pub fn test_base_trait(eng: &dyn Base) {
     assert_eq!(None, eng.get(DBColumnFamily::Record, &k1).unwrap());
 }
 
-pub fn test_kv_trait(eng: &dyn KV) {
+pub fn test_kv_trait(eng: &dyn AccessRecord) {
     let none = eng.next_kv(&"init".as_bytes().to_vec(), true);
     assert_eq!(none, None);
 
@@ -207,7 +207,7 @@ where
     assert_eq!(100, act.id);
 }
 
-pub fn test_instance_trait(eng: &dyn InstanceEngine<TestId, TestInstance>) {
+pub fn test_instance_trait(eng: &dyn AccessInstance<TestId, TestInstance>) {
     let noninst = eng.get_instance(TestId { id: 0 }).unwrap();
     assert_eq!(None, noninst);
 
