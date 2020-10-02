@@ -102,7 +102,7 @@ mod tests {
 
         {
             let eng = MemEngine::new().unwrap();
-            test_kv_trait(&eng);
+            test_record_trait(&eng);
         }
 
         {

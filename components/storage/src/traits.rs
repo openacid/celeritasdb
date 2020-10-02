@@ -338,13 +338,43 @@ where
     }
 }
 
-pub trait Engine<CK, CV, IK, IV>:
-    AccessRecord + ColumnedEngine<CK, CV> + AccessInstance<IK, IV>
+/// AccessStatus provides API to access status
+pub trait AccessStatus<STKEY, STVAL>: Base
+where
+    STKEY: ToKey,
+    STVAL: Message + Default,
+{
+    /// set status
+    fn set_status(&self, key: &STKEY, value: &STVAL) -> Result<(), StorageError> {
+        let kbytes = key.to_key();
+        let mut vbytes = vec![];
+        value.encode(&mut vbytes)?;
+
+        self.set(DBColumnFamily::Status, &kbytes, &vbytes)
+    }
+
+    /// get an status with key
+    fn get_status(&self, key: &STKEY) -> Result<Option<STVAL>, StorageError> {
+        let kbytes = key.to_key();
+        let vbytes = self.get(DBColumnFamily::Status, &kbytes)?;
+        let r = match vbytes {
+            Some(v) => STVAL::decode(v.as_slice())?,
+            None => return Ok(None),
+        };
+
+        Ok(Some(r))
+    }
+}
+
+pub trait Engine<CK, CV, IK, IV, STKEY, STVAL>:
+    AccessRecord + ColumnedEngine<CK, CV> + AccessInstance<IK, IV> + AccessStatus<STKEY, STVAL>
 where
     CK: LowerHex + Copy,
     CV: Message + Default,
     IK: ToKey,
     IV: Message + ToKey + Default,
+    STKEY: ToKey,
+    STVAL: Message + Default,
 {
 }
 
@@ -366,12 +396,22 @@ where
 {
 }
 
-impl<T, CK, CV, IK, IV> Engine<CK, CV, IK, IV> for T
+impl<T, IK, IV> AccessStatus<IK, IV> for T
+where
+    T: Base,
+    IK: ToKey,
+    IV: Message + Default,
+{
+}
+
+impl<T, CK, CV, IK, IV, STKEY, STVAL> Engine<CK, CV, IK, IV, STKEY, STVAL> for T
 where
     T: Base,
     CK: LowerHex + Copy,
     CV: Message + Default,
     IK: ToKey,
     IV: Message + ToKey + Default,
+    STKEY: ToKey,
+    STVAL: Message + Default,
 {
 }

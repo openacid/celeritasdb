@@ -1,3 +1,5 @@
+pub use std::collections::HashMap;
+
 /// cmd creates a command. Supported pattern:
 /// cmd!()  // NoOp
 /// cmd!(x)  // Get x
@@ -102,6 +104,25 @@ macro_rules! instidvec {
 
     [$(($replica_id:expr, $idx:expr)),*] => {
         vec![$(InstanceId::from(($replica_id, $idx))),*]
+    };
+}
+
+/// instids builds a InstanceIds object, which is a wrapper of HashMap<RepilcaId, idx>
+#[macro_export]
+#[allow(unused_macros)]
+macro_rules! instids {
+    {} => {
+        InstanceIds {
+            ids: HashMap::new(),
+        }
+    };
+
+    {$(($replica_id:expr, $idx:expr)),*} => {
+        InstanceIds {
+            ids: hashmap!{
+                $($replica_id => $idx),*
+            }
+        }
     };
 }
 

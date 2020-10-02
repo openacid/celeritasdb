@@ -37,7 +37,7 @@ fn test_withns() {
         let eng = MemEngine::new().unwrap();
         let eng = Arc::new(eng);
         let w = WithNs::new(5, eng);
-        test_kv_trait(&w);
+        test_record_trait(&w);
     }
 
     {
@@ -52,6 +52,13 @@ fn test_withns() {
         let eng = Arc::new(eng);
         let w = WithNs::new(5, eng);
         test_instance_trait(&w);
+    }
+
+    {
+        let eng = MemEngine::new().unwrap();
+        let eng = Arc::new(eng);
+        let w = WithNs::new(5, eng);
+        test_status_trait(&w);
     }
 }
 

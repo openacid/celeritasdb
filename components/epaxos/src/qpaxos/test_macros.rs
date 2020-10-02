@@ -95,6 +95,31 @@ fn test_macro_instidvec() {
 }
 
 #[test]
+fn test_macro_instids() {
+    {
+        // implicit type
+        let instids = instids! {};
+        assert_eq!(
+            InstanceIds {
+                ..Default::default()
+            },
+            instids
+        );
+    }
+
+    let instids = instids![(1, 2), (3, 4)];
+    assert_eq!(
+        InstanceIds {
+            ids: hashmap! {
+                1 => 2,
+                3 => 4,
+            }
+        },
+        instids
+    );
+}
+
+#[test]
 fn test_macro_inst() {
     // instance_id, ballot, cmds
     let want = Instance {

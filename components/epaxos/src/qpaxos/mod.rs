@@ -68,6 +68,21 @@ pub type ReplicaId = i64;
 
 pub struct MakeRequest {}
 
+pub enum ReplicaStatus {
+    Exec,
+    MaxInstance,
+}
+
+impl ToKey for ReplicaStatus {
+    fn to_key(&self) -> Vec<u8> {
+        // TODO: use reference to reduce memory copy.
+        match self {
+            ReplicaStatus::Exec => "/exec".into(),
+            ReplicaStatus::MaxInstance => "/max_inst".into(),
+        }
+    }
+}
+
 #[derive(Debug, Eq, PartialEq, enum_utils::FromStr)]
 pub enum Direction {
     Request,

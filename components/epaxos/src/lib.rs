@@ -35,7 +35,8 @@ pub use qpaxos::*;
 use std::sync::Arc;
 use storage::Engine;
 pub use storage::*;
-pub type Storage = Arc<dyn Engine<ReplicaId, InstanceId, InstanceId, Instance>>;
+pub type Storage =
+    Arc<dyn Engine<ReplicaId, InstanceId, InstanceId, Instance, ReplicaStatus, InstanceIds>>;
 
 use prost::Message;
 impl From<&Command> for WriteEntry {

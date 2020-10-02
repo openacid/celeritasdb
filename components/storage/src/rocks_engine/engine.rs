@@ -142,7 +142,7 @@ mod tests {
 
         {
             let eng = new_eng();
-            test_kv_trait(&eng);
+            test_record_trait(&eng);
         }
 
         {

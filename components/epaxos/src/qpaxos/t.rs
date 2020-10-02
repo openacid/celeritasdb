@@ -78,6 +78,15 @@ fn test_instance_id_to_key() {
 }
 
 #[test]
+fn test_replica_status_to_key() {
+    let k = ReplicaStatus::Exec.to_key();
+    assert_eq!("/exec", str::from_utf8(&k).unwrap());
+
+    let k = ReplicaStatus::MaxInstance.to_key();
+    assert_eq!("/max_inst", str::from_utf8(&k).unwrap());
+}
+
+#[test]
 #[should_panic(expected = "idx can not be less than 0:-1")]
 fn test_instance_id_to_key_negative() {
     InstanceId::from((1, -1)).to_key();
