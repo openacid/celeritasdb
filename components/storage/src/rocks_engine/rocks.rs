@@ -51,11 +51,12 @@ pub fn open(path: &str) -> Result<DB, String> {
         db_opt.create_if_missing(true);
 
         for x in cfs_opts {
-            if x.cf == DBColumnFamily::KV {
-                exist_cfs_opts.push(CFOptions::new(x.cf, x.options.clone()));
-            } else {
-                new_cfs_opts.push(CFOptions::new(x.cf, x.options.clone()));
-            }
+            // TODO: after renaming DBColumnFamily::Default to Record, it is not a default cf thus not a existent cf.
+            // if x.cf == DBColumnFamily::Record {
+            //     exist_cfs_opts.push(CFOptions::new(x.cf, x.options.clone()));
+            // } else {
+            new_cfs_opts.push(CFOptions::new(x.cf, x.options.clone()));
+            // }
         }
 
         return open_db_cfs(path, db_opt, new_cfs_opts, exist_cfs_opts);
@@ -65,6 +66,9 @@ pub fn open(path: &str) -> Result<DB, String> {
 
     let cf_list = DB::list_column_families(&db_opt, path)?;
     let existed: Vec<&str> = cf_list.iter().map(|v| v.as_str()).collect();
+    for x in existed.iter() {
+        println!("existed cf:{}", x);
+    }
     let needed: Vec<&str> = cfs_opts.iter().map(|x| x.cf.into()).collect();
 
     if existed == needed {
@@ -122,6 +126,7 @@ fn test_open() {
 
     let tmp_root = Builder::new().tempdir().unwrap();
     let db_path = format!("{}/test", tmp_root.path().display());
+    println!("db path:{}", db_path);
     let db = open(&db_path).unwrap();
 
     assert_eq!(db.path(), db_path);
@@ -130,6 +135,8 @@ fn test_open() {
     let mut exp: Vec<&str> = vec![];
     for cf in DBColumnFamily::all() {
         exp.push(cf.into());
+        let s: &str = cf.into();
+        println!("{}", s);
     }
 
     assert_eq!(cfs.sort(), exp.sort());
