@@ -8,20 +8,7 @@ use crate::qpaxos::ReplicateRequest;
 use std::str;
 
 fn new_foo_inst() -> Instance {
-    let replica = 1;
-
-    let inst_id1 = InstanceId::from((1, 10));
-    let inst_id2 = InstanceId::from((2, 20));
-
-    let cmds = cmdvec![("NoOp", "k1", "v1"), ("Get", "k2", "v2")];
-    let ballot = (0, replica).into();
-
-    let mut inst = Instance::of(&cmds[..], ballot, &[]);
-    // TODO move these to Instance::new_instance
-    inst.instance_id = Some(inst_id1);
-    inst.deps = Some(vec![inst_id2].into());
-
-    inst
+    inst!((1, 10), (0, _), [(), (k2 = v2)], [(2, 10)])
 }
 
 // TODO test to_replica_id
@@ -140,84 +127,33 @@ fn test_cmp_instance_id() {
 
 #[test]
 fn test_instance_after() {
+    // macro to create an instance with only field `deps`.
+    #[allow(unused_macros)]
+    macro_rules! dinst {
+        [$($deps:tt),*] => {
+            Instance {
+                deps: Some($crate::depvec![$($deps),*].into()),
+                ..Default::default()
+            }
+        };
+    }
+
     let cases = vec![
+        (dinst![(1, 1)], dinst![(1, 1)], false),
+        (dinst![(1, 1)], dinst![(1, 0)], true),
+        (dinst![(1, 1), (2, 1)], dinst![(1, 1), (2, 1)], false),
+        (dinst![(1, 1), (2, 1)], dinst![(1, 1), (2, 0)], true),
         (
-            Instance {
-                deps: Some([(1, 1)].into()),
-                ..Default::default()
-            },
-            Instance {
-                deps: Some([(1, 1)].into()),
-                ..Default::default()
-            },
+            dinst![(1, 1), (2, 1), (3, 1)],
+            dinst![(1, 1), (2, 1)],
             false,
         ),
         (
-            Instance {
-                deps: Some([(1, 1)].into()),
-                ..Default::default()
-            },
-            Instance {
-                deps: Some([(1, 0)].into()),
-                ..Default::default()
-            },
-            true,
-        ),
-        (
-            Instance {
-                deps: Some([(1, 1), (2, 1)].into()),
-                ..Default::default()
-            },
-            Instance {
-                deps: Some([(1, 1), (2, 1)].into()),
-                ..Default::default()
-            },
+            dinst![(1, 1), (2, 1)],
+            dinst![(1, 1), (2, 1), (3, 1)],
             false,
         ),
-        (
-            Instance {
-                deps: Some([(1, 1), (2, 1)].into()),
-                ..Default::default()
-            },
-            Instance {
-                deps: Some([(1, 1), (2, 0)].into()),
-                ..Default::default()
-            },
-            true,
-        ),
-        (
-            Instance {
-                deps: Some([(1, 1), (2, 1), (3, 1)].into()),
-                ..Default::default()
-            },
-            Instance {
-                deps: Some([(1, 1), (2, 1)].into()),
-                ..Default::default()
-            },
-            false,
-        ),
-        (
-            Instance {
-                deps: Some([(1, 1), (2, 1)].into()),
-                ..Default::default()
-            },
-            Instance {
-                deps: Some([(1, 1), (2, 1), (3, 1)].into()),
-                ..Default::default()
-            },
-            false,
-        ),
-        (
-            Instance {
-                deps: Some([(1, 2), (2, 1)].into()),
-                ..Default::default()
-            },
-            Instance {
-                deps: Some([(1, 1), (2, 1), (3, 1)].into()),
-                ..Default::default()
-            },
-            true,
-        ),
+        (dinst![(1, 2), (2, 1)], dinst![(1, 1), (2, 1), (3, 1)], true),
     ];
 
     for (a, b, r) in cases {

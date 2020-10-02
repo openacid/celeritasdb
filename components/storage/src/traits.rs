@@ -80,8 +80,8 @@ impl<T: ToString> NameSpace for T {
     }
 }
 
-/// SharedStorage defines the API to impl a Storage with namespace support.
-pub trait SharedStorage {
+/// ShareByNS defines the API to impl a Storage with namespace support.
+pub trait ShareByNS {
     type NS: NameSpace;
     type B: Base + ?Sized;
 
@@ -100,7 +100,7 @@ where
     shared_sto: Arc<B>,
 }
 
-impl<B, NS> SharedStorage for WithNs<B, NS>
+impl<B, NS> ShareByNS for WithNs<B, NS>
 where
     B: Base + ?Sized,
     NS: NameSpace,
@@ -135,7 +135,7 @@ impl<T, B, NS> Base for T
 where
     B: Base + ?Sized,
     NS: NameSpace,
-    T: SharedStorage<B = B, NS = NS> + Send + Sync,
+    T: ShareByNS<B = B, NS = NS> + Send + Sync,
 {
     fn set(&self, cf: DBColumnFamily, key: &[u8], value: &[u8]) -> Result<(), StorageError> {
         self.get_storage()
