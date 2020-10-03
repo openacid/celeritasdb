@@ -1,12 +1,17 @@
 use std::sync::Arc;
 
 use crate::inst;
+use crate::instids;
 use crate::instidvec;
 
 use crate::qpaxos::Dep;
 use crate::qpaxos::{Command, Instance, InstanceId};
 use crate::replica::*;
 use crate::testutil;
+use crate::InstanceIds;
+use crate::ReplicaId;
+use crate::ReplicaStatus;
+use std::collections::HashMap;
 use storage::MemEngine;
 use tokio::sync::oneshot;
 
@@ -112,7 +117,7 @@ async fn test_execute_commands() {
     ];
 
     for inst in cases.iter() {
-        match rp.execute_commands(vec![inst.clone()]).await {
+        match rp.execute_commands(vec![inst.clone()], instids![]).await {
             Ok(r) => assert_eq!(vec![inst.instance_id.unwrap()], r),
             Err(_) => assert!(false),
         }
@@ -130,7 +135,9 @@ async fn test_execute_instances() {
         inst!((3, 1), [(y = vy)], (1, [1, 1, 0])),
     ];
 
-    match rp.execute_instances(min_insts).await {
+    let executed = instids![(1, 0), (2, 0), (3, 0)];
+
+    match rp.execute_instances(min_insts, executed).await {
         Ok(iids) => assert_eq!(vec![InstanceId::from((1, 1))], iids),
         Err(_) => assert!(false),
     };
@@ -142,7 +149,8 @@ async fn test_execute_instances() {
         inst!((3, 1), [(y = vy)], (1, [1, 0, 0])),
     ];
 
-    match rp.execute_instances(min_insts).await {
+    let executed = instids![(1, 0), (2, 0), (3, 0)];
+    match rp.execute_instances(min_insts, executed).await {
         Ok(iids) => assert_eq!(
             vec![InstanceId::from((1, 1)), (2, 1).into(), (3, 1).into()],
             iids
@@ -159,7 +167,8 @@ async fn test_execute_instances() {
         inst!((3, 1), [(y = vy)], (1, [1, 1, 0])),
     ];
 
-    match rp.execute_instances(min_insts).await {
+    let executed = instids![(1, 0), (2, 0), (3, 0)];
+    match rp.execute_instances(min_insts, executed).await {
         Ok(iids) => assert_eq!(instidvec![(1, 1), (2, 1)], iids),
         Err(_) => assert!(false),
     };
@@ -169,7 +178,7 @@ async fn test_execute_instances() {
 async fn test_replica_execute() {
     let rp = new_replica();
 
-    let cases = vec![
+    let cases: Vec<(Vec<Instance>, Vec<(ReplicaId, i64)>, Vec<InstanceId>)> = vec![
         // (1, 1)
         (
             vec![inst!((1, 1), deps:(1, [0, 0, 0]), committed:true)],
@@ -222,19 +231,26 @@ async fn test_replica_execute() {
             rp.storage.set_instance(&inst).unwrap();
         });
 
+        let mut executed = InstanceIds {
+            ..Default::default()
+        };
         for (rid, idx) in exec_ref.iter() {
-            rp.storage
-                .set_ref("exec", *rid as i64, (*rid as i64, *idx as i64).into())
-                .unwrap();
+            executed.insert(*rid, *idx);
         }
+        rp.storage
+            .set_status(&ReplicaStatus::Exec, &executed)
+            .unwrap();
 
         match rp.execute().await {
             Ok(r) => {
                 assert_eq!(rst, &r);
                 for iid in r.iter() {
                     assert_eq!(
-                        *iid,
-                        rp.storage.get_ref("exec", iid.replica_id).unwrap().unwrap()
+                        iid.idx,
+                        rp.storage
+                            .get_status(&ReplicaStatus::Exec)
+                            .unwrap()
+                            .unwrap()[&iid.replica_id]
                     );
                     assert_eq!(
                         true,
@@ -261,7 +277,8 @@ async fn test_send_reply() {
 
     rp.insert_tx((2, 1).into(), tx).await;
     let insts = min_insts.clone();
-    tokio::spawn(async move { rp.execute_instances(insts).await });
+    let executed = instids![(1, 0), (2, 0)];
+    tokio::spawn(async move { rp.execute_instances(insts, executed).await });
 
     match rx.await {
         Ok(v) => {
@@ -281,6 +298,7 @@ async fn test_send_reply() {
     let (tx, rx) = oneshot::channel();
     rp.insert_tx((2, 1).into(), tx).await;
     let insts = min_insts.clone();
+    let executed = instids![(1, 0), (2, 0)];
     drop(rx);
-    rp.execute_instances(insts.clone()).await.unwrap();
+    rp.execute_instances(insts.clone(), executed).await.unwrap();
 }

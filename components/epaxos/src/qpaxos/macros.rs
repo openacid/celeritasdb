@@ -1,3 +1,4 @@
+pub use crate::InstanceIdVec;
 pub use std::collections::HashMap;
 
 /// cmd creates a command. Supported pattern:

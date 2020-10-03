@@ -5,6 +5,8 @@ use std::time::SystemTime;
 use crate::qpaxos::{Deps, Instance, InstanceId, InstanceIdVec, OpCode};
 use crate::replica::ExecRst;
 use crate::replica::Replica;
+use crate::InstanceIds;
+use crate::ReplicaStatus;
 use storage::StorageError;
 use storage::WriteEntry;
 use tokio::sync::oneshot::Sender;
@@ -26,7 +28,7 @@ impl Replica {
     pub fn find_missing_insts(
         &self,
         min_insts: &Vec<Instance>,
-        exec_up_to: &InstanceIdVec,
+        executed: &InstanceIds,
     ) -> Option<InstanceIdVec> {
         let mut rst = InstanceIdVec::from([0; 0]);
         let mut iids = InstanceIdVec::from([0; 0]);
@@ -38,18 +40,21 @@ impl Replica {
         }
 
         for dep in all_deps.iter() {
+            // A dependency on a replica there is a known instance.
+            // This algo requres only one instance on every replica.
+            // Thus this dependency can not be a missing one.
             if let Some(_) = iids.get(dep.replica_id) {
                 continue;
             }
 
-            let missing: InstanceId = match exec_up_to.get(dep.replica_id) {
+            let missing: InstanceId = match executed.get(&dep.replica_id) {
                 None => (dep.replica_id, 0).into(),
-                Some(iid) => {
-                    if dep.idx <= iid.idx {
+                Some(idx) => {
+                    if dep.idx <= *idx {
                         continue;
                     }
 
-                    (dep.replica_id, iid.idx + 1).into()
+                    (dep.replica_id, *idx + 1).into()
                 }
             };
 
@@ -87,6 +92,7 @@ impl Replica {
     pub async fn execute_commands(
         &self,
         mut insts: Vec<Instance>,
+        mut executed: InstanceIds,
     ) -> Result<Vec<InstanceId>, StorageError> {
         let mut rst = Vec::with_capacity(insts.len());
         let mut entrys: Vec<WriteEntry> = Vec::with_capacity(insts.len());
@@ -120,7 +126,7 @@ impl Replica {
                 }
             }
 
-            entrys.push(iid.into());
+            executed.insert(iid.replica_id, iid.idx);
             replies.push((iid, repl));
         }
 
@@ -129,6 +135,9 @@ impl Replica {
             entrys.push(inst.into());
         }
 
+        // TODO: use write batch to update exec-status
+
+        self.storage.set_status(&ReplicaStatus::Exec, &executed)?;
         self.storage.write_batch(&entrys)?;
         self.send_replies(replies).await;
         Ok(rst)
@@ -148,6 +157,7 @@ impl Replica {
     pub async fn execute_instances(
         &self,
         mut insts: Vec<Instance>,
+        executed: InstanceIds,
     ) -> Result<Vec<InstanceId>, StorageError> {
         let mut early = vec![false; insts.len()];
         let mut late = vec![false; insts.len()];
@@ -172,7 +182,7 @@ impl Replica {
         }
 
         can_exec.sort_by(|a, b| a.instance_id.cmp(&b.instance_id));
-        self.execute_commands(can_exec).await
+        self.execute_commands(can_exec, executed).await
     }
 
     // only save one smallest problem instance of every replica with problem_inst_ids.
@@ -233,16 +243,22 @@ impl Replica {
     }
 
     pub async fn execute(&self) -> Result<Vec<InstanceId>, StorageError> {
-        let mut exec_up_to = InstanceIdVec::from([0; 0]);
         let mut smallest_inst_ids = InstanceIdVec::from([0; 0]);
 
+        let executed = self.storage.get_status(&ReplicaStatus::Exec)?;
+        let mut executed = match executed {
+            None => InstanceIds {
+                ..Default::default()
+            },
+            Some(v) => v,
+        };
+
         for rid in self.group_replica_ids.iter() {
-            let exec_iid = self.storage.get_ref("exec", *rid)?;
-            let exec_iid = exec_iid.unwrap_or((*rid, -1).into());
+            if !executed.contains_key(rid) {
+                executed.insert(*rid, -1);
+            }
 
-            exec_up_to.push(exec_iid);
-
-            smallest_inst_ids.push((*rid, exec_iid.idx + 1).into());
+            smallest_inst_ids.push((*rid, executed[rid] + 1).into());
         }
 
         let instances = self.get_insts_if_committed(&smallest_inst_ids)?;
@@ -251,12 +267,12 @@ impl Replica {
         }
 
         if instances.len() < self.group_replica_ids.len() {
-            if let Some(iids) = self.find_missing_insts(&instances, &exec_up_to) {
+            if let Some(iids) = self.find_missing_insts(&instances, &executed) {
                 self.recover_instances(&iids);
                 return Ok(vec![]);
             }
         }
 
-        self.execute_instances(instances).await
+        self.execute_instances(instances, executed).await
     }
 }
