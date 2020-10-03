@@ -160,7 +160,7 @@ macro_rules! __instance_fields {
 /// deps: [(replica_id, idx)...]
 ///
 /// Supported pattern:
-/// inst!(instance_id, ballot, cmds, deps, vballot, committed, executed)
+/// inst!(instance_id, ballot, cmds, deps, vballot, committed)
 /// inst!(instance_id, ballot, cmds, deps)
 /// inst!(instance_id, ballot, cmds)
 /// inst!(instance_id, cmds, deps)
@@ -268,8 +268,7 @@ macro_rules! inst {
      [$( ($op:expr, $key:expr, $val:expr)),*],
      [$( ($dep_rid:expr, $dep_idx:expr)),*],
      $vballot:expr,
-     $committed:expr,
-     $executed:expr
+     $committed:expr
      $(,)*
      ) => {
         Instance {
@@ -280,8 +279,7 @@ macro_rules! inst {
                 depvec![$( ($dep_rid, $dep_idx)),*].into()
             ),
             vballot:Some($vballot.into()),
-            committed:$committed,
-            executed:$executed
+            committed:$committed
         }
     };
 }

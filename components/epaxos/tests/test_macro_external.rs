@@ -22,7 +22,6 @@ fn test_external_macro_inst() {
         deps: None,
         vballot: None,
         committed: false,
-        executed: false,
     };
 
     assert_eq!(
@@ -38,7 +37,6 @@ fn test_external_macro_inst() {
         deps: None,
         vballot: None,
         committed: false,
-        executed: false,
     };
 
     assert_eq!(want, inst!((1, 2), [("Set", "x", "y"), ("Get", "a", "")]));
@@ -52,7 +50,6 @@ fn test_external_macro_inst() {
         deps: Some(vec![dep!(11, 12), dep!(12, 13)].into()),
         vballot: None,
         committed: false,
-        executed: false,
     };
 
     assert_eq!(want, inst!((1, 2), [(x = y), (a)], [(11, 12), (12, 13)]));
@@ -68,7 +65,6 @@ fn test_external_macro_inst() {
         }),
         vballot: None,
         committed: false,
-        executed: false,
     };
 
     assert_eq!(
@@ -91,7 +87,6 @@ fn test_external_macro_inst() {
         }),
         vballot: Some((2, 3).into()),
         committed: true,
-        executed: true,
     };
 
     assert_eq!(
@@ -102,7 +97,6 @@ fn test_external_macro_inst() {
             [("Set", "x", "y"), ("Get", "a", "b")],
             [(11, 12), (13, 14)],
             (2, 3),
-            true,
             true
         )
     );

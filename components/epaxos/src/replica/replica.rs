@@ -197,6 +197,8 @@ impl Replica {
             .as_ref()
             .ok_or(ProtocolError::LackOf("phase".into()))?;
 
+        // TODO: Prepare does not need to be rejected when ballot is smaller.
+        // Because recovering a FastCommit-ed value does not rely on ballot.
         match phase {
             Phase::Prepare(_) | Phase::Accept(_) => {
                 if req.ballot < inst.ballot {

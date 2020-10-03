@@ -17,24 +17,8 @@ async fn test_replica_exec_thread() {
     let ctx = InProcContext::new("az_1");
 
     let cases = [
-        inst!(
-            (1, 0),
-            (4, 2),
-            [("Set", "x", "y")],
-            [(1, 0)],
-            (2, 3),
-            true,
-            false,
-        ),
-        inst!(
-            (1, 1),
-            (4, 2),
-            [("Set", "z", "a")],
-            [(1, 0)],
-            (2, 3),
-            true,
-            false,
-        ),
+        inst!((1, 0), (4, 2), [("Set", "x", "y")], [(1, 0)], (2, 3), true,),
+        inst!((1, 1), (4, 2), [("Set", "z", "a")], [(1, 0)], (2, 3), true,),
     ];
 
     // there is only replica
@@ -44,12 +28,12 @@ async fn test_replica_exec_thread() {
         sto.set_instance(&inst).unwrap();
 
         loop {
-            let inst1 = sto
-                .get_instance(inst.instance_id.unwrap())
-                .unwrap()
-                .unwrap();
-            if inst1.executed {
-                break;
+            let exec = sto.get_status(&ReplicaStatus::Exec).unwrap();
+            if let Some(e) = exec {
+                let iid = inst.instance_id.unwrap();
+                if e.get(&iid.replica_id) == Some(&iid.idx) {
+                    break;
+                }
             }
 
             delay_for(Duration::from_millis(10)).await;

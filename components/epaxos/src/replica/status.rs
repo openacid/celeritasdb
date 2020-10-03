@@ -8,15 +8,10 @@ pub enum InstanceStatus {
     Prepared,
     Accepted,
     Committed,
-    Executed,
 }
 
 impl Instance {
     pub fn get_status(&self) -> InstanceStatus {
-        if self.executed {
-            return InstanceStatus::Executed;
-        }
-
         if self.committed {
             return InstanceStatus::Committed;
         }

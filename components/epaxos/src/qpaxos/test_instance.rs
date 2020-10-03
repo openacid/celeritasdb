@@ -44,7 +44,6 @@ fn test_macro_inst_all_arg() {
         }),
         vballot: Some((2, 3).into()),
         committed: true,
-        executed: true,
     };
 
     assert_eq!(
@@ -55,7 +54,6 @@ fn test_macro_inst_all_arg() {
             [("Set", "x", "y"), ("Get", "a", "b")],
             [(12, 13), (14, 15)],
             (2, 3),
-            true,
             true,
         )
     );
@@ -69,7 +67,6 @@ fn test_macro_inst_all_arg() {
             [("Set", "x", "y"), ("Get", "a", "b")],
             [(12, 13), (14, 15)],
             (2, 3),
-            true,
             true,
         )
     );
@@ -86,7 +83,6 @@ fn test_macro_inst() {
         }),
         vballot: None,
         committed: false,
-        executed: false,
     };
 
     // only initial_deps

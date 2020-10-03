@@ -1,5 +1,3 @@
-use std::fmt::LowerHex;
-
 use crate::StorageError;
 use prost::Message;
 use std::sync::Arc;

@@ -109,9 +109,8 @@ fn test_display_instance() {
         [(3, 4), (4, 5)],
         (6, 7),
         false,
-        true,
     );
-    assert_eq!("{id:(1, 2), blt:(3, 4), ablt:(6, 7), cmds:[Set:a=b, Get:c], deps:[(3, 4, 0), (4, 5, 0)], c/e:false/true}",
+    assert_eq!("{id:(1, 2), blt:(3, 4), ablt:(6, 7), cmds:[Set:a=b, Get:c], deps:[(3, 4, 0), (4, 5, 0)], c:false}",
     format!("{}", inst));
 }
 
@@ -124,7 +123,6 @@ fn test_display_replicate_request() {
         [(2, 3), (3, 4)],
         (2, 3),
         false,
-        true,
     );
 
     let r = "to:10, blt:(3, 4), iid:(1, 2), phase";

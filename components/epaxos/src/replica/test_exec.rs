@@ -252,10 +252,6 @@ async fn test_replica_execute() {
                             .unwrap()
                             .unwrap()[&iid.replica_id]
                     );
-                    assert_eq!(
-                        true,
-                        rp.storage.get_instance(*iid).unwrap().unwrap().executed
-                    );
                 }
             }
             Err(_) => {

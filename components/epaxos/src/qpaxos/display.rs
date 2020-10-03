@@ -156,14 +156,13 @@ impl_tostr_ext!(Dep, "({}, {}, {})", replica_id, idx, seq);
 impl_tostr_ext!(BallotNum, "({}, {})", num, replica_id);
 impl_tostr_ext!(
     Instance,
-    "{{id:{}, blt:{}, ablt:{}, cmds:{}, deps:{}, c/e:{}/{}}}",
+    "{{id:{}, blt:{}, ablt:{}, cmds:{}, deps:{}, c:{}}}",
     instance_id,
     ballot,
     vballot,
     cmds,
     deps,
-    committed,
-    executed
+    committed
 );
 
 // replication requests

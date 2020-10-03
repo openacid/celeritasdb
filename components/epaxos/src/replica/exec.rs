@@ -130,8 +130,8 @@ impl Replica {
             replies.push((iid, repl));
         }
 
+        // TODO: Since executed status is moved to ReplciaStatus::Exec, maybe no more instance update is required.
         while let Some(mut inst) = insts.pop() {
-            inst.executed = true;
             entrys.push(inst.into());
         }
 

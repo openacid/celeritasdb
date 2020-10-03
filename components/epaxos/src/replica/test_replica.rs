@@ -396,7 +396,7 @@ fn test_handle_commit_request() {
 fn _test_updated_inst(got: &Instance, cmds: Vec<Command>, committed: bool, executed: bool) {
     assert_eq!(cmds, got.cmds, "cmds");
     assert_eq!(committed, got.committed, "committed");
-    assert_eq!(executed, got.executed, "executed");
+    // TODO: check executed status of instance by RepicaStatus::Exec
 }
 
 #[test]
