@@ -7,6 +7,7 @@ use crate::qpaxos::InstanceIdVec;
 use crate::qpaxos::MakeRequest;
 use crate::qpaxos::OpCode;
 
+use crate::instids;
 use crate::qpaxos::replicate_reply;
 use crate::qpaxos::AcceptReply;
 use crate::qpaxos::CommitReply;
@@ -15,6 +16,7 @@ use crate::qpaxos::PrepareReply;
 use crate::qpaxos::QError;
 use crate::qpaxos::ReplicateReply;
 use crate::qpaxos::StorageFailure;
+use crate::InstanceIds;
 
 #[test]
 fn test_display_instance_id() {
@@ -91,6 +93,11 @@ fn test_display_instance_id_vec() {
         "[(1, 2), (3, 4)]",
         format!("{}", InstanceIdVec::from(instidvec![(1, 2), (3, 4)]))
     );
+}
+
+#[test]
+fn test_display_instance_ids() {
+    assert_eq!("{1:2, 3:4}", format!("{}", instids! {(1,2),(3,4)}));
 }
 
 #[test]

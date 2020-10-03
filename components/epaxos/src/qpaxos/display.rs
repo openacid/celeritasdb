@@ -11,6 +11,7 @@ use crate::qpaxos::Deps;
 use crate::qpaxos::Instance;
 use crate::qpaxos::InstanceId;
 use crate::qpaxos::InstanceIdVec;
+use crate::qpaxos::InstanceIds;
 use crate::qpaxos::InvalidRequest;
 use crate::qpaxos::OpCode;
 use crate::qpaxos::PrepareReply;
@@ -19,6 +20,7 @@ use crate::qpaxos::QError;
 use crate::qpaxos::ReplicateReply;
 use crate::qpaxos::ReplicateRequest;
 use crate::qpaxos::StorageFailure;
+use std::collections::HashMap;
 use std::fmt;
 
 pub trait ToStringExt {
@@ -54,7 +56,31 @@ impl<T: ToStringExt> ToStringExt for Vec<T> {
     }
 }
 
+impl<K: ToStringExt + Ord, V: ToStringExt + Ord> ToStringExt for HashMap<K, V> {
+    fn tostr_ext(&self) -> String {
+        let mut rst = String::from("{");
+        let mut kvs: Vec<(&K, &V)> = self.iter().collect();
+        kvs.sort();
+        for (i, (k, v)) in kvs.iter().enumerate() {
+            rst.push_str(&k.tostr_ext());
+            rst.push_str(":");
+            rst.push_str(&v.tostr_ext());
+            if i < self.len() - 1 {
+                rst.push_str(", ");
+            }
+        }
+        rst.push_str("}");
+        rst
+    }
+}
+
 impl ToStringExt for InstanceIdVec {
+    fn tostr_ext(&self) -> String {
+        self.ids.tostr_ext()
+    }
+}
+
+impl ToStringExt for InstanceIds {
     fn tostr_ext(&self) -> String {
         self.ids.tostr_ext()
     }
@@ -195,6 +221,7 @@ macro_rules! impl_display {
 }
 
 impl_display!(InstanceIdVec);
+impl_display!(InstanceIds);
 impl_display!(Command);
 impl_display!(InstanceId);
 impl_display!(BallotNum);
