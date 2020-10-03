@@ -1,7 +1,7 @@
 use crate::test_engine::*;
 use crate::DBColumnFamily;
 use crate::MemEngine;
-use crate::WithNs;
+use crate::NsStorage;
 use std::sync::Arc;
 
 use crate::traits::Base;
@@ -25,42 +25,42 @@ fn test_namespace() {
 }
 
 #[test]
-fn test_withns() {
+fn test_ns_storage() {
     {
         let eng = MemEngine::new().unwrap();
         let eng = Arc::new(eng);
-        let w = WithNs::new(5, eng);
+        let w = NsStorage::new(5, eng);
         test_base_trait(&w);
     }
 
     {
         let eng = MemEngine::new().unwrap();
         let eng = Arc::new(eng);
-        let w = WithNs::new(5, eng);
+        let w = NsStorage::new(5, eng);
         test_record_trait(&w);
     }
 
     {
         let eng = MemEngine::new().unwrap();
         let eng = Arc::new(eng);
-        let w = WithNs::new(5, eng);
+        let w = NsStorage::new(5, eng);
         test_instance_trait(&w);
     }
 
     {
         let eng = MemEngine::new().unwrap();
         let eng = Arc::new(eng);
-        let w = WithNs::new(5, eng);
+        let w = NsStorage::new(5, eng);
         test_status_trait(&w);
     }
 }
 
 #[test]
-fn test_withns_no_overriding() {
+fn test_ns_storage_no_overriding() {
     let eng = MemEngine::new().unwrap();
     let eng = Arc::new(eng);
-    let w1 = WithNs::new(1, eng.clone());
-    let w2 = WithNs::new(2, eng.clone());
+    let w1 = NsStorage::new(1, eng.clone());
+    let w2 = NsStorage::new(2, eng.clone());
 
     let k = "foo".as_bytes().to_vec();
     let v1 = "111".as_bytes().to_vec();

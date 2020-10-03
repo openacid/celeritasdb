@@ -93,9 +93,9 @@ pub trait ShareByNS {
     fn get_storage(&self) -> &Arc<Self::B>;
 }
 
-/// WithNs is a namespace storage based on a shared storage `Base`.
+/// NsStorage is a namespace storage based on a shared storage `Base`.
 /// Write and read operations are wrapped with a namespace.
-pub struct WithNs<B, NS>
+pub struct NsStorage<B, NS>
 where
     NS: NameSpace,
     B: Base + ?Sized,
@@ -104,7 +104,7 @@ where
     shared_sto: Arc<B>,
 }
 
-impl<B, NS> ShareByNS for WithNs<B, NS>
+impl<B, NS> ShareByNS for NsStorage<B, NS>
 where
     B: Base + ?Sized,
     NS: NameSpace,
@@ -120,12 +120,12 @@ where
     }
 }
 
-impl<B, NS> WithNs<B, NS>
+impl<B, NS> NsStorage<B, NS>
 where
     NS: NameSpace,
     B: Base + ?Sized,
 {
-    /// new creates a Storage WithNs with `namespace` and a shared underlying storage `shared_sto`.
+    /// new creates a NsStorage with `namespace` and a shared underlying storage `shared_sto`.
     pub fn new(namespace: NS, shared_sto: Arc<B>) -> Self {
         Self {
             namespace,
