@@ -44,13 +44,6 @@ fn test_withns() {
         let eng = MemEngine::new().unwrap();
         let eng = Arc::new(eng);
         let w = WithNs::new(5, eng);
-        test_columned_trait(&w);
-    }
-
-    {
-        let eng = MemEngine::new().unwrap();
-        let eng = Arc::new(eng);
-        let w = WithNs::new(5, eng);
         test_instance_trait(&w);
     }
 

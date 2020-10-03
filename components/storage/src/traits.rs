@@ -190,16 +190,6 @@ where
     }
 }
 
-pub fn make_ref_key<T>(typ: &str, id: T) -> Vec<u8>
-where
-    T: LowerHex,
-{
-    match typ {
-        "exec" => format!("/status/max_exec_instance_id/{:016x}", id).into_bytes(),
-        _ => panic!("unknown type ref: {}", typ),
-    }
-}
-
 pub trait ToKey {
     fn to_key(&self) -> Vec<u8>;
 }
@@ -246,66 +236,6 @@ pub trait AccessRecord: Base {
 
     fn prev_kv(&self, key: &[u8], include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
         self.prev(DBColumnFamily::Record, key, include)
-    }
-}
-
-/// ColumnedEngine organizes object in columns.
-/// Because the underlying storage is a simple object store,
-/// it introduces ColumnId to classify objects.
-/// And also it provides APIs to track objects in different columns.
-///
-/// set_ref(type, K, V) to store V of K.
-///
-/// E.g.: `set_ref("max", K, V)` to set the "max" V of K.
-pub trait ColumnedEngine<K, V>: Base
-where
-    K: LowerHex + Copy,
-    V: Message + Default,
-{
-    fn set_ref(&self, typ: &str, k: K, v: V) -> Result<(), StorageError> {
-        let key = make_ref_key(typ, k);
-        let mut value = vec![];
-        v.encode(&mut value)?;
-
-        self.set(DBColumnFamily::Status, &key, &value)
-    }
-
-    fn get_ref(&self, typ: &str, k: K) -> Result<Option<V>, StorageError> {
-        let key = make_ref_key(typ, k);
-        let val = self.get(DBColumnFamily::Status, &key)?;
-
-        let val = match val {
-            Some(v) => v,
-            None => return Ok(None),
-        };
-
-        Ok(Some(V::decode(val.as_slice())?))
-    }
-
-    /// set_ref_if set ref if the current value satisifies specified condition.
-    /// The condition is a lambda takes one arguments: the current value of the ref.
-    /// This method should be called with concurrency control.
-    ///
-    /// # Arguments:
-    ///
-    /// `typ`: ref type.
-    /// `k`: column id of type K.
-    /// `v`: object id of type V.
-    /// `default`: the default value to feed to `cond` if ref is not found.
-    /// `cond`: a lambda takes one argument of type V.
-    fn set_ref_if<P>(&self, typ: &str, k: K, v: V, default: V, cond: P) -> Result<(), StorageError>
-    where
-        Self: Sized,
-        P: FnOnce(V) -> bool,
-    {
-        let r0 = self.get_ref(typ, k)?;
-        let r0 = r0.unwrap_or(default);
-
-        if cond(r0) {
-            self.set_ref(typ, k, v)
-        } else {
-            Ok(())
-        }
     }
 }
 
@@ -366,11 +296,9 @@ where
     }
 }
 
-pub trait Engine<CK, CV, IK, IV, STKEY, STVAL>:
-    AccessRecord + ColumnedEngine<CK, CV> + AccessInstance<IK, IV> + AccessStatus<STKEY, STVAL>
+pub trait Engine<IK, IV, STKEY, STVAL>:
+    AccessRecord + AccessInstance<IK, IV> + AccessStatus<STKEY, STVAL>
 where
-    CK: LowerHex + Copy,
-    CV: Message + Default,
     IK: ToKey,
     IV: Message + ToKey + Default,
     STKEY: ToKey,
@@ -379,14 +307,6 @@ where
 }
 
 impl<T> AccessRecord for T where T: Base {}
-
-impl<T, CK, CV> ColumnedEngine<CK, CV> for T
-where
-    T: Base,
-    CK: LowerHex + Copy,
-    CV: Message + Default,
-{
-}
 
 impl<T, IK, IV> AccessInstance<IK, IV> for T
 where
@@ -404,11 +324,9 @@ where
 {
 }
 
-impl<T, CK, CV, IK, IV, STKEY, STVAL> Engine<CK, CV, IK, IV, STKEY, STVAL> for T
+impl<T, IK, IV, STKEY, STVAL> Engine<IK, IV, STKEY, STVAL> for T
 where
     T: Base,
-    CK: LowerHex + Copy,
-    CV: Message + Default,
     IK: ToKey,
     IV: Message + ToKey + Default,
     STKEY: ToKey,

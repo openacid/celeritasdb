@@ -107,11 +107,6 @@ mod tests {
 
         {
             let eng = MemEngine::new().unwrap();
-            test_columned_trait(&eng);
-        }
-
-        {
-            let eng = MemEngine::new().unwrap();
             test_instance_trait(&eng);
         }
     }

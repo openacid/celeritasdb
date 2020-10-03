@@ -35,8 +35,7 @@ pub use qpaxos::*;
 use std::sync::Arc;
 use storage::Engine;
 pub use storage::*;
-pub type Storage =
-    Arc<dyn Engine<ReplicaId, InstanceId, InstanceId, Instance, ReplicaStatus, InstanceIds>>;
+pub type Storage = Arc<dyn Engine<InstanceId, Instance, ReplicaStatus, InstanceIds>>;
 
 use prost::Message;
 impl From<&Command> for WriteEntry {
@@ -56,18 +55,5 @@ impl From<Instance> for WriteEntry {
         let mut v = vec![];
         inst.encode(&mut v).unwrap();
         return WriteEntry::Set(DBColumnFamily::Instance, inst.to_key(), v);
-    }
-}
-
-// just for set max exec ref
-// we can not impl From<(&str, A: Into<InstanceId>)>
-// because WriteEntry is not in this crate
-impl From<InstanceId> for WriteEntry {
-    fn from(iid: InstanceId) -> Self {
-        let k = make_ref_key("exec", iid.replica_id);
-        let mut v = vec![];
-        iid.encode(&mut v).unwrap();
-
-        return WriteEntry::Set(DBColumnFamily::Status, k, v);
     }
 }

@@ -179,34 +179,6 @@ pub fn test_record_trait(eng: &dyn AccessRecord) {
     assert!(none.is_none());
 }
 
-pub fn test_columned_trait<T>(eng: &T)
-where
-    T: ColumnedEngine<i32, TestId>,
-{
-    let cases = vec![(1i32, 2i64), (3i32, 4i64)];
-
-    for (k, v) in cases {
-        let v = TestId { id: v };
-
-        eng.set_ref("exec", k, v).unwrap();
-        let act = eng.get_ref("exec", k).unwrap().unwrap();
-
-        assert_eq!(act, v);
-    }
-
-    eng.set_ref_if("exec", 3, TestId { id: 3 }, TestId { id: 0 }, |x| x.id == 3)
-        .unwrap();
-    let act = eng.get_ref("exec", 3).unwrap().unwrap();
-    assert_eq!(4, act.id);
-
-    eng.set_ref_if("exec", 3, TestId { id: 100 }, TestId { id: 0 }, |x| {
-        x.id == 4
-    })
-    .unwrap();
-    let act = eng.get_ref("exec", 3).unwrap().unwrap();
-    assert_eq!(100, act.id);
-}
-
 pub fn test_instance_trait(eng: &dyn AccessInstance<TestId, TestInstance>) {
     let noninst = eng.get_instance(TestId { id: 0 }).unwrap();
     assert_eq!(None, noninst);

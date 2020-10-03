@@ -147,11 +147,6 @@ mod tests {
 
         {
             let eng = new_eng();
-            test_columned_trait(&eng);
-        }
-
-        {
-            let eng = new_eng();
             test_instance_trait(&eng);
         }
     }
