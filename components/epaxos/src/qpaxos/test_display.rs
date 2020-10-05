@@ -63,17 +63,7 @@ fn test_display_command() {
             }
         )
     );
-    assert_eq!(
-        "Set:foo=bar",
-        format!(
-            "{}",
-            Command {
-                op: OpCode::Set as i32,
-                key: k.clone(),
-                value: v.clone()
-            }
-        )
-    );
+    assert_eq!("Set:foo=bar", format!("{}", cmd!(foo = bar)));
     assert_eq!(
         "Delete:foo",
         format!(

@@ -20,6 +20,8 @@ fn test_macro_cmd() {
     assert_eq!(Command::from(("Set", "x", "yyy")), cmd!(x = "yyy"));
 
     assert_eq!(Command::from(("Set", "x", "y")), cmd!(x = "y"));
+
+    assert_eq!(Command::from(("Delete", "x", "")), cmd!(del x));
 }
 
 #[test]
@@ -31,8 +33,9 @@ fn test_macro_cmdvec() {
             Command::from(("Get", "x", "")),
             Command::from(("Set", "x", "y")),
             Command::from(("Set", "a", "b")),
+            Command::from(("Delete", "a", "")),
         ],
-        cmdvec![(x), (x = y), ("Set", "a", "b")]
+        cmdvec![(x), (x = y), ("Set", "a", "b"), (del a)]
     );
 }
 
@@ -198,10 +201,14 @@ fn test_macro_inst_instid_cmds() {
     assert_eq!(
         Instance {
             instance_id: None,
-            cmds: vec![("Set", "x", "y").into(), ("Get", "a", "").into()],
+            cmds: vec![
+                ("Set", "x", "y").into(),
+                ("Get", "a", "").into(),
+                ("Delete", "x", "").into(),
+            ],
             ..Default::default()
         },
-        inst!(None, [(x = y), (a)])
+        inst!(None, [(x = y), (a), (del x)])
     );
 }
 #[test]

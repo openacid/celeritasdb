@@ -35,6 +35,10 @@ macro_rules! cmd {
     ($v:ident = $what:expr) => {
         Command::from(("Set", stringify!($v), $what))
     };
+
+    (del $v:ident) => {
+        Command::from(("Delete", stringify!($v), ""))
+    };
 }
 
 #[macro_export]
