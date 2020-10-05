@@ -16,9 +16,9 @@ impl Iterator for BaseIter {
 
     fn next(&mut self) -> Option<Self::Item> {
         let r = if self.reverse {
-            self.storage.prev(self.cf, &self.cursor, self.include)
+            self.storage.prev_raw(self.cf, &self.cursor, self.include)
         } else {
-            self.storage.next(self.cf, &self.cursor, self.include)
+            self.storage.next_raw(self.cf, &self.cursor, self.include)
         };
 
         self.include = false;
@@ -45,10 +45,10 @@ impl Iterator for InstanceIter {
         let k = self.curr_inst_id.to_key();
         let (key_bytes, val_bytes) = if self.reverse {
             self.storage
-                .prev(DBColumnFamily::Instance, &k, self.include)?
+                .prev_raw(DBColumnFamily::Instance, &k, self.include)?
         } else {
             self.storage
-                .next(DBColumnFamily::Instance, &k, self.include)?
+                .next_raw(DBColumnFamily::Instance, &k, self.include)?
         };
 
         let key = String::from_utf8(key_bytes);

@@ -13,7 +13,7 @@ fn test_base_iter() {
     for i in 0..100 {
         let k = format!("K{:>03}", i).as_bytes().to_vec();
         let v = format!("V{:?}", i).as_bytes().to_vec();
-        sto.set(DBColumnFamily::Record, &k, &v).unwrap();
+        sto.set_raw(DBColumnFamily::Record, &k, &v).unwrap();
         ks.push(k);
         vs.push(v);
     }

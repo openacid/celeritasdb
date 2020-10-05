@@ -4,7 +4,7 @@ use crate::MemEngine;
 use crate::NsStorage;
 use std::sync::Arc;
 
-use crate::traits::Base;
+use crate::traits::RawKV;
 use crate::WriteEntry;
 
 use crate::NameSpace;
@@ -69,26 +69,26 @@ fn test_ns_storage_no_overriding() {
     {
         // no overriding for get/set
 
-        w1.set(DBColumnFamily::Status, &k, &v1).unwrap();
-        w2.set(DBColumnFamily::Status, &k, &v2).unwrap();
+        w1.set_raw(DBColumnFamily::Status, &k, &v1).unwrap();
+        w2.set_raw(DBColumnFamily::Status, &k, &v2).unwrap();
 
-        let r = w1.get(DBColumnFamily::Status, &k).unwrap();
+        let r = w1.get_raw(DBColumnFamily::Status, &k).unwrap();
         assert_eq!(v1, r.unwrap());
 
-        let r = w2.get(DBColumnFamily::Status, &k).unwrap();
+        let r = w2.get_raw(DBColumnFamily::Status, &k).unwrap();
         assert_eq!(v2, r.unwrap());
     }
 
     {
         // next/prev is bounded by namespace
 
-        let r = w1.next(DBColumnFamily::Status, &k, true);
+        let r = w1.next_raw(DBColumnFamily::Status, &k, true);
         assert_eq!((k.clone(), v1.clone()), r.unwrap());
 
-        let r = w1.next(DBColumnFamily::Status, &k, false);
+        let r = w1.next_raw(DBColumnFamily::Status, &k, false);
         assert!(r.is_none(), "next should not get k/v from other namespace");
 
-        let r = w2.prev(DBColumnFamily::Status, &k, false);
+        let r = w2.prev_raw(DBColumnFamily::Status, &k, false);
         assert!(r.is_none(), "prev should not get k/v from other namespace");
     }
 
@@ -105,13 +105,13 @@ fn test_ns_storage_no_overriding() {
 
         w1.write_batch(&batch).unwrap();
 
-        let r = w1.get(DBColumnFamily::Record, &k1).unwrap();
+        let r = w1.get_raw(DBColumnFamily::Record, &k1).unwrap();
         assert_eq!(Some(v1), r);
 
-        let r = w2.get(DBColumnFamily::Record, &k1).unwrap();
+        let r = w2.get_raw(DBColumnFamily::Record, &k1).unwrap();
         assert!(r.is_none());
 
-        let r = w2.get(DBColumnFamily::Status, &k2).unwrap();
+        let r = w2.get_raw(DBColumnFamily::Status, &k2).unwrap();
         assert!(r.is_none());
     }
 }

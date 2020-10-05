@@ -85,7 +85,7 @@ impl<T: ToString> NameSpace for T {
 /// ShareByNS defines the API to impl a Storage with namespace support.
 pub trait ShareByNS {
     type NS: NameSpace;
-    type B: Base + ?Sized;
+    type B: RawKV + ?Sized;
 
     fn get_ns(&self) -> &Self::NS;
     fn get_storage(&self) -> &Arc<Self::B>;
@@ -96,7 +96,7 @@ pub trait ShareByNS {
 pub struct NsStorage<B, NS>
 where
     NS: NameSpace,
-    B: Base + ?Sized,
+    B: RawKV + ?Sized,
 {
     namespace: NS,
     shared_sto: Arc<B>,
@@ -104,7 +104,7 @@ where
 
 impl<B, NS> ShareByNS for NsStorage<B, NS>
 where
-    B: Base + ?Sized,
+    B: RawKV + ?Sized,
     NS: NameSpace,
 {
     type B = B;
@@ -121,7 +121,7 @@ where
 impl<B, NS> NsStorage<B, NS>
 where
     NS: NameSpace,
-    B: Base + ?Sized,
+    B: RawKV + ?Sized,
 {
     /// new creates a NsStorage with `namespace` and a shared underlying storage `shared_sto`.
     pub fn new(namespace: NS, shared_sto: Arc<B>) -> Self {
@@ -133,38 +133,49 @@ where
 }
 
 /// impl Base storage API for types that impls SharedStorage.
-impl<T, B, NS> Base for T
+impl<T, B, NS> RawKV for T
 where
-    B: Base + ?Sized,
+    B: RawKV + ?Sized,
     NS: NameSpace,
     T: ShareByNS<B = B, NS = NS> + Send + Sync,
 {
-    fn set(&self, cf: DBColumnFamily, key: &[u8], value: &[u8]) -> Result<(), StorageError> {
+    fn set_raw(&self, cf: DBColumnFamily, key: &[u8], value: &[u8]) -> Result<(), StorageError> {
         self.get_storage()
-            .set(cf, &self.get_ns().wrap_ns(key), value)
+            .set_raw(cf, &self.get_ns().wrap_ns(key), value)
     }
 
-    fn get(&self, cf: DBColumnFamily, key: &[u8]) -> Result<Option<Vec<u8>>, StorageError> {
-        self.get_storage().get(cf, &self.get_ns().wrap_ns(key))
+    fn get_raw(&self, cf: DBColumnFamily, key: &[u8]) -> Result<Option<Vec<u8>>, StorageError> {
+        self.get_storage().get_raw(cf, &self.get_ns().wrap_ns(key))
     }
 
-    fn delete(&self, cf: DBColumnFamily, key: &[u8]) -> Result<(), StorageError> {
-        self.get_storage().delete(cf, &self.get_ns().wrap_ns(key))
+    fn delete_raw(&self, cf: DBColumnFamily, key: &[u8]) -> Result<(), StorageError> {
+        self.get_storage()
+            .delete_raw(cf, &self.get_ns().wrap_ns(key))
     }
 
-    fn next(&self, cf: DBColumnFamily, key: &[u8], include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
+    fn next_raw(
+        &self,
+        cf: DBColumnFamily,
+        key: &[u8],
+        include: bool,
+    ) -> Option<(Vec<u8>, Vec<u8>)> {
         let (k, v) = self
             .get_storage()
-            .next(cf, &self.get_ns().wrap_ns(key), include)?;
+            .next_raw(cf, &self.get_ns().wrap_ns(key), include)?;
         let unwrapped = self.get_ns().unwrap_ns(k.as_slice())?;
 
         Some((unwrapped, v.to_vec()))
     }
 
-    fn prev(&self, cf: DBColumnFamily, key: &[u8], include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
+    fn prev_raw(
+        &self,
+        cf: DBColumnFamily,
+        key: &[u8],
+        include: bool,
+    ) -> Option<(Vec<u8>, Vec<u8>)> {
         let (k, v) = self
             .get_storage()
-            .prev(cf, &self.get_ns().wrap_ns(key), include)?;
+            .prev_raw(cf, &self.get_ns().wrap_ns(key), include)?;
         let unwrapped = self.get_ns().unwrap_ns(k.as_slice())?;
 
         Some((unwrapped, v.to_vec()))
@@ -192,53 +203,55 @@ pub trait ToKey {
     fn to_key(&self) -> Vec<u8>;
 }
 
-/// Base offer basic key-value access
-pub trait Base: Send + Sync {
+/// RawKV defines access API for raw key-value in byte stream.
+pub trait RawKV: Send + Sync {
     /// set a new key-value
-    fn set(&self, cf: DBColumnFamily, key: &[u8], value: &[u8]) -> Result<(), StorageError>;
+    fn set_raw(&self, cf: DBColumnFamily, key: &[u8], value: &[u8]) -> Result<(), StorageError>;
 
     /// get an existing value with key
-    fn get(&self, cf: DBColumnFamily, key: &[u8]) -> Result<Option<Vec<u8>>, StorageError>;
+    fn get_raw(&self, cf: DBColumnFamily, key: &[u8]) -> Result<Option<Vec<u8>>, StorageError>;
 
     /// delete a key
-    fn delete(&self, cf: DBColumnFamily, key: &[u8]) -> Result<(), StorageError>;
+    fn delete_raw(&self, cf: DBColumnFamily, key: &[u8]) -> Result<(), StorageError>;
 
     /// next_kv returns a key-value pair greater than the given one(include=false),
     /// or greater or equal the given one(include=true)
-    fn next(&self, cf: DBColumnFamily, key: &[u8], include: bool) -> Option<(Vec<u8>, Vec<u8>)>;
+    fn next_raw(&self, cf: DBColumnFamily, key: &[u8], include: bool)
+        -> Option<(Vec<u8>, Vec<u8>)>;
 
     /// prev_kv returns a key-value pair smaller than the given one(include=false),
     /// or smaller or equal the given one(include=true)
-    fn prev(&self, cf: DBColumnFamily, key: &[u8], include: bool) -> Option<(Vec<u8>, Vec<u8>)>;
+    fn prev_raw(&self, cf: DBColumnFamily, key: &[u8], include: bool)
+        -> Option<(Vec<u8>, Vec<u8>)>;
 
     fn write_batch(&self, entrys: &Vec<WriteEntry>) -> Result<(), StorageError>;
 }
 
 /// AccessRecord provides API to access user key/value record.
-pub trait AccessRecord: Base {
+pub trait AccessRecord: RawKV {
     fn set_kv(&self, key: &[u8], value: &[u8]) -> Result<(), StorageError> {
-        self.set(DBColumnFamily::Record, key, value)
+        self.set_raw(DBColumnFamily::Record, key, value)
     }
 
     fn get_kv(&self, key: &[u8]) -> Result<Option<Vec<u8>>, StorageError> {
-        self.get(DBColumnFamily::Record, key)
+        self.get_raw(DBColumnFamily::Record, key)
     }
 
     fn delete_kv(&self, key: &[u8]) -> Result<(), StorageError> {
-        self.delete(DBColumnFamily::Record, key)
+        self.delete_raw(DBColumnFamily::Record, key)
     }
 
     fn next_kv(&self, key: &[u8], include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
-        self.next(DBColumnFamily::Record, key, include)
+        self.next_raw(DBColumnFamily::Record, key, include)
     }
 
     fn prev_kv(&self, key: &[u8], include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
-        self.prev(DBColumnFamily::Record, key, include)
+        self.prev_raw(DBColumnFamily::Record, key, include)
     }
 }
 
 /// AccessInstance provides API to access instances
-pub trait AccessInstance<IK, IV>: Base
+pub trait AccessInstance<IK, IV>: RawKV
 where
     IK: ToKey,
     IV: Message + ToKey + Default,
@@ -250,13 +263,13 @@ where
         let mut value = vec![];
         v.encode(&mut value)?;
 
-        self.set(DBColumnFamily::Instance, &iid, &value)
+        self.set_raw(DBColumnFamily::Instance, &iid, &value)
     }
 
     /// get an instance with instance id
     fn get_instance(&self, k: IK) -> Result<Option<IV>, StorageError> {
         let key = k.to_key();
-        let vbs = self.get(DBColumnFamily::Instance, &key)?;
+        let vbs = self.get_raw(DBColumnFamily::Instance, &key)?;
         let r = match vbs {
             Some(v) => IV::decode(v.as_slice())?,
             None => return Ok(None),
@@ -267,7 +280,7 @@ where
 }
 
 /// AccessStatus provides API to access status
-pub trait AccessStatus<STKEY, STVAL>: Base
+pub trait AccessStatus<STKEY, STVAL>: RawKV
 where
     STKEY: ToKey,
     STVAL: Message + Default,
@@ -278,13 +291,13 @@ where
         let mut vbytes = vec![];
         value.encode(&mut vbytes)?;
 
-        self.set(DBColumnFamily::Status, &kbytes, &vbytes)
+        self.set_raw(DBColumnFamily::Status, &kbytes, &vbytes)
     }
 
     /// get an status with key
     fn get_status(&self, key: &STKEY) -> Result<Option<STVAL>, StorageError> {
         let kbytes = key.to_key();
-        let vbytes = self.get(DBColumnFamily::Status, &kbytes)?;
+        let vbytes = self.get_raw(DBColumnFamily::Status, &kbytes)?;
         let r = match vbytes {
             Some(v) => STVAL::decode(v.as_slice())?,
             None => return Ok(None),
@@ -304,11 +317,11 @@ where
 {
 }
 
-impl<T> AccessRecord for T where T: Base {}
+impl<T> AccessRecord for T where T: RawKV {}
 
 impl<T, IK, IV> AccessInstance<IK, IV> for T
 where
-    T: Base,
+    T: RawKV,
     IK: ToKey,
     IV: Message + ToKey + Default,
 {
@@ -316,7 +329,7 @@ where
 
 impl<T, IK, IV> AccessStatus<IK, IV> for T
 where
-    T: Base,
+    T: RawKV,
     IK: ToKey,
     IV: Message + Default,
 {
@@ -324,7 +337,7 @@ where
 
 impl<T, IK, IV, STKEY, STVAL> Engine<IK, IV, STKEY, STVAL> for T
 where
-    T: Base,
+    T: RawKV,
     IK: ToKey,
     IV: Message + ToKey + Default,
     STKEY: ToKey,

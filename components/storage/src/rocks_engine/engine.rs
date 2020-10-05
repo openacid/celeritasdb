@@ -1,7 +1,7 @@
 use super::open;
 use crate::DBColumnFamily;
 use crate::WriteEntry;
-use crate::{Base, RocksDBEngine, StorageError};
+use crate::{RawKV, RocksDBEngine, StorageError};
 use rocksdb::{CFHandle, SeekKey, Writable, WriteBatch};
 
 impl RocksDBEngine {
@@ -75,28 +75,38 @@ impl RocksDBEngine {
     }
 }
 
-impl Base for RocksDBEngine {
-    fn set(&self, cf: DBColumnFamily, key: &[u8], value: &[u8]) -> Result<(), StorageError> {
+impl RawKV for RocksDBEngine {
+    fn set_raw(&self, cf: DBColumnFamily, key: &[u8], value: &[u8]) -> Result<(), StorageError> {
         let cfh = self._make_cf_handle(cf)?;
         Ok(self.db.put_cf(cfh, key, value)?)
     }
 
-    fn get(&self, cf: DBColumnFamily, key: &[u8]) -> Result<Option<Vec<u8>>, StorageError> {
+    fn get_raw(&self, cf: DBColumnFamily, key: &[u8]) -> Result<Option<Vec<u8>>, StorageError> {
         let cfh = self._make_cf_handle(cf)?;
         let r = self.db.get_cf(cfh, key)?;
         Ok(r.map(|x| x.to_vec()))
     }
 
-    fn delete(&self, cf: DBColumnFamily, key: &[u8]) -> Result<(), StorageError> {
+    fn delete_raw(&self, cf: DBColumnFamily, key: &[u8]) -> Result<(), StorageError> {
         let cfh = self._make_cf_handle(cf)?;
         Ok(self.db.delete_cf(cfh, key)?)
     }
 
-    fn next(&self, cf: DBColumnFamily, key: &[u8], include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
+    fn next_raw(
+        &self,
+        cf: DBColumnFamily,
+        key: &[u8],
+        include: bool,
+    ) -> Option<(Vec<u8>, Vec<u8>)> {
         self._range(cf, key, include, false)
     }
 
-    fn prev(&self, cf: DBColumnFamily, key: &[u8], include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
+    fn prev_raw(
+        &self,
+        cf: DBColumnFamily,
+        key: &[u8],
+        include: bool,
+    ) -> Option<(Vec<u8>, Vec<u8>)> {
         self._range(cf, key, include, true)
     }
 

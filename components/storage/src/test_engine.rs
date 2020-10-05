@@ -31,28 +31,28 @@ fn new_inst() -> TestInstance {
     TestInstance { id: 0, foo: 1 }
 }
 
-pub fn test_base_trait(eng: &dyn Base) {
-    let none = eng.next(DBColumnFamily::Record, &"init".as_bytes().to_vec(), true);
+pub fn test_base_trait(eng: &dyn RawKV) {
+    let none = eng.next_raw(DBColumnFamily::Record, &"init".as_bytes().to_vec(), true);
     assert_eq!(none, None);
-    let none = eng.next(DBColumnFamily::Instance, &"init".as_bytes().to_vec(), true);
-    assert_eq!(none, None);
-
-    let none = eng.prev(DBColumnFamily::Record, &"init".as_bytes().to_vec(), true);
+    let none = eng.next_raw(DBColumnFamily::Instance, &"init".as_bytes().to_vec(), true);
     assert_eq!(none, None);
 
-    let none = eng.prev(DBColumnFamily::Instance, &"init".as_bytes().to_vec(), true);
+    let none = eng.prev_raw(DBColumnFamily::Record, &"init".as_bytes().to_vec(), true);
+    assert_eq!(none, None);
+
+    let none = eng.prev_raw(DBColumnFamily::Instance, &"init".as_bytes().to_vec(), true);
     assert_eq!(none, None);
 
     let none = eng
-        .get(DBColumnFamily::Record, &"init".as_bytes().to_vec())
+        .get_raw(DBColumnFamily::Record, &"init".as_bytes().to_vec())
         .unwrap();
     assert_eq!(none, None);
     let none = eng
-        .get(DBColumnFamily::Instance, &"init".as_bytes().to_vec())
+        .get_raw(DBColumnFamily::Instance, &"init".as_bytes().to_vec())
         .unwrap();
     assert_eq!(none, None);
 
-    let r = eng.delete(DBColumnFamily::Record, &"init".as_bytes().to_vec());
+    let r = eng.delete_raw(DBColumnFamily::Record, &"init".as_bytes().to_vec());
     assert!(r.is_ok());
 
     let kvs = vec![
@@ -63,42 +63,42 @@ pub fn test_base_trait(eng: &dyn Base) {
     ];
 
     for (k, v) in kvs.iter() {
-        eng.set(DBColumnFamily::Status, k, v).unwrap();
+        eng.set_raw(DBColumnFamily::Status, k, v).unwrap();
     }
 
-    let r = eng.get(DBColumnFamily::Record, &kvs[0].0).unwrap();
+    let r = eng.get_raw(DBColumnFamily::Record, &kvs[0].0).unwrap();
     assert_eq!(None, r);
-    let r = eng.get(DBColumnFamily::Status, &kvs[0].0).unwrap();
+    let r = eng.get_raw(DBColumnFamily::Status, &kvs[0].0).unwrap();
     assert_eq!(r, Some(kvs[0].1.clone()));
 
-    let next = eng.next(DBColumnFamily::Record, &kvs[0].0, true);
+    let next = eng.next_raw(DBColumnFamily::Record, &kvs[0].0, true);
     assert!(next.is_none());
 
-    let next = eng.next(DBColumnFamily::Status, &kvs[0].0, true);
+    let next = eng.next_raw(DBColumnFamily::Status, &kvs[0].0, true);
     assert_eq!(next, Some(kvs[0].clone()));
 
-    let next = eng.next(DBColumnFamily::Status, &kvs[0].0, false);
+    let next = eng.next_raw(DBColumnFamily::Status, &kvs[0].0, false);
     assert_eq!(next, Some(kvs[1].clone()));
 
-    let next = eng.next(DBColumnFamily::Status, &kvs[3].0, false);
+    let next = eng.next_raw(DBColumnFamily::Status, &kvs[3].0, false);
     assert!(next.is_none());
 
-    let prev = eng.prev(DBColumnFamily::Record, &kvs[0].0, true);
+    let prev = eng.prev_raw(DBColumnFamily::Record, &kvs[0].0, true);
     assert!(prev.is_none());
 
-    let prev = eng.prev(DBColumnFamily::Status, &kvs[0].0, true);
+    let prev = eng.prev_raw(DBColumnFamily::Status, &kvs[0].0, true);
     assert_eq!(prev, Some(kvs[0].clone()));
 
-    let prev = eng.prev(DBColumnFamily::Status, &kvs[0].0, false);
+    let prev = eng.prev_raw(DBColumnFamily::Status, &kvs[0].0, false);
     assert!(prev.is_none());
 
-    let prev = eng.prev(DBColumnFamily::Status, &kvs[3].0, true);
+    let prev = eng.prev_raw(DBColumnFamily::Status, &kvs[3].0, true);
     assert_eq!(prev, Some(kvs[3].clone()));
 
-    eng.delete(DBColumnFamily::Record, &kvs[0].0).unwrap();
+    eng.delete_raw(DBColumnFamily::Record, &kvs[0].0).unwrap();
 
-    eng.delete(DBColumnFamily::Status, &kvs[0].0).unwrap();
-    let r = eng.get(DBColumnFamily::Status, &kvs[0].0).unwrap();
+    eng.delete_raw(DBColumnFamily::Status, &kvs[0].0).unwrap();
+    let r = eng.get_raw(DBColumnFamily::Status, &kvs[0].0).unwrap();
     assert!(r.is_none());
 
     let k1 = "k1".as_bytes().to_vec();
@@ -114,11 +114,11 @@ pub fn test_base_trait(eng: &dyn Base) {
     eng.write_batch(&cmds).unwrap();
     assert_eq!(
         v1.clone(),
-        eng.get(DBColumnFamily::Record, &k1).unwrap().unwrap()
+        eng.get_raw(DBColumnFamily::Record, &k1).unwrap().unwrap()
     );
     assert_eq!(
         v2.clone(),
-        eng.get(DBColumnFamily::Status, &k2).unwrap().unwrap()
+        eng.get_raw(DBColumnFamily::Status, &k2).unwrap().unwrap()
     );
 
     let cmds = vec![
@@ -127,7 +127,7 @@ pub fn test_base_trait(eng: &dyn Base) {
     ];
 
     eng.write_batch(&cmds).unwrap();
-    assert_eq!(None, eng.get(DBColumnFamily::Record, &k1).unwrap());
+    assert_eq!(None, eng.get_raw(DBColumnFamily::Record, &k1).unwrap());
 }
 
 pub fn test_record_trait(eng: &dyn AccessRecord) {

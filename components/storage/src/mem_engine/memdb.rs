@@ -3,7 +3,7 @@ use std::ops::Bound::Included;
 use std::ops::Bound::Unbounded;
 use std::sync::Mutex;
 
-use crate::{Base, DBColumnFamily, MemEngine, StorageError, WriteEntry};
+use crate::{DBColumnFamily, MemEngine, RawKV, StorageError, WriteEntry};
 
 impl MemEngine {
     pub fn new() -> Result<MemEngine, StorageError> {
@@ -14,33 +14,38 @@ impl MemEngine {
     }
 }
 
-impl Base for MemEngine {
+impl RawKV for MemEngine {
     // TODO lock().unwrap() need to deal with poisoning
     // https://doc.rust-lang.org/std/sync/struct.Mutex.html#poisoning
 
     // TODO concurrent test
 
-    fn set(&self, cf: DBColumnFamily, key: &[u8], value: &[u8]) -> Result<(), StorageError> {
+    fn set_raw(&self, cf: DBColumnFamily, key: &[u8], value: &[u8]) -> Result<(), StorageError> {
         let mut cfs = self._db.lock().unwrap();
         let bt = cfs.entry(cf.into()).or_insert(BTreeMap::new());
         bt.insert(key.to_vec(), value.to_vec());
         Ok(())
     }
 
-    fn get(&self, cf: DBColumnFamily, key: &[u8]) -> Result<Option<Vec<u8>>, StorageError> {
+    fn get_raw(&self, cf: DBColumnFamily, key: &[u8]) -> Result<Option<Vec<u8>>, StorageError> {
         let mut cfs = self._db.lock().unwrap();
         let bt = cfs.entry(cf.into()).or_insert(BTreeMap::new());
         Ok(bt.get(key).map(|x| x.clone()))
     }
 
-    fn delete(&self, cf: DBColumnFamily, key: &[u8]) -> Result<(), StorageError> {
+    fn delete_raw(&self, cf: DBColumnFamily, key: &[u8]) -> Result<(), StorageError> {
         let mut cfs = self._db.lock().unwrap();
         let bt = cfs.entry(cf.into()).or_insert(BTreeMap::new());
         bt.remove(key);
         Ok(())
     }
 
-    fn next(&self, cf: DBColumnFamily, key: &[u8], include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
+    fn next_raw(
+        &self,
+        cf: DBColumnFamily,
+        key: &[u8],
+        include: bool,
+    ) -> Option<(Vec<u8>, Vec<u8>)> {
         let mut cfs = self._db.lock().unwrap();
         let bt = cfs.entry(cf.into()).or_insert(BTreeMap::new());
 
@@ -55,7 +60,12 @@ impl Base for MemEngine {
         None
     }
 
-    fn prev(&self, cf: DBColumnFamily, key: &[u8], include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
+    fn prev_raw(
+        &self,
+        cf: DBColumnFamily,
+        key: &[u8],
+        include: bool,
+    ) -> Option<(Vec<u8>, Vec<u8>)> {
         let mut cfs = self._db.lock().unwrap();
         let bt = cfs.entry(cf.into()).or_insert(BTreeMap::new());
 
@@ -76,10 +86,10 @@ impl Base for MemEngine {
             match en {
                 WriteEntry::Nil => {}
                 WriteEntry::Set(cf, k, v) => {
-                    self.set(*cf, k, v).unwrap();
+                    self.set_raw(*cf, k, v).unwrap();
                 }
                 WriteEntry::Delete(cf, k) => {
-                    self.delete(*cf, k).unwrap();
+                    self.delete_raw(*cf, k).unwrap();
                 }
             }
         }
