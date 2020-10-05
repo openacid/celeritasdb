@@ -1,5 +1,7 @@
 use std::sync::Arc;
 
+use crate::inst;
+
 use crate::conf::ClusterInfo;
 use crate::qpaxos::*;
 use crate::replica::*;
@@ -87,7 +89,7 @@ fn test_new_instance() {
 
 #[test]
 fn test_get_max_instance_ids() {
-    let (i12, i13, i34) = (foo_inst!((1, 2)), foo_inst!((1, 3)), foo_inst!((3, 4)));
+    let (i12, i13, i34) = (inst!((1, 2)), inst!((1, 3)), inst!((3, 4)));
 
     let insts = vec![((1, 2), &i12), ((1, 3), &i13), ((3, 4), &i34)];
 
@@ -187,7 +189,7 @@ fn test_handle_replicate_ballot_check() {
 #[test]
 #[should_panic(expected = "inst.deps is unexpected to be None")]
 fn test_handle_prepare_request_panic_local_deps_none() {
-    let inst = foo_inst!((0, 0));
+    let inst = inst!((0, 0));
     let req_inst = foo_inst!((1, 0), [(0, 0)]);
 
     _handle_prepare_request((0, 0), inst, req_inst);

@@ -131,7 +131,7 @@ impl Replica {
         }
 
         // TODO: Since executed status is moved to ReplciaStatus::Exec, maybe no more instance update is required.
-        while let Some(mut inst) = insts.pop() {
+        while let Some(inst) = insts.pop() {
             entrys.push(inst.into());
         }
 

@@ -1,3 +1,4 @@
+use crate::inst;
 use crate::qpaxos::Command;
 use crate::qpaxos::Dep;
 use crate::qpaxos::Instance;
@@ -10,7 +11,7 @@ use crate::testutil::TestCluster;
 async fn test_bcast_replicate_request() {
     let mut tc = TestCluster::new(3);
     tc.start().await;
-    let inst = foo_inst!((0, 1), "key_x", [(0, 0), (1, 0), (2, 0)]);
+    let inst = inst!((0, 1), [(x = x)], [(0, 0), (1, 0), (2, 0)]);
     let req = MakeRequest::prepare(0, &inst, &[true, true, true]);
 
     let r = bcast_msg(&tc.replicas[0].peers, req).await;

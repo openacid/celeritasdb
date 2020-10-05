@@ -138,15 +138,39 @@ macro_rules! ballot {
     };
 }
 
+#[macro_export]
+#[allow(unused_macros)]
+macro_rules! optinstid {
+    (None) => {
+        Option::<InstanceId>::None
+    };
+
+    ($id: expr) => {
+        Some(InstanceId::from($id))
+    };
+}
+
+#[macro_export]
+#[allow(unused_macros)]
+macro_rules! optdeps {
+    (None) => {
+        Option::<Deps>::None
+    };
+
+    ($deps: tt) => {
+        Some($crate::depvec!$deps.into())
+    };
+}
+
 #[doc(hidden)]
 #[macro_export]
 macro_rules! __instance_fields {
     ($field:expr, None) => { None };
 
-    (instance_id, $v:tt) => { Some($crate::instid!$v) };
+    (instance_id, $v:expr) => { $crate::optinstid!($v) };
     (ballot, $v:tt) => { Some($crate::ballot!$v) };
     (vballot, $v:tt) => { Some($crate::ballot!$v) };
-    (cmds, $v:tt) => { $crate::cmdvec!$v.into() };
+    (cmds, $v:tt) => { $crate::cmdvec!$v };
     (deps, $v:tt) => { Some($crate::depvec!$v.into()) };
 
     // other fields
@@ -157,6 +181,7 @@ macro_rules! __instance_fields {
 /// instance_id: (replica_id, idx),
 /// ballot: (epoch, num, _). the `_` is a place holder indicating to use replica_is from instance_id.
 /// cmds: [("Set", "x", "y")...]
+/// cmds: [(x=y)...]
 /// deps: [(replica_id, idx)...]
 ///
 /// Supported pattern:
@@ -192,6 +217,13 @@ macro_rules! inst {
         }
     };
 
+    // instance_id
+    ($id:tt) => {
+        Instance {
+            instance_id: $crate::__instance_fields!(instance_id, $id),
+            ..Default::default()
+        }
+    };
 
     // instance_id, key:value...
     ($id:tt,
@@ -205,28 +237,26 @@ macro_rules! inst {
         }
     };
 
-
     // instance_id, cmds
-    ($id:expr,
+    ($id:tt,
      [$($cmd:tt),*]
-     $(,)*
-     ) => {
+     $(,)*) => {
         Instance {
-            instance_id: Some($id.into()),
-            cmds: $crate::cmdvec![$($cmd),*].into(),
+            instance_id: $crate::__instance_fields!(instance_id, $id),
+            cmds: $crate::__instance_fields!(cmds, [$($cmd),*]),
             ..Default::default()
         }
     };
 
     // instance_id, cmds, deps
-    ($id:expr,
+    ($id:tt,
      [$($cmd:tt),*],
      $deps:tt
      $(,)*
      ) => {
         Instance {
-            instance_id: Some($id.into()),
-            cmds: $crate::cmdvec![$($cmd),*].into(),
+            instance_id: $crate::__instance_fields!(instance_id, $id),
+            cmds: $crate::__instance_fields!(cmds, [$($cmd),*]),
             deps: Some($crate::depvec!$deps.into()),
             ..Default::default()
         }
@@ -235,13 +265,13 @@ macro_rules! inst {
     // instance_id, ballot, cmds
     ($id:expr,
      ($num:expr, _),
-     [$( ($op:expr, $key:expr, $val:expr)),*]
+     [$($cmd:tt),*]
      $(,)*
      ) => {
         Instance {
             instance_id: Some($id.into()),
             ballot: Some(($num, InstanceId::from($id).replica_id).into()),
-            cmds: $crate::cmdvec![$( ($op, $key, $val)),*].into(),
+            cmds: $crate::__instance_fields!(cmds, [$($cmd),*]),
             ..Default::default()
         }
     };
@@ -256,7 +286,7 @@ macro_rules! inst {
         Instance {
             instance_id: Some($id.into()),
             ballot: Some(($num, InstanceId::from($id).replica_id).into()),
-            cmds: $crate::cmdvec![$($cmd),*].into(),
+            cmds: $crate::__instance_fields!(cmds, [$($cmd),*]),
             deps: Some($crate::depvec!$deps.into()),
             ..Default::default()
         }

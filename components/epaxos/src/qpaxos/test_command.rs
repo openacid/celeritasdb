@@ -83,13 +83,17 @@ fn test_command_conflit() {
 fn test_macro_cmd() {
     let cmd = cmd!("Set", "key", "value");
     assert_eq!(cmd, (OpCode::Set, "key", "value").into());
+
+    let cmd = cmd!(key = value);
+    assert_eq!(cmd, (OpCode::Set, "key", "value").into());
 }
 
 #[test]
 fn test_macro_cmdvec() {
-    let cmds = cmdvec![("Set", "key", "value"), (OpCode::Get, "a", "b")];
+    let cmds = cmdvec![(a = b), ("Set", "key", "value"), (OpCode::Get, "a", "b")];
 
-    assert_eq!(cmds[0], (OpCode::Set, "key", "value").into());
-    assert_eq!(cmds[1], ("Get", "a", "b").into());
-    assert_eq!(2, cmds.len());
+    assert_eq!(cmds[0], (OpCode::Set, "a", "b").into());
+    assert_eq!(cmds[1], (OpCode::Set, "key", "value").into());
+    assert_eq!(cmds[2], ("Get", "a", "b").into());
+    assert_eq!(3, cmds.len());
 }

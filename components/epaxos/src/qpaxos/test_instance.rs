@@ -38,7 +38,7 @@ fn test_macro_inst_all_arg() {
     let want = Instance {
         instance_id: Some((1, 2).into()),
         ballot: Some((4, 2).into()),
-        cmds: vec![("Set", "x", "y").into(), ("Get", "a", "b").into()],
+        cmds: vec![("Set", "x", "y").into(), ("Get", "a", "").into()],
         deps: Some(Deps {
             dep_vec: vec![(12, 13).into(), (14, 15).into()],
         }),
@@ -51,7 +51,7 @@ fn test_macro_inst_all_arg() {
         inst!(
             (1, 2),
             (4, 2),
-            [("Set", "x", "y"), ("Get", "a", "b")],
+            [("Set", "x", "y"), ("Get", "a", "")],
             [(12, 13), (14, 15)],
             (2, 3),
             true,
@@ -64,7 +64,7 @@ fn test_macro_inst_all_arg() {
         inst!(
             InstanceId::from((1, 2)),
             (4, 2),
-            [("Set", "x", "y"), ("Get", "a", "b")],
+            [("Set", "x", "y"), ("Get", "a", "")],
             [(12, 13), (14, 15)],
             (2, 3),
             true,
@@ -77,7 +77,7 @@ fn test_macro_inst() {
     let mut want = Instance {
         instance_id: Some((1, 2).into()),
         ballot: Some((4, 1).into()),
-        cmds: vec![("Set", "x", "y").into(), ("Get", "a", "b").into()],
+        cmds: vec![("Set", "x", "y").into(), ("Get", "a", "").into()],
         deps: Some(Deps {
             dep_vec: vec![(11, 12).into(), (13, 14).into()],
         }),
@@ -88,31 +88,21 @@ fn test_macro_inst() {
     // only initial_deps
     assert_eq!(
         want,
-        inst!(
-            (1, 2),
-            (4, _),
-            [("Set", "x", "y"), ("Get", "a", "b")],
-            [(11, 12), (13, 14)]
-        )
+        inst!((1, 2), (4, _), [(x = y), (a)], [(11, 12), (13, 14)])
     );
 
     // deps
     want.deps = Some(instidvec![(10, 0), (11, 12)].into());
     assert_eq!(
         want,
-        inst!(
-            (1, 2),
-            (4, _),
-            [("Set", "x", "y"), ("Get", "a", "b")],
-            [(10, 0), (11, 12)],
-        )
+        inst!((1, 2), (4, _), [(x = y), (a)], [(10, 0), (11, 12)],)
     );
 
     // initial_deps is None
     want.deps = None;
     assert_eq!(
         want,
-        inst!((1, 2), (4, _), [("Set", "x", "y"), ("Get", "a", "b")],)
+        inst!((1, 2), (4, _), [("Set", "x", "y"), ("Get", "a", "")],)
     );
 }
 

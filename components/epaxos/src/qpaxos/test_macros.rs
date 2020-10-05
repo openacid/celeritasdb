@@ -120,6 +120,144 @@ fn test_macro_instids() {
 }
 
 #[test]
+fn test_macro_optinstid() {
+    let smiid: Option<InstanceId> = Some(InstanceId::from((1, 2)));
+
+    assert_eq!(smiid, optinstid!((1, 2)));
+    assert_eq!(smiid, optinstid!(InstanceId::from((1, 2))));
+
+    let iid = InstanceId::from((1, 2));
+    assert_eq!(smiid, optinstid!(iid));
+
+    assert_eq!(None, optinstid!(None));
+}
+
+#[test]
+fn test_macro_optdeps() {
+    let smdeps: Option<Deps> = Some(Deps::from(depvec![(1, 2), (3, 4)]));
+
+    assert_eq!(smdeps, optdeps!([(1, 2), (3, 4)]));
+    assert_eq!(None, optdeps!(None));
+}
+
+#[test]
+fn test_macro_instance_fields() {
+    // instance_id
+
+    let smiid: Option<InstanceId> = Some(InstanceId::from((1, 2)));
+    assert_eq!(
+        Option::<InstanceId>::None,
+        __instance_fields!(instance_id, None)
+    );
+    assert_eq!(smiid, __instance_fields!(instance_id, (1, 2)));
+    assert_eq!(
+        smiid,
+        __instance_fields!(instance_id, InstanceId::from((1, 2)))
+    );
+
+    // deps
+    let smdeps: Option<Deps> = Some(Deps::from(depvec![(1, 2), (3, 4)]));
+    assert_eq!(smdeps, __instance_fields!(deps, [(1, 2), (3, 4)]));
+    assert_eq!(Option::<Deps>::None, __instance_fields!(deps, None));
+}
+
+#[test]
+fn test_macro_inst_instid() {
+    assert_eq!(
+        Instance {
+            instance_id: None,
+            ..Default::default()
+        },
+        inst!(None)
+    );
+
+    let want = Instance {
+        instance_id: Some(InstanceId::from((1, 2))),
+        ..Default::default()
+    };
+    assert_eq!(want, inst!((1, 2)));
+
+    let iid = InstanceId::from((1, 2));
+    assert_eq!(want, inst!(iid));
+}
+#[test]
+fn test_macro_inst_instid_cmds() {
+    let want = Instance {
+        instance_id: Some((1, 2).into()),
+        cmds: vec![("Set", "x", "y").into(), ("Get", "a", "").into()],
+        ..Default::default()
+    };
+
+    let iid = InstanceId::from((1, 2));
+
+    assert_eq!(want, inst!((1, 2), [("Set", "x", "y"), ("Get", "a", "")]));
+    assert_eq!(want, inst!((1, 2), [(x = y), (a)]));
+    assert_eq!(want, inst!(iid, [(x = y), (a)]));
+
+    // instance_id accept None
+    assert_eq!(
+        Instance {
+            instance_id: None,
+            cmds: vec![("Set", "x", "y").into(), ("Get", "a", "").into()],
+            ..Default::default()
+        },
+        inst!(None, [(x = y), (a)])
+    );
+}
+#[test]
+fn test_macro_inst_instid_cmds_deps() {
+    let mut want = Instance {
+        instance_id: Some((1, 2).into()),
+        cmds: vec![("Set", "x", "y").into(), ("Get", "a", "").into()],
+        deps: Some(vec![dep!(11, 12), dep!(12, 13)].into()),
+        ..Default::default()
+    };
+
+    assert_eq!(want, inst!((1, 2), [(x = y), (a)], [(11, 12), (12, 13)]));
+    assert_eq!(want, inst!((1, 2), [(x = y), (a)], (11, [12, 13])));
+
+    let iid = InstanceId::from((1, 2));
+    assert_eq!(want, inst!(iid, [(x = y), (a)], (11, [12, 13])));
+
+    want.instance_id = None;
+    assert_eq!(want, inst!(None, [(x = y), (a)], (11, [12, 13])));
+}
+
+#[test]
+fn test_macro_inst_instid_blt_cmds() {
+    let want = Instance {
+        instance_id: Some((1, 2).into()),
+        ballot: Some((3, 1).into()),
+        cmds: vec![("Set", "x", "y").into(), ("Get", "a", "").into()],
+        ..Default::default()
+    };
+
+    assert_eq!(want, inst!((1, 2), (3, _), [(x = y), (a)]));
+
+    let iid = InstanceId::from((1, 2));
+    assert_eq!(want, inst!(iid, (3, _), [(x = y), (a)]));
+}
+#[test]
+fn test_macro_inst_instid_blt_cmds_deps() {
+    let want = Instance {
+        instance_id: Some((1, 2).into()),
+        ballot: Some((3, 1).into()),
+        cmds: vec![("Set", "x", "y").into(), ("Get", "a", "").into()],
+        deps: Some(vec![dep!(11, 12), dep!(12, 13)].into()),
+        ..Default::default()
+    };
+
+    assert_eq!(
+        want,
+        inst!((1, 2), (3, _), [(x = y), (a)], [(11, 12), (12, 13)])
+    );
+    assert_eq!(want, inst!((1, 2), (3, _), [(x = y), (a)], (11, [12, 13])));
+
+    let iid = InstanceId::from((1, 2));
+    assert_eq!(want, inst!(iid, (3, _), [(x = y), (a)], (11, [12, 13])));
+}
+
+#[test]
 fn test_macro_inst() {
     // instance_id, ballot, cmds
     let want = Instance {
@@ -135,32 +273,6 @@ fn test_macro_inst() {
         want,
         inst!((1, 2), (4, _), [("Set", "x", "y"), ("Get", "a", "b")])
     );
-
-    // instance_id, cmds
-    let want = Instance {
-        instance_id: Some((1, 2).into()),
-        ballot: None,
-        cmds: vec![("Set", "x", "y").into(), ("Get", "a", "").into()],
-        deps: None,
-        vballot: None,
-        committed: false,
-    };
-
-    assert_eq!(want, inst!((1, 2), [("Set", "x", "y"), ("Get", "a", "")]));
-    assert_eq!(want, inst!((1, 2), [(x = y), (a)]));
-
-    // instance_id, cmds, deps
-    let want = Instance {
-        instance_id: Some((1, 2).into()),
-        ballot: None,
-        cmds: vec![("Set", "x", "y").into(), ("Get", "a", "").into()],
-        deps: Some(vec![dep!(11, 12), dep!(12, 13)].into()),
-        vballot: None,
-        committed: false,
-    };
-
-    assert_eq!(want, inst!((1, 2), [(x = y), (a)], [(11, 12), (12, 13)]));
-    assert_eq!(want, inst!((1, 2), [(x = y), (a)], (11, [12, 13])));
 
     // instance_id, ballot, cmds, deps
     let want = Instance {
@@ -211,21 +323,17 @@ fn test_macro_inst() {
 
 #[test]
 fn test_macro_inst_kv() {
-    assert_eq!(
-        Instance {
-            instance_id: Some((1, 2).into()),
-            ..Default::default()
-        },
-        inst!(instance_id:(1, 2))
-    );
+    let want = Instance {
+        instance_id: Some((1, 2).into()),
+        ..Default::default()
+    };
+    assert_eq!(want, inst!(instance_id:(1, 2)));
 
-    assert_eq!(
-        Instance {
-            instance_id: None,
-            ..Default::default()
-        },
-        inst!(instance_id: None)
-    );
+    let want = Instance {
+        instance_id: None,
+        ..Default::default()
+    };
+    assert_eq!(want, inst!(instance_id: None));
 
     // with id
     assert_eq!(
@@ -261,13 +369,13 @@ fn test_macro_inst_kv() {
         inst!(ballot: None)
     );
 
-    assert_eq!(
-        Instance {
-            cmds: vec![("Set", "x", "1").into()],
-            ..Default::default()
-        },
-        inst!(cmds:[("Set", "x", "1")])
-    );
+    let want = Instance {
+        cmds: vec![("Set", "x", "y").into()],
+        ..Default::default()
+    };
+
+    assert_eq!(want, inst!(cmds:[("Set", "x", "y")]));
+    assert_eq!(want, inst!(cmds:[(x=y)]));
 
     assert_eq!(
         Instance {

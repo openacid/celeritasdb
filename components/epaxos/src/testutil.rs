@@ -31,16 +31,6 @@ pub use testutil_cluster::*;
 /// foo_inst!(iid)
 #[allow(unused_macros)]
 macro_rules! foo_inst {
-    ($id:expr,
-     [$( ($op:expr, $key:expr, $val:expr)),*],
-     [$(($dep_rid:expr, $dep_idx:expr)),* $(,)*]
-    ) => {
-        inst!($id, (0, _),
-              [$( ($op, $key, $val)),*],
-              [$(($dep_rid, $dep_idx)),*],
-              "withdeps"
-        )
-    };
 
     ($id:expr,
      $key:expr,
@@ -58,7 +48,7 @@ macro_rules! foo_inst {
         Instance {
             instance_id: None,
             ..inst!((0, 0), (0, _),
-                      [("Set", "x", "y")],
+                      [(x=y)],
                       [$(($dep_rid, $dep_idx)),*]
                      )
         }
@@ -68,15 +58,8 @@ macro_rules! foo_inst {
      [$(($dep_rid:expr, $dep_idx:expr)),* $(,)*]
     ) => {
         inst!($id, (0, _),
-              [("Set", "x", "y")],
+              [(x=y)],
               [$(($dep_rid, $dep_idx)),*]
-        )
-    };
-
-    ($id:expr
-    ) => {
-        inst!($id, (0, _),
-              [("Set", "x", "y")],
         )
     };
 }
