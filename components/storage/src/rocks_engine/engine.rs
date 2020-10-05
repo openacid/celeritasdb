@@ -28,7 +28,7 @@ impl RocksDBEngine {
     }
 
     /// make rocksdb column family handle
-    fn _make_cf_handle(&self, cf: DBColumnFamily) -> Result<&CFHandle, StorageError> {
+    fn _get_cf_handle(&self, cf: DBColumnFamily) -> Result<&CFHandle, StorageError> {
         match self.db.cf_handle(cf.into()) {
             Some(h) => Ok(h),
             None => Err(format!("got column family {:?} handle failed", cf).into()),
@@ -42,7 +42,8 @@ impl RocksDBEngine {
         include: bool,
         reverse: bool,
     ) -> Option<(Vec<u8>, Vec<u8>)> {
-        let cf = self._make_cf_handle(cf).ok()?;
+        // TODO: _get_cf_handle should not discard error.
+        let cf = self._get_cf_handle(cf).ok()?;
         let mut iter = self.db.iter_cf(cf);
 
         if !iter.seek(SeekKey::from(&key[..])).ok()? {
@@ -77,18 +78,18 @@ impl RocksDBEngine {
 
 impl RawKV for RocksDBEngine {
     fn set_raw(&self, cf: DBColumnFamily, key: &[u8], value: &[u8]) -> Result<(), StorageError> {
-        let cfh = self._make_cf_handle(cf)?;
+        let cfh = self._get_cf_handle(cf)?;
         Ok(self.db.put_cf(cfh, key, value)?)
     }
 
     fn get_raw(&self, cf: DBColumnFamily, key: &[u8]) -> Result<Option<Vec<u8>>, StorageError> {
-        let cfh = self._make_cf_handle(cf)?;
+        let cfh = self._get_cf_handle(cf)?;
         let r = self.db.get_cf(cfh, key)?;
         Ok(r.map(|x| x.to_vec()))
     }
 
     fn delete_raw(&self, cf: DBColumnFamily, key: &[u8]) -> Result<(), StorageError> {
-        let cfh = self._make_cf_handle(cf)?;
+        let cfh = self._get_cf_handle(cf)?;
         Ok(self.db.delete_cf(cfh, key)?)
     }
 
@@ -116,11 +117,11 @@ impl RawKV for RocksDBEngine {
             match en {
                 WriteEntry::Nil => {}
                 WriteEntry::Set(cf, k, v) => {
-                    let cfh = self._make_cf_handle(*cf)?;
+                    let cfh = self._get_cf_handle(*cf)?;
                     batch.put_cf(cfh, k, v)?;
                 }
                 WriteEntry::Delete(cf, k) => {
-                    let cfh = self._make_cf_handle(*cf)?;
+                    let cfh = self._get_cf_handle(*cf)?;
                     batch.delete_cf(cfh, k)?;
                 }
             }
