@@ -276,10 +276,7 @@ fn test_macro_inst() {
         committed: false,
     };
 
-    assert_eq!(
-        want,
-        inst!((1, 2), (4, _), [("Set", "x", "y"), ("Get", "a", "b")])
-    );
+    assert_eq!(want, inst!((1, 2), (4, _), [(x = y), ("Get", "a", "b")]));
 
     // instance_id, ballot, cmds, deps
     let want = Instance {
@@ -298,7 +295,7 @@ fn test_macro_inst() {
         inst!(
             (1, 2),
             (4, _),
-            [("Set", "x", "y"), ("Get", "a", "b")],
+            [(x = y), ("Get", "a", "b")],
             [(11, 12), (13, 14)]
         )
     );
@@ -320,7 +317,7 @@ fn test_macro_inst() {
         inst!(
             (1, 2),
             (4, 3),
-            [("Set", "x", "y"), ("Get", "a", "b")],
+            [(x = y), ("Get", "a", "b")],
             [(11, 12), (13, 14)],
             (2, 3),
             true

@@ -39,42 +39,10 @@ fn test_display_ballot() {
 
 #[test]
 fn test_display_command() {
-    let k: Vec<u8> = "foo".into();
-    let v: Vec<u8> = "bar".into();
-    assert_eq!(
-        "NoOp",
-        format!(
-            "{}",
-            Command {
-                op: OpCode::NoOp as i32,
-                key: k.clone(),
-                value: v.clone()
-            }
-        )
-    );
-    assert_eq!(
-        "Get:foo",
-        format!(
-            "{}",
-            Command {
-                op: OpCode::Get as i32,
-                key: k.clone(),
-                value: v.clone()
-            }
-        )
-    );
+    assert_eq!("NoOp", format!("{}", cmd!()));
+    assert_eq!("Get:foo", format!("{}", cmd!(foo)));
     assert_eq!("Set:foo=bar", format!("{}", cmd!(foo = bar)));
-    assert_eq!(
-        "Delete:foo",
-        format!(
-            "{}",
-            Command {
-                op: OpCode::Delete as i32,
-                key: k.clone(),
-                value: v.clone()
-            }
-        )
-    );
+    assert_eq!("Delete:foo", format!("{}", cmd!(del foo)));
 }
 
 #[test]

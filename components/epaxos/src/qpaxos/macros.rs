@@ -299,7 +299,7 @@ macro_rules! inst {
     // all arg
     ($id:expr,
      ($num:expr, $brid:expr),
-     [$( ($op:expr, $key:expr, $val:expr)),*],
+     [$($cmd:tt),*],
      [$( ($dep_rid:expr, $dep_idx:expr)),*],
      $vballot:expr,
      $committed:expr
@@ -308,7 +308,7 @@ macro_rules! inst {
         Instance {
             instance_id: Some($id.into()),
             ballot: Some(($num, $brid).into()),
-            cmds: cmdvec![$( ($op, $key, $val)),*].into(),
+            cmds: $crate::__instance_fields!(cmds, [$($cmd),*]),
             deps: Some(
                 depvec![$( ($dep_rid, $dep_idx)),*].into()
             ),
