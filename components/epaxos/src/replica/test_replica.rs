@@ -14,11 +14,53 @@ use storage::ToKey;
 use pretty_assertions::assert_eq;
 use prost::Message;
 
+/// Create an instance with command "set x=y".
+/// Use this when only deps are concerned.
+/// The deps and deps are all set to the second arg.
+/// supported pattern:
+/// foo_inst!(iid, key, deps) // an instance with a single cmd: Set `key`
+/// foo_inst!(iid, deps)
+/// foo_inst!(None, deps)
+#[allow(unused_macros)]
+macro_rules! foo_inst {
+
+    ($id:expr,
+     $key:expr,
+     [$(($dep_rid:expr, $dep_idx:expr)),* $(,)*]
+    ) => {
+        inst!($id, (0, _),
+              [("Set", $key, $key)],
+              [$(($dep_rid, $dep_idx)),*]
+        )
+    };
+
+    (None,
+     [$(($dep_rid:expr, $dep_idx:expr)),* $(,)*]
+    ) => {
+        Instance {
+            instance_id: None,
+            ..inst!((0, 0), (0, _),
+                      [(x=y)],
+                      [$(($dep_rid, $dep_idx)),*]
+                     )
+        }
+    };
+
+    ($id:expr,
+     [$(($dep_rid:expr, $dep_idx:expr)),* $(,)*]
+    ) => {
+        inst!($id, (0, _),
+              [(x=y)],
+              [$(($dep_rid, $dep_idx)),*]
+        )
+    };
+}
+
 fn new_foo_inst(leader_id: i64) -> Instance {
     inst!(
         (leader_id, 1),
         (2, _),
-        [("NoOp", "k1", "v1"), ("Get", "k2", "v2")],
+        [(), (k2)],
         [(1, 10), (2, 20), (3, 30)],
     )
 }

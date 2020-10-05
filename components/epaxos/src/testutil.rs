@@ -20,50 +20,6 @@ mod testutil_cluster;
 
 pub use testutil_cluster::*;
 
-/// Create an instance with command "set x=y".
-/// Use this when only deps are concerned.
-/// The initial_deps and deps are all set to the second arg.
-/// supported pattern:
-/// foo_inst!(iid, cmds, initial_deps)
-/// foo_inst!(iid, key, initial_deps) // an instance with a single cmd: Set `key`
-/// foo_inst!(iid, initial_deps)
-/// foo_inst!(None, initial_deps)
-/// foo_inst!(iid)
-#[allow(unused_macros)]
-macro_rules! foo_inst {
-
-    ($id:expr,
-     $key:expr,
-     [$(($dep_rid:expr, $dep_idx:expr)),* $(,)*]
-    ) => {
-        inst!($id, (0, _),
-              [("Set", $key, $key)],
-              [$(($dep_rid, $dep_idx)),*]
-        )
-    };
-
-    (None,
-     [$(($dep_rid:expr, $dep_idx:expr)),* $(,)*]
-    ) => {
-        Instance {
-            instance_id: None,
-            ..inst!((0, 0), (0, _),
-                      [(x=y)],
-                      [$(($dep_rid, $dep_idx)),*]
-                     )
-        }
-    };
-
-    ($id:expr,
-     [$(($dep_rid:expr, $dep_idx:expr)),* $(,)*]
-    ) => {
-        inst!($id, (0, _),
-              [(x=y)],
-              [$(($dep_rid, $dep_idx)),*]
-        )
-    };
-}
-
 #[allow(unused_macros)]
 macro_rules! test_enc_dec {
     // $msg is a prost Message.
