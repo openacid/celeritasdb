@@ -5,7 +5,6 @@ use crate::qpaxos::Instance;
 use crate::qpaxos::InstanceId;
 use crate::qpaxos::InstanceIdVec;
 use crate::qpaxos::MakeRequest;
-use crate::qpaxos::OpCode;
 
 use crate::instids;
 use crate::qpaxos::replicate_reply;
@@ -63,7 +62,7 @@ fn test_display_instance() {
     let inst = inst!(
         (1, 2),
         (3, 4),
-        [("Set", "a", "b"), ("Get", "c", "d")],
+        [(a = b), (c)],
         [(3, 4), (4, 5)],
         (6, 7),
         false,
@@ -77,7 +76,7 @@ fn test_display_replicate_request() {
     let inst = inst!(
         (1, 2),
         (3, 4),
-        [("Set", "a", "b"), ("Get", "c", "d")],
+        [(a = b), (c)],
         [(2, 3), (3, 4)],
         (2, 3),
         false,

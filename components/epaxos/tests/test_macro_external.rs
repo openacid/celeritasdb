@@ -1,7 +1,6 @@
 // test using macro outside a crate.
 // every test is a single crate
 
-use epaxos::cmdvec;
 use epaxos::dep;
 use epaxos::depvec;
 use epaxos::inst;
