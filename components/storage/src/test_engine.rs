@@ -20,6 +20,15 @@ impl ToKey for TestId {
         format!("key: {:?}", self.id).as_bytes().to_vec()
     }
 }
+impl FromKey for TestId {
+    fn from_key(&mut self, buf: &[u8]) {
+        let s = String::from_utf8_lossy(buf);
+        self.id = match u64::from_str_radix(&s, 16) {
+            Ok(v) => v as i64,
+            Err(_) => 0,
+        };
+    }
+}
 
 impl ToKey for TestInstance {
     fn to_key(&self) -> Vec<u8> {
@@ -198,5 +207,17 @@ pub fn test_status_trait(eng: &dyn AccessStatus<TestId, TestInstance>) {
     eng.set_status(&TestId { id: 0 }, &inst).unwrap();
 
     let got = eng.get_status(&TestId { id: 0 }).unwrap();
+    assert_eq!(Some(inst), got);
+}
+
+pub fn test_objectkv_trait(eng: &Storage) {
+    let noninst: Option<TestInstance> = eng.get(DBColumnFamily::Status, &TestId { id: 0 }).unwrap();
+    assert_eq!(None, noninst);
+
+    let inst = new_inst();
+    eng.set(DBColumnFamily::Status, &TestId { id: 0 }, &inst)
+        .unwrap();
+
+    let got: Option<TestInstance> = eng.get(DBColumnFamily::Status, &TestId { id: 0 }).unwrap();
     assert_eq!(Some(inst), got);
 }

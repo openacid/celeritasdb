@@ -203,6 +203,11 @@ pub trait ToKey {
     fn to_key(&self) -> Vec<u8>;
 }
 
+// TODO from_key and to_key should return error?
+pub trait FromKey {
+    fn from_key(&mut self, buf: &[u8]);
+}
+
 /// RawKV defines access API for raw key-value in byte stream.
 pub trait RawKV: Send + Sync {
     /// set a new key-value
@@ -225,6 +230,95 @@ pub trait RawKV: Send + Sync {
         -> Option<(Vec<u8>, Vec<u8>)>;
 
     fn write_batch(&self, entrys: &Vec<WriteEntry>) -> Result<(), StorageError>;
+}
+
+/// GetRawKV defines API to retrieve an inner struct that impl RawKV as underlying storage engine.
+pub trait GetRawKV {
+    fn get_rawkv_engine(&self) -> &Arc<dyn RawKV>;
+}
+
+/// RawKV defines access API to access object like KV.
+pub trait ObjectKV: GetRawKV {
+    /// set a new key-value
+    fn set<OK: ToKey, OV: Message + Default>(
+        &self,
+        cf: DBColumnFamily,
+        key: &OK,
+        value: &OV,
+    ) -> Result<(), StorageError> {
+        let kbytes = key.to_key();
+        let mut vbytes = vec![];
+        value.encode(&mut vbytes)?;
+
+        self.get_rawkv_engine().set_raw(cf, &kbytes, &vbytes)
+    }
+    fn get<OK: ToKey, OV: Message + Default>(
+        &self,
+        cf: DBColumnFamily,
+        key: &OK,
+    ) -> Result<Option<OV>, StorageError> {
+        let kbytes = key.to_key();
+        let vbytes = self.get_rawkv_engine().get_raw(cf, &kbytes)?;
+        let r = match vbytes {
+            Some(v) => OV::decode(v.as_slice())?,
+            None => return Ok(None),
+        };
+
+        Ok(Some(r))
+    }
+
+    /// delete a key
+    fn delete<OK: ToKey>(&self, cf: DBColumnFamily, key: &OK) -> Result<(), StorageError> {
+        let kbytes = key.to_key();
+        self.get_rawkv_engine().delete_raw(cf, &kbytes)
+    }
+
+    // TODO: replace next/prev with a single function "scan"?
+
+    /// next_kv returns a key-value pair greater than the given one(include=false),
+    /// or greater or equal the given one(include=true)
+    fn next<OK: FromKey + ToKey + Default, OV: Message + Default>(
+        &self,
+        cf: DBColumnFamily,
+        key: &OK,
+        include: bool,
+    ) -> Result<Option<(OK, OV)>, StorageError> {
+        // TODO RawKV::next()  should return a Result with StorageError.
+        let kbytes = key.to_key();
+        let nxt = self.get_rawkv_engine().next_raw(cf, &kbytes, include);
+        match nxt {
+            None => return Ok(None),
+            Some((k, v)) => {
+                let mut rstk: OK = OK::default();
+                rstk.from_key(k.as_slice());
+                let rstv: OV = OV::decode(v.as_slice())?;
+                return Ok(Some((rstk, rstv)));
+            }
+        }
+    }
+
+    /// prev_kv returns a key-value pair smaller than the given one(include=false),
+    /// or smaller or equal the given one(include=true)
+    fn prev<OK: FromKey + ToKey + Default, OV: Message + Default>(
+        &self,
+        cf: DBColumnFamily,
+        key: &OK,
+        include: bool,
+    ) -> Result<Option<(OK, OV)>, StorageError> {
+        let kbytes = key.to_key();
+        let nxt = self.get_rawkv_engine().prev_raw(cf, &kbytes, include);
+        match nxt {
+            None => return Ok(None),
+            Some((k, v)) => {
+                let mut rstk: OK = OK::default();
+                rstk.from_key(k.as_slice());
+                let rstv: OV = OV::decode(v.as_slice())?;
+                return Ok(Some((rstk, rstv)));
+            }
+        }
+    }
+
+    // fn write_batch(&self, entrys: &Vec<WriteEntry>) -> Result<(), StorageError>;
 }
 
 /// AccessRecord provides API to access user key/value record.
@@ -315,6 +409,41 @@ where
     STKEY: ToKey,
     STVAL: Message + Default,
 {
+}
+
+/// Storage exports the storage APIs.
+///
+/// Rust does not support method with generic types for a trait object.
+/// ```
+/// trait T {
+///     fn get<T>() {}
+/// }
+///
+/// Arc<dyn T> // illegal
+/// ```
+/// See https://stackoverflow.com/questions/30938499/why-is-the-sized-bound-necessary-in-this-trait#:~:text=In%20Rust%20all%20generic%20type,%3E%20T%20%7B%20...%20%7D
+///
+/// Thus in order to define a storage with various underlying engine and
+/// generic typed method, we need to separate these two part:
+/// ```
+/// struct Storage {            // Add method get<T>() etc to this outside struct.
+///     inner: Arc<dyn Engine>, // impl various engine at this level.
+/// }_
+/// ```
+pub struct Storage {
+    // TODO change Arc to Box
+    inner: Arc<dyn RawKV>,
+}
+impl GetRawKV for Storage {
+    fn get_rawkv_engine(&self) -> &Arc<dyn RawKV> {
+        &self.inner
+    }
+}
+impl ObjectKV for Storage {}
+impl Storage {
+    pub fn new(rawkv: Arc<dyn RawKV>) -> Self {
+        Storage { inner: rawkv }
+    }
 }
 
 impl<T> AccessRecord for T where T: RawKV {}

@@ -34,6 +34,7 @@ pub use service::*;
 pub use qpaxos::*;
 use std::sync::Arc;
 use storage::Engine;
+pub use storage::FromKey;
 pub use storage::*;
 pub type Storage = Arc<dyn Engine<InstanceId, Instance, ReplicaStatus, InstanceIds>>;
 

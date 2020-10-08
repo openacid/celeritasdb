@@ -8,6 +8,7 @@ use crate::traits::RawKV;
 use crate::WriteEntry;
 
 use crate::NameSpace;
+use crate::Storage;
 
 #[test]
 fn test_namespace() {
@@ -52,6 +53,16 @@ fn test_ns_storage() {
         let eng = Arc::new(eng);
         let w = NsStorage::new(5, eng);
         test_status_trait(&w);
+    }
+}
+#[test]
+fn test_ns_storage_objectkv() {
+    {
+        let eng = MemEngine::new().unwrap();
+        let eng = Arc::new(eng);
+        let w = NsStorage::new(5, eng);
+        let s = Storage::new(Arc::new(w));
+        test_objectkv_trait(&s);
     }
 }
 
