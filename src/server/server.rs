@@ -20,7 +20,7 @@ use epaxos::replica::ReplicaPeer;
 use epaxos::replication::bcast_msg;
 use epaxos::QPaxosImpl;
 use epaxos::ServerData;
-use epaxos::Storage;
+use storage::Storage;
 
 use crate::RedisApi;
 use crate::ServerError;

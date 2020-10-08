@@ -1,3 +1,5 @@
+use storage::AccessInstance;
+
 use crate::conf::GroupInfo;
 use crate::qpaxos::Command;
 use crate::qpaxos::MakeRequest;

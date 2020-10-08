@@ -9,7 +9,7 @@ use tokio;
 use cele::init_logger;
 use cele::Server;
 use epaxos::conf::ClusterInfo;
-use storage::MemEngine;
+use storage::{MemEngine, Storage};
 
 #[macro_use]
 extern crate slog_global;
@@ -46,7 +46,7 @@ fn main() {
     let sto = MemEngine::new().unwrap();
 
     let cluster = ClusterInfo::from_file(conffn).unwrap();
-    let server = Server::new(Arc::new(sto), cluster, node_id.into());
+    let server = Server::new(Storage::new(Arc::new(sto)), cluster, node_id.into());
 
     start(server);
     info!("serve returned");

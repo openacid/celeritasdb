@@ -3,7 +3,7 @@ use crate::NodeId;
 use crate::ServerData;
 use std::collections::BTreeMap;
 use std::sync::Arc;
-use storage::MemEngine;
+use storage::{MemEngine, Storage};
 
 lazy_static! {
     /// LOCAL_CLUSTERS predefines several single-node cluster for testing.
@@ -60,6 +60,7 @@ pub fn new_inmem_server_data(name: &str) -> ServerData {
 
     let sto = MemEngine::new().unwrap();
     let sto = Arc::new(sto);
+    let sto = Storage::new(sto);
 
     let node_ids: Vec<NodeId> = ci.nodes.keys().cloned().collect();
     let node_id: NodeId = node_ids[0].clone();

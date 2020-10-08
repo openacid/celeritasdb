@@ -18,7 +18,7 @@ use cele::Server;
 use epaxos::qpaxos::ReplicaId;
 use epaxos::replica::Replica;
 use epaxos::testutil;
-use epaxos::Storage;
+use storage::Storage;
 
 /// InProcContext setup a small cluster of an in-process server and a client.
 pub struct InProcContext {

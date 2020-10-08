@@ -2,11 +2,12 @@ use crate::qpaxos::Dep;
 use crate::qpaxos::{Command, OpCode};
 use crate::*;
 use std::sync::Arc;
-use storage::MemEngine;
+use storage::Storage;
+use storage::{MemEngine, RawKV};
 
 #[test]
 fn test_base_iter() {
-    let sto: Storage = Arc::new(MemEngine::new().unwrap());
+    let sto: Storage = Storage::new(Arc::new(MemEngine::new().unwrap()));
 
     let mut ks = vec![];
     let mut vs = vec![];
@@ -51,7 +52,7 @@ fn test_base_iter() {
 #[test]
 fn test_instance_iter() {
     let mut ints = Vec::<Instance>::new();
-    let sto: Storage = Arc::new(MemEngine::new().unwrap());
+    let sto: Storage = Storage::new(Arc::new(MemEngine::new().unwrap()));
 
     for rid in 0..3 {
         for idx in 0..10 {

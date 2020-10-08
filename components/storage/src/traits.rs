@@ -121,7 +121,7 @@ where
 impl<B, NS> NsStorage<B, NS>
 where
     NS: NameSpace,
-    B: RawKV + ?Sized,
+    B: RawKV,
 {
     /// new creates a NsStorage with `namespace` and a shared underlying storage `shared_sto`.
     pub fn new(namespace: NS, shared_sto: Arc<B>) -> Self {
@@ -232,13 +232,8 @@ pub trait RawKV: Send + Sync {
     fn write_batch(&self, entrys: &Vec<WriteEntry>) -> Result<(), StorageError>;
 }
 
-/// GetRawKV defines API to retrieve an inner struct that impl RawKV as underlying storage engine.
-pub trait GetRawKV {
-    fn get_rawkv_engine(&self) -> &Arc<dyn RawKV>;
-}
-
 /// RawKV defines access API to access object like KV.
-pub trait ObjectKV: GetRawKV {
+pub trait ObjectKV: RawKV {
     /// set a new key-value
     fn set<OK: ToKey, OV: Message + Default>(
         &self,
@@ -250,7 +245,7 @@ pub trait ObjectKV: GetRawKV {
         let mut vbytes = vec![];
         value.encode(&mut vbytes)?;
 
-        self.get_rawkv_engine().set_raw(cf, &kbytes, &vbytes)
+        self.set_raw(cf, &kbytes, &vbytes)
     }
     fn get<OK: ToKey, OV: Message + Default>(
         &self,
@@ -258,7 +253,7 @@ pub trait ObjectKV: GetRawKV {
         key: &OK,
     ) -> Result<Option<OV>, StorageError> {
         let kbytes = key.to_key();
-        let vbytes = self.get_rawkv_engine().get_raw(cf, &kbytes)?;
+        let vbytes = self.get_raw(cf, &kbytes)?;
         let r = match vbytes {
             Some(v) => OV::decode(v.as_slice())?,
             None => return Ok(None),
@@ -270,7 +265,7 @@ pub trait ObjectKV: GetRawKV {
     /// delete a key
     fn delete<OK: ToKey>(&self, cf: DBColumnFamily, key: &OK) -> Result<(), StorageError> {
         let kbytes = key.to_key();
-        self.get_rawkv_engine().delete_raw(cf, &kbytes)
+        self.delete_raw(cf, &kbytes)
     }
 
     // TODO: replace next/prev with a single function "scan"?
@@ -285,7 +280,7 @@ pub trait ObjectKV: GetRawKV {
     ) -> Result<Option<(OK, OV)>, StorageError> {
         // TODO RawKV::next()  should return a Result with StorageError.
         let kbytes = key.to_key();
-        let nxt = self.get_rawkv_engine().next_raw(cf, &kbytes, include);
+        let nxt = self.next_raw(cf, &kbytes, include);
         match nxt {
             None => return Ok(None),
             Some((k, v)) => {
@@ -306,7 +301,7 @@ pub trait ObjectKV: GetRawKV {
         include: bool,
     ) -> Result<Option<(OK, OV)>, StorageError> {
         let kbytes = key.to_key();
-        let nxt = self.get_rawkv_engine().prev_raw(cf, &kbytes, include);
+        let nxt = self.prev_raw(cf, &kbytes, include);
         match nxt {
             None => return Ok(None),
             Some((k, v)) => {
@@ -414,7 +409,7 @@ where
 /// Storage exports the storage APIs.
 ///
 /// Rust does not support method with generic types for a trait object.
-/// ```
+/// ```ignore
 /// trait T {
 ///     fn get<T>() {}
 /// }
@@ -425,51 +420,89 @@ where
 ///
 /// Thus in order to define a storage with various underlying engine and
 /// generic typed method, we need to separate these two part:
-/// ```
+/// ```ignore
 /// struct Storage {            // Add method get<T>() etc to this outside struct.
 ///     inner: Arc<dyn Engine>, // impl various engine at this level.
-/// }_
+/// }
 /// ```
+#[derive(Clone)]
 pub struct Storage {
     // TODO change Arc to Box
     inner: Arc<dyn RawKV>,
 }
-impl GetRawKV for Storage {
-    fn get_rawkv_engine(&self) -> &Arc<dyn RawKV> {
-        &self.inner
-    }
-}
-impl ObjectKV for Storage {}
+
 impl Storage {
     pub fn new(rawkv: Arc<dyn RawKV>) -> Self {
         Storage { inner: rawkv }
     }
+    pub fn get_inner(&self) -> &Arc<dyn RawKV> {
+        &self.inner
+    }
+}
+impl ObjectKV for Storage {}
+
+// Pass raw-kv api to inner storage engine.
+impl RawKV for Storage {
+    fn set_raw(&self, cf: DBColumnFamily, key: &[u8], value: &[u8]) -> Result<(), StorageError> {
+        self.get_inner().set_raw(cf, key, value)
+    }
+
+    fn get_raw(&self, cf: DBColumnFamily, key: &[u8]) -> Result<Option<Vec<u8>>, StorageError> {
+        self.get_inner().get_raw(cf, key)
+    }
+
+    fn delete_raw(&self, cf: DBColumnFamily, key: &[u8]) -> Result<(), StorageError> {
+        self.get_inner().delete_raw(cf, key)
+    }
+
+    fn next_raw(
+        &self,
+        cf: DBColumnFamily,
+        key: &[u8],
+        include: bool,
+    ) -> Option<(Vec<u8>, Vec<u8>)> {
+        self.get_inner().next_raw(cf, key, include)
+    }
+
+    fn prev_raw(
+        &self,
+        cf: DBColumnFamily,
+        key: &[u8],
+        include: bool,
+    ) -> Option<(Vec<u8>, Vec<u8>)> {
+        self.get_inner().prev_raw(cf, key, include)
+    }
+
+    fn write_batch(&self, entrys: &Vec<WriteEntry>) -> Result<(), StorageError> {
+        self.get_inner().write_batch(entrys)
+    }
 }
 
-impl<T> AccessRecord for T where T: RawKV {}
+impl AccessRecord for Storage {}
+// impl<T> AccessRecord for T where T: RawKV {}
 
-impl<T, IK, IV> AccessInstance<IK, IV> for T
-where
-    T: RawKV,
-    IK: ToKey,
-    IV: Message + ToKey + Default,
-{
-}
+// impl<T, IK, IV> AccessInstance<IK, IV> for T
+// where
+//     T: RawKV,
+//     IK: ToKey,
+//     IV: Message + ToKey + Default,
+// {
+// }
 
-impl<T, IK, IV> AccessStatus<IK, IV> for T
-where
-    T: RawKV,
-    IK: ToKey,
-    IV: Message + Default,
-{
-}
+// impl<T, IK, IV> AccessStatus<IK, IV> for T
+// where
+//     T: RawKV,
+//     IK: ToKey,
+//     IV: Message + Default,
+// {
+// }
 
-impl<T, IK, IV, STKEY, STVAL> Engine<IK, IV, STKEY, STVAL> for T
-where
-    T: RawKV,
-    IK: ToKey,
-    IV: Message + ToKey + Default,
-    STKEY: ToKey,
-    STVAL: Message + Default,
-{
-}
+// impl<T, IK, IV, STKEY, STVAL> Engine<IK, IV, STKEY, STVAL> for T
+// where
+//     T: RawKV,
+//     IK: ToKey,
+//     IV: Message + ToKey + Default,
+//     STKEY: ToKey,
+//     STVAL: Message + Default,
+// {
+// }

@@ -12,7 +12,11 @@ use crate::InstanceIds;
 use crate::ReplicaId;
 use crate::ReplicaStatus;
 use std::collections::HashMap;
+use storage::AccessInstance;
+use storage::AccessRecord;
+use storage::AccessStatus;
 use storage::MemEngine;
+use storage::Storage;
 use tokio::sync::oneshot;
 
 fn new_replica() -> Replica {
@@ -20,7 +24,7 @@ fn new_replica() -> Replica {
         1,
         vec![1, 2, 3],
         vec![],
-        Arc::new(MemEngine::new().unwrap()),
+        Storage::new(Arc::new(MemEngine::new().unwrap())),
     )
 }
 

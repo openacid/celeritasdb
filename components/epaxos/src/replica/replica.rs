@@ -21,11 +21,10 @@ use crate::qpaxos::ReplicateRequest;
 use crate::replica::ReplicaError;
 use crate::replication::RpcHandlerError;
 use crate::Iter;
-use crate::Storage;
 use std::collections::HashMap;
 use std::sync::Arc;
-use storage::NsStorage;
-use storage::StorageError;
+use storage::{AccessInstance, NsStorage, Storage};
+use storage::{RawKV, StorageError};
 use tokio::sync::oneshot::Sender;
 use tokio::sync::Mutex;
 
@@ -93,7 +92,14 @@ pub struct Replica {
 
 impl Replica {
     /// create a new Replica
-    pub fn new(rid: ReplicaId, cinfo: &ClusterInfo, sto: Storage) -> Result<Replica, ReplicaError> {
+    pub fn new<T: RawKV>(
+        rid: ReplicaId,
+        cinfo: &ClusterInfo,
+        sto: T,
+    ) -> Result<Replica, ReplicaError>
+    where
+        T: 'static,
+    {
         let group = cinfo
             .get_group(rid)
             .ok_or(ReplicaError::ReplicaNotFound(rid))?;
@@ -117,7 +123,7 @@ impl Replica {
             replica_id: rid,
             group_replica_ids: group.replicas.keys().cloned().collect(),
             peers,
-            storage: Arc::new(NsStorage::new(rid, sto)),
+            storage: Storage::new(Arc::new(NsStorage::new(rid, Arc::new(sto)))),
             // TODO get from conf
             committed_timeout: 10000,
             waiting_replies: Mutex::new(HashMap::new()),

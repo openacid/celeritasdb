@@ -5,6 +5,7 @@ use epaxos::qpaxos::*;
 
 use epaxos::cmdvec;
 use epaxos::depvec;
+use storage::AccessInstance;
 
 use std::time::Duration;
 

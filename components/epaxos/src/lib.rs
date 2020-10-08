@@ -27,16 +27,20 @@ pub mod replication;
 
 pub use conf::*;
 pub use iters::*;
+pub use qpaxos::*;
 pub use replication::*;
 pub use serverdata::*;
 pub use service::*;
 
-pub use qpaxos::*;
-use std::sync::Arc;
-use storage::Engine;
-pub use storage::FromKey;
-pub use storage::*;
-pub type Storage = Arc<dyn Engine<InstanceId, Instance, ReplicaStatus, InstanceIds>>;
+use storage::AccessInstance;
+use storage::AccessStatus;
+use storage::DBColumnFamily;
+use storage::Storage;
+use storage::ToKey;
+use storage::WriteEntry;
+
+impl AccessInstance<InstanceId, Instance> for Storage {}
+impl AccessStatus<ReplicaStatus, InstanceIds> for Storage {}
 
 use prost::Message;
 impl From<&Command> for WriteEntry {

@@ -2,7 +2,7 @@ use crate::conf::ClusterInfo;
 use crate::RangeLookupError;
 use crate::ServerData;
 use std::sync::Arc;
-use storage::MemEngine;
+use storage::{MemEngine, Storage};
 
 #[test]
 fn test_serverdata() {
@@ -24,7 +24,7 @@ groups:
 ";
     let ci = ClusterInfo::from_str(yaml).unwrap();
     let sto = MemEngine::new().unwrap();
-    let sto = Arc::new(sto);
+    let sto = Storage::new(Arc::new(sto));
     {
         // test lookup group
         let node_id = "192.168.0.1:4442";

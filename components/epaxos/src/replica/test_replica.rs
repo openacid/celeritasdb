@@ -6,10 +6,9 @@ use crate::conf::ClusterInfo;
 use crate::qpaxos::*;
 use crate::replica::*;
 use crate::testutil;
-use crate::Storage;
-use storage::DBColumnFamily;
-use storage::MemEngine;
-use storage::ToKey;
+use storage::{AccessInstance, ToKey};
+use storage::{DBColumnFamily, Storage};
+use storage::{MemEngine, RawKV};
 
 use pretty_assertions::assert_eq;
 use prost::Message;
@@ -66,7 +65,7 @@ fn new_foo_inst(leader_id: i64) -> Instance {
 }
 
 fn new_mem_sto() -> Storage {
-    Arc::new(MemEngine::new().unwrap())
+    Storage::new(Arc::new(MemEngine::new().unwrap()))
 }
 
 /// Create a stupid replica with some instances stored.

@@ -7,8 +7,8 @@ use std::time::Duration;
 use crate::qpaxos::*;
 use crate::replica::{Replica, ReplicaPeer};
 use crate::QPaxosImpl;
-use crate::Storage;
 use storage::MemEngine;
+use storage::Storage;
 
 use tokio::sync::oneshot;
 use tokio::sync::Mutex;
@@ -60,6 +60,7 @@ pub struct TestCluster {
 impl TestCluster {
     pub fn new(replica_cnt: i32) -> Self {
         let sto = Arc::new(MemEngine::new().unwrap());
+        let sto = Storage::new(sto);
 
         let mut addrs = HashMap::new();
         for i in 0..replica_cnt {
