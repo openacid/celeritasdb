@@ -18,7 +18,6 @@ fn new_eng() -> Storage {
     eng
 }
 
-//TODO test
 #[test]
 fn test_status_trait() {
     let eng = new_eng();
