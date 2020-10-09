@@ -8,9 +8,7 @@ use epaxos::qpaxos::*;
 use std::time::Duration;
 
 use crate::support::*;
-use storage::AccessInstance;
-use storage::AccessRecord;
-use storage::AccessStatus;
+use epaxos::StorageAPI;
 use tokio::time::delay_for;
 
 mod support;

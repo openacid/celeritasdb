@@ -6,7 +6,8 @@ use crate::conf::ClusterInfo;
 use crate::qpaxos::*;
 use crate::replica::*;
 use crate::testutil;
-use storage::{AccessInstance, ToKey};
+use crate::StorageAPI;
+use storage::ToKey;
 use storage::{DBColumnFamily, Storage};
 use storage::{MemEngine, RawKV};
 

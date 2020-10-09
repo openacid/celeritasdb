@@ -1,6 +1,3 @@
-use crate::AccessInstance;
-use crate::AccessRecord;
-use crate::AccessStatus;
 use crate::DBColumnFamily;
 use crate::FromKey;
 use crate::ObjectKV;
@@ -146,77 +143,6 @@ pub fn test_base_trait(eng: &dyn RawKV) {
 
     eng.write_batch(&cmds).unwrap();
     assert_eq!(None, eng.get_raw(DBColumnFamily::Record, &k1).unwrap());
-}
-
-pub fn test_record_trait(eng: &dyn AccessRecord) {
-    let none = eng.next_kv(&"init".as_bytes().to_vec(), true);
-    assert_eq!(none, None);
-
-    let none = eng.prev_kv(&"init".as_bytes().to_vec(), true);
-    assert_eq!(none, None);
-
-    let prefix = "k".as_bytes().to_vec();
-    let kvs = vec![
-        ("k0".as_bytes().to_vec(), "v0".as_bytes().to_vec()),
-        ("k1".as_bytes().to_vec(), "v1".as_bytes().to_vec()),
-        ("k2".as_bytes().to_vec(), "v2".as_bytes().to_vec()),
-        ("k3".as_bytes().to_vec(), "v3".as_bytes().to_vec()),
-    ];
-
-    eng.set_kv(&kvs[0].0, &kvs[0].1).unwrap();
-    let v0 = eng.get_kv(&kvs[0].0).unwrap().unwrap();
-    assert_eq!(v0, kvs[0].1.clone());
-
-    let next0 = eng.next_kv(&prefix, true);
-    assert_eq!(next0, Some(kvs[0].clone()));
-
-    for (k, v) in kvs.iter() {
-        eng.set_kv(k, v).unwrap();
-    }
-
-    let next0 = eng.next_kv(&kvs[0].0, true);
-    assert_eq!(next0, Some(kvs[0].clone()));
-
-    let next1 = eng.next_kv(&kvs[0].0, false);
-    assert_eq!(next1, Some(kvs[1].clone()));
-
-    let next_last = eng.next_kv(&kvs[3].0.clone(), false);
-    assert_eq!(next_last, None);
-
-    let prev0 = eng.prev_kv(&kvs[3].0, true);
-    assert_eq!(prev0, Some(kvs[3].clone()));
-
-    let prev1 = eng.prev_kv(&kvs[3].0, false);
-    assert_eq!(prev1, Some(kvs[2].clone()));
-
-    let prev2 = eng.prev_kv(&kvs[0].0, false);
-    assert_eq!(prev2, None);
-
-    eng.delete_kv(&kvs[0].0).unwrap();
-    let none = eng.get_kv(&kvs[0].0).unwrap();
-    assert!(none.is_none());
-}
-
-pub fn test_instance_trait(eng: &dyn AccessInstance<TestId, TestInstance>) {
-    let noninst = eng.get_instance(TestId { id: 0 }).unwrap();
-    assert_eq!(None, noninst);
-
-    let inst = new_inst();
-    eng.set_instance(&inst).unwrap();
-
-    let got = eng.get_instance(TestId { id: 0 }).unwrap();
-    assert_eq!(Some(inst), got);
-}
-
-pub fn test_status_trait(eng: &dyn AccessStatus<TestId, TestInstance>) {
-    let noninst = eng.get_status(&TestId { id: 0 }).unwrap();
-    assert_eq!(None, noninst);
-
-    let inst = new_inst();
-    eng.set_status(&TestId { id: 0 }, &inst).unwrap();
-
-    let got = eng.get_status(&TestId { id: 0 }).unwrap();
-    assert_eq!(Some(inst), got);
 }
 
 pub fn test_objectkv_trait(eng: &Storage) {

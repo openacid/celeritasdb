@@ -7,8 +7,9 @@ use crate::replica::ExecRst;
 use crate::replica::Replica;
 use crate::InstanceIds;
 use crate::ReplicaStatus;
-use storage::{AccessInstance, AccessRecord, RawKV, StorageError};
-use storage::{AccessStatus, WriteEntry};
+use crate::StorageAPI;
+use storage::WriteEntry;
+use storage::{RawKV, StorageError};
 use tokio::sync::oneshot::Sender;
 
 thread_local! {

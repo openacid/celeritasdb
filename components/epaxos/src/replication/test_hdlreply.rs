@@ -6,7 +6,8 @@ use crate::qpaxos::*;
 use crate::replica::*;
 use crate::replication::*;
 use crate::testutil;
-use storage::{AccessInstance, MemEngine, Storage};
+use crate::StorageAPI;
+use storage::{MemEngine, Storage};
 
 #[cfg(test)]
 use pretty_assertions::assert_eq;

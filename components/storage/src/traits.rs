@@ -316,105 +316,15 @@ pub trait ObjectKV: RawKV {
     // fn write_batch(&self, entrys: &Vec<WriteEntry>) -> Result<(), StorageError>;
 }
 
-/// AccessRecord provides API to access user key/value record.
-pub trait AccessRecord: RawKV {
-    fn set_kv(&self, key: &[u8], value: &[u8]) -> Result<(), StorageError> {
-        self.set_raw(DBColumnFamily::Record, key, value)
-    }
-
-    fn get_kv(&self, key: &[u8]) -> Result<Option<Vec<u8>>, StorageError> {
-        self.get_raw(DBColumnFamily::Record, key)
-    }
-
-    fn delete_kv(&self, key: &[u8]) -> Result<(), StorageError> {
-        self.delete_raw(DBColumnFamily::Record, key)
-    }
-
-    fn next_kv(&self, key: &[u8], include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
-        self.next_raw(DBColumnFamily::Record, key, include)
-    }
-
-    fn prev_kv(&self, key: &[u8], include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
-        self.prev_raw(DBColumnFamily::Record, key, include)
-    }
-}
-
-/// AccessInstance provides API to access instances
-pub trait AccessInstance<IK, IV>: RawKV
-where
-    IK: ToKey,
-    IV: Message + ToKey + Default,
-{
-    /// set an instance
-    fn set_instance(&self, v: &IV) -> Result<(), StorageError> {
-        // TODO does not guarantee in a transaction
-        let iid = v.to_key();
-        let mut value = vec![];
-        v.encode(&mut value)?;
-
-        self.set_raw(DBColumnFamily::Instance, &iid, &value)
-    }
-
-    /// get an instance with instance id
-    fn get_instance(&self, k: IK) -> Result<Option<IV>, StorageError> {
-        let key = k.to_key();
-        let vbs = self.get_raw(DBColumnFamily::Instance, &key)?;
-        let r = match vbs {
-            Some(v) => IV::decode(v.as_slice())?,
-            None => return Ok(None),
-        };
-
-        Ok(Some(r))
-    }
-}
-
-/// AccessStatus provides API to access status
-pub trait AccessStatus<STKEY, STVAL>: RawKV
-where
-    STKEY: ToKey,
-    STVAL: Message + Default,
-{
-    /// set status
-    fn set_status(&self, key: &STKEY, value: &STVAL) -> Result<(), StorageError> {
-        let kbytes = key.to_key();
-        let mut vbytes = vec![];
-        value.encode(&mut vbytes)?;
-
-        self.set_raw(DBColumnFamily::Status, &kbytes, &vbytes)
-    }
-
-    /// get an status with key
-    fn get_status(&self, key: &STKEY) -> Result<Option<STVAL>, StorageError> {
-        let kbytes = key.to_key();
-        let vbytes = self.get_raw(DBColumnFamily::Status, &kbytes)?;
-        let r = match vbytes {
-            Some(v) => STVAL::decode(v.as_slice())?,
-            None => return Ok(None),
-        };
-
-        Ok(Some(r))
-    }
-}
-
-pub trait Engine<IK, IV, STKEY, STVAL>:
-    AccessRecord + AccessInstance<IK, IV> + AccessStatus<STKEY, STVAL>
-where
-    IK: ToKey,
-    IV: Message + ToKey + Default,
-    STKEY: ToKey,
-    STVAL: Message + Default,
-{
-}
-
 /// Storage exports the storage APIs.
 ///
 /// Rust does not support method with generic types for a trait object.
 /// ```ignore
-/// trait T {
+/// trait Typ {
 ///     fn get<T>() {}
 /// }
 ///
-/// Arc<dyn T> // illegal
+/// Arc<dyn Typ> // illegal
 /// ```
 /// See https://stackoverflow.com/questions/30938499/why-is-the-sized-bound-necessary-in-this-trait#:~:text=In%20Rust%20all%20generic%20type,%3E%20T%20%7B%20...%20%7D
 ///
@@ -477,32 +387,3 @@ impl RawKV for Storage {
         self.get_inner().write_batch(entrys)
     }
 }
-
-impl AccessRecord for Storage {}
-// impl<T> AccessRecord for T where T: RawKV {}
-
-// impl<T, IK, IV> AccessInstance<IK, IV> for T
-// where
-//     T: RawKV,
-//     IK: ToKey,
-//     IV: Message + ToKey + Default,
-// {
-// }
-
-// impl<T, IK, IV> AccessStatus<IK, IV> for T
-// where
-//     T: RawKV,
-//     IK: ToKey,
-//     IV: Message + Default,
-// {
-// }
-
-// impl<T, IK, IV, STKEY, STVAL> Engine<IK, IV, STKEY, STVAL> for T
-// where
-//     T: RawKV,
-//     IK: ToKey,
-//     IV: Message + ToKey + Default,
-//     STKEY: ToKey,
-//     STVAL: Message + Default,
-// {
-// }

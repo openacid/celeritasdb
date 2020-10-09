@@ -100,28 +100,13 @@ impl RawKV for MemEngine {
 
 #[cfg(test)]
 mod tests {
-    use std::sync::Arc;
 
     use crate::test_engine::*;
     use crate::*;
 
     #[test]
     fn test_engine() {
-        {
-            let eng = MemEngine::new().unwrap();
-            test_base_trait(&eng);
-        }
-
-        {
-            let eng = MemEngine::new().unwrap();
-            let sto = Storage::new(Arc::new(eng));
-            test_record_trait(&sto);
-        }
-
-        // {
-        //     let eng = MemEngine::new().unwrap();
-        //     let sto = Storage::new(Arc::new(eng));
-        //     test_instance_trait(&sto);
-        // }
+        let eng = MemEngine::new().unwrap();
+        test_base_trait(&eng);
     }
 }

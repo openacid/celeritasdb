@@ -1,5 +1,3 @@
-use storage::AccessInstance;
-
 use crate::conf::GroupInfo;
 use crate::qpaxos::Command;
 use crate::qpaxos::MakeRequest;
@@ -10,6 +8,7 @@ use crate::replication::bcast_msg;
 use crate::replication::handle_accept_reply;
 use crate::replication::handle_prepare_reply;
 use crate::ReplicationError;
+use crate::StorageAPI;
 
 /// replicate runs replication algo to forward instance to other replica in leader's group.
 /// An OK return value indicate the instance becomes safe, but not yet committed.

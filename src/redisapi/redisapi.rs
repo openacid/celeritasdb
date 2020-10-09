@@ -23,7 +23,7 @@ use epaxos::qpaxos::OpCode;
 use epaxos::replica::ReplicaPeer;
 use epaxos::replicate;
 use epaxos::ServerData;
-use storage::AccessInstance;
+use epaxos::StorageAPI;
 
 use crate::RedisApiError;
 use parse::Response;

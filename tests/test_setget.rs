@@ -1,11 +1,11 @@
 #[cfg(test)]
 use pretty_assertions::assert_eq;
 
-use epaxos::qpaxos::*;
-
 use epaxos::cmdvec;
 use epaxos::depvec;
-use storage::AccessInstance;
+
+use epaxos::qpaxos::*;
+use epaxos::StorageAPI;
 
 use std::time::Duration;
 
