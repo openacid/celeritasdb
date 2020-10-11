@@ -171,7 +171,7 @@ pub trait ObjectKV: RawKV + WithNameSpace {
         self.delete_raw(cf, &kbytes)
     }
 
-    /// next_kv returns a key-value pair greater than the given one(include=false),
+    /// next returns a key-value pair greater than the given one(include=false),
     /// or greater or equal the given one(include=true)
     fn next<OK: AsStorageKey, OV: Message + Default>(
         &self,

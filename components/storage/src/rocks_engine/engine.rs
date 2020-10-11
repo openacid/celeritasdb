@@ -126,7 +126,7 @@ impl RawKV for RocksDBEngine {
 #[cfg(test)]
 mod tests {
 
-    use crate::test_engine::*;
+    use crate::test_storage::test_base_trait;
     use crate::*;
     use tempfile::Builder;
 

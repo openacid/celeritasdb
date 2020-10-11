@@ -2,19 +2,14 @@
 extern crate quick_error;
 
 mod errors;
-pub use errors::*;
-
+mod mem_engine;
 mod rocks_engine;
-pub use rocks_engine::*;
-
 mod traits;
+
+pub use errors::*;
+pub use mem_engine::*;
+pub use rocks_engine::*;
 pub use traits::*;
 
-mod mem_engine;
-pub use mem_engine::*;
-
 #[cfg(test)]
-mod test_namespace;
-
-#[cfg(test)]
-mod test_engine;
+mod test_storage;

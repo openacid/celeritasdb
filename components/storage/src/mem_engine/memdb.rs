@@ -67,46 +67,6 @@ impl RawKV for MemEngine {
         None
     }
 
-    // fn next_raw(
-    //     &self,
-    //     cf: DBColumnFamily,
-    //     key: &[u8],
-    //     include: bool,
-    // ) -> Option<(Vec<u8>, Vec<u8>)> {
-    //     let mut cfs = self._db.lock().unwrap();
-    //     let bt = cfs.entry(cf.into()).or_insert(BTreeMap::new());
-
-    //     for (k, v) in bt.range(key.to_vec()..) {
-    //         if include == false && key == k.as_slice() {
-    //             continue;
-    //         }
-
-    //         return Some((k.to_vec(), v.to_vec()));
-    //     }
-
-    //     None
-    // }
-
-    // fn prev_raw(
-    //     &self,
-    //     cf: DBColumnFamily,
-    //     key: &[u8],
-    //     include: bool,
-    // ) -> Option<(Vec<u8>, Vec<u8>)> {
-    //     let mut cfs = self._db.lock().unwrap();
-    //     let bt = cfs.entry(cf.into()).or_insert(BTreeMap::new());
-
-    //     for (k, v) in bt.range((Unbounded, Included(key.to_vec()))).rev() {
-    //         if include == false && key == k.as_slice() {
-    //             continue;
-    //         }
-
-    //         return Some((k.to_vec(), v.to_vec()));
-    //     }
-
-    //     None
-    // }
-
     // TODO now just execute these commands in order
     fn write_batch(&self, entrys: &Vec<WriteEntry>) -> Result<(), StorageError> {
         for en in entrys {
@@ -128,8 +88,8 @@ impl RawKV for MemEngine {
 #[cfg(test)]
 mod tests {
 
-    use crate::test_engine::*;
-    use crate::*;
+    use crate::test_storage::test_base_trait;
+    use crate::MemEngine;
 
     #[test]
     fn test_engine() {
