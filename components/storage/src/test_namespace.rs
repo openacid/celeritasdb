@@ -1,35 +1,21 @@
-use crate::test_engine::*;
 use crate::DBColumnFamily;
 use crate::MemEngine;
-use crate::NsStorage;
+use crate::ObjectKV;
+use crate::{test_engine::*, NameSpace};
+use prost::Message;
 use std::sync::Arc;
 
 use crate::traits::RawKV;
 use crate::WriteEntry;
 
-use crate::NameSpace;
 use crate::Storage;
-
-#[test]
-fn test_namespace() {
-    assert_eq!("5/foo".as_bytes().to_vec(), 5i64.wrap_ns("foo".as_bytes()));
-    assert_eq!(
-        "bar/foo".as_bytes().to_vec(),
-        "bar".wrap_ns("foo".as_bytes())
-    );
-
-    assert_eq!(None, 5i64.unwrap_ns("6/foo".as_bytes()));
-    assert_eq!(
-        Some("foo".as_bytes().to_vec()),
-        5i64.unwrap_ns("5/foo".as_bytes())
-    );
-}
+use crate::NS;
 
 #[test]
 fn test_ns_storage() {
     let eng = MemEngine::new().unwrap();
     let eng = Arc::new(eng);
-    let w = NsStorage::new(5, eng);
+    let w = Storage::new(NS { ns: "5/".into() }, eng);
     test_base_trait(&w);
 }
 #[test]
@@ -37,69 +23,98 @@ fn test_ns_storage_objectkv() {
     {
         let eng = MemEngine::new().unwrap();
         let eng = Arc::new(eng);
-        let w = NsStorage::new(5, eng);
-        let s = Storage::new(Arc::new(w));
-        test_objectkv_trait(&s);
+        let w = Storage::new(NS { ns: "5/".into() }, eng);
+        test_objectkv_trait(&w);
     }
+}
+
+fn two_storages() -> (Storage, Storage) {
+    let eng = MemEngine::new().unwrap();
+    let eng = Arc::new(eng);
+    let w1 = Storage::new(NS { ns: "1/".into() }, eng.clone());
+    let w2 = Storage::new(NS { ns: "2/".into() }, eng.clone());
+    (w1, w2)
 }
 
 #[test]
 fn test_ns_storage_no_overriding() {
-    let eng = MemEngine::new().unwrap();
-    let eng = Arc::new(eng);
-    let w1 = NsStorage::new(1, eng.clone());
-    let w2 = NsStorage::new(2, eng.clone());
-
     let k = "foo".as_bytes().to_vec();
     let v1 = "111".as_bytes().to_vec();
     let v2 = "222".as_bytes().to_vec();
 
     {
-        // no overriding for get/set
+        // rawkv api does not support name space.
+        let (w1, w2) = two_storages();
 
         w1.set_raw(DBColumnFamily::Status, &k, &v1).unwrap();
         w2.set_raw(DBColumnFamily::Status, &k, &v2).unwrap();
 
         let r = w1.get_raw(DBColumnFamily::Status, &k).unwrap();
-        assert_eq!(v1, r.unwrap());
+        assert_eq!(v2, r.unwrap());
 
         let r = w2.get_raw(DBColumnFamily::Status, &k).unwrap();
         assert_eq!(v2, r.unwrap());
     }
 
     {
-        // next/prev is bounded by namespace
+        // no overriding for get/set
+        let (w1, w2) = two_storages();
 
-        let r = w1.next_raw(DBColumnFamily::Status, &k, true);
+        w1.set(DBColumnFamily::Status, &k, &v1).unwrap();
+        w2.set(DBColumnFamily::Status, &k, &v2).unwrap();
+
+        let r: Option<Vec<u8>> = w1.get(DBColumnFamily::Status, &k).unwrap();
+        assert_eq!(v1, r.unwrap());
+
+        let r: Option<Vec<u8>> = w2.get(DBColumnFamily::Status, &k).unwrap();
+        assert_eq!(v2, r.unwrap());
+    }
+
+    {
+        // next/prev is bounded by namespace
+        let (w1, w2) = two_storages();
+        w1.set(DBColumnFamily::Status, &k, &v1).unwrap();
+        w2.set(DBColumnFamily::Status, &k, &v2).unwrap();
+
+        let r = w1.next(DBColumnFamily::Status, &k, true).unwrap();
         assert_eq!((k.clone(), v1.clone()), r.unwrap());
 
-        let r = w1.next_raw(DBColumnFamily::Status, &k, false);
+        let r = w1
+            .next::<Vec<u8>, Vec<u8>>(DBColumnFamily::Status, &k, false)
+            .unwrap();
         assert!(r.is_none(), "next should not get k/v from other namespace");
 
-        let r = w2.prev_raw(DBColumnFamily::Status, &k, false);
+        let r = w2
+            .prev::<Vec<u8>, Vec<u8>>(DBColumnFamily::Status, &k, false)
+            .unwrap();
         assert!(r.is_none(), "prev should not get k/v from other namespace");
     }
 
     {
         // write_batch should not override
+        let (w1, w2) = two_storages();
 
         let k1 = "k1".as_bytes().to_vec();
         let k2 = "k2".as_bytes().to_vec();
 
+        let mut b = Vec::new();
+        v1.encode(&mut b).unwrap();
+
         let batch = vec![
-            WriteEntry::Set(DBColumnFamily::Record, k1.clone(), v1.clone()),
-            WriteEntry::Set(DBColumnFamily::Status, k2.clone(), v1.clone()),
+            WriteEntry::Set(DBColumnFamily::Record, w1.wrap_ns(&k1), b.clone()),
+            WriteEntry::Set(DBColumnFamily::Status, w1.wrap_ns(&k2), b.clone()),
         ];
 
         w1.write_batch(&batch).unwrap();
 
-        let r = w1.get_raw(DBColumnFamily::Record, &k1).unwrap();
+        let r = w1.get(DBColumnFamily::Record, &k1);
+        let r = r.unwrap();
         assert_eq!(Some(v1), r);
 
-        let r = w2.get_raw(DBColumnFamily::Record, &k1).unwrap();
+        let r: Option<Vec<u8>> = w2.get(DBColumnFamily::Record, &k1).unwrap();
         assert!(r.is_none());
 
-        let r = w2.get_raw(DBColumnFamily::Status, &k2).unwrap();
+        let r: Option<Vec<u8>> = w2.get(DBColumnFamily::Status, &k2).unwrap();
         assert!(r.is_none());
     }
 }

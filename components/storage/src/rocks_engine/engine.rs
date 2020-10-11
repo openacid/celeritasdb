@@ -93,23 +93,24 @@ impl RawKV for RocksDBEngine {
         Ok(self.db.delete_cf(cfh, key)?)
     }
 
-    fn next_raw(
+    fn nxt_raw(
         &self,
         cf: DBColumnFamily,
         key: &[u8],
+        forward: bool,
         include: bool,
     ) -> Option<(Vec<u8>, Vec<u8>)> {
-        self._range(cf, key, include, false)
+        self._range(cf, key, include, !forward)
     }
 
-    fn prev_raw(
-        &self,
-        cf: DBColumnFamily,
-        key: &[u8],
-        include: bool,
-    ) -> Option<(Vec<u8>, Vec<u8>)> {
-        self._range(cf, key, include, true)
-    }
+    // fn prev_raw(
+    //     &self,
+    //     cf: DBColumnFamily,
+    //     key: &[u8],
+    //     include: bool,
+    // ) -> Option<(Vec<u8>, Vec<u8>)> {
+    //     self._range(cf, key, include, true)
+    // }
 
     fn write_batch(&self, entrys: &Vec<WriteEntry>) -> Result<(), StorageError> {
         let batch = WriteBatch::with_capacity(entrys.len());

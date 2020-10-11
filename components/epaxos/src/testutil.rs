@@ -8,6 +8,7 @@ use crate::qpaxos::*;
 use crate::replica::{Replica, ReplicaPeer};
 use crate::QPaxosImpl;
 use storage::MemEngine;
+use storage::RawKV;
 use storage::Storage;
 
 use tokio::sync::oneshot;
@@ -39,13 +40,13 @@ pub fn new_replica(
     rid: ReplicaId,
     group: Vec<ReplicaId>,
     peers: Vec<ReplicaPeer>,
-    sto: Storage,
+    sto: Arc<dyn RawKV>,
 ) -> Replica {
     Replica {
         replica_id: rid,
         group_replica_ids: group,
         peers,
-        storage: sto,
+        storage: Storage::new(rid, sto),
         committed_timeout: 1000,
         waiting_replies: Mutex::new(HashMap::new()),
     }
@@ -60,7 +61,6 @@ pub struct TestCluster {
 impl TestCluster {
     pub fn new(replica_cnt: i32) -> Self {
         let sto = Arc::new(MemEngine::new().unwrap());
-        let sto = Storage::new(sto);
 
         let mut addrs = HashMap::new();
         for i in 0..replica_cnt {

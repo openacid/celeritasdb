@@ -7,7 +7,7 @@ use crate::replica::*;
 use crate::replication::*;
 use crate::testutil;
 use crate::StorageAPI;
-use storage::{MemEngine, Storage};
+use storage::MemEngine;
 
 #[cfg(test)]
 use pretty_assertions::assert_eq;
@@ -251,7 +251,7 @@ fn test_handle_accept_reply() {
         replica_id,
         vec![0, 1, 2],
         vec![],
-        Storage::new(Arc::new(MemEngine::new().unwrap())),
+        Arc::new(MemEngine::new().unwrap()),
     );
 
     let mut inst = inst!((1, 2), (0, _), [(x = "1")], []);

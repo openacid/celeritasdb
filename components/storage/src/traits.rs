@@ -1,5 +1,6 @@
 use crate::StorageError;
 use prost::Message;
+use std::fmt;
 use std::sync::Arc;
 
 /// DBColumnFamily defines several `table`:
@@ -45,6 +46,34 @@ pub enum WriteEntry {
     Delete(DBColumnFamily, Vec<u8>),
 }
 
+pub trait AsStorageKey {
+    fn to_key(&self) -> Vec<u8>;
+    fn key_len(&self) -> usize {
+        // default impl
+        self.to_key().len()
+    }
+    fn from_key(_buf: &[u8]) -> Self
+    where
+        Self: std::marker::Sized,
+    {
+        unimplemented!()
+    }
+}
+
+impl AsStorageKey for Vec<u8> {
+    fn to_key(&self) -> Vec<u8> {
+        self.clone()
+    }
+
+    fn key_len(&self) -> usize {
+        self.len()
+    }
+
+    fn from_key(buf: &[u8]) -> Vec<u8> {
+        buf.into()
+    }
+}
+
 /// NameSpace wraps a key into another key with namespace.
 /// E.g.: key: "abc" -> key with namespace "my_namespace/abc";
 ///
@@ -52,160 +81,24 @@ pub enum WriteEntry {
 pub trait NameSpace {
     /// wrap_ns wraps a key with namespace string, e.g.:
     /// key: "foo" with ns:NameSpace = 5i64: "5/foo".
-    fn wrap_ns(&self, key: &[u8]) -> Vec<u8>;
+    fn wrap_ns<K: AsStorageKey>(&self, key: &K) -> Vec<u8>;
 
     /// unwrap_ns strip namespace part from key, If the key belongs to another namespace, it
     /// returns None.
-    fn unwrap_ns(&self, key: &[u8]) -> Option<Vec<u8>>;
+    fn unwrap_ns<'a>(&self, key: &'a [u8]) -> Option<&'a [u8]>;
 }
 
-/// impl NameSpace for types with ToString:
-/// E.g. for ns:i64=5, it wraps key "foo" to "5/foo"
-impl<T: ToString> NameSpace for T {
-    fn wrap_ns(&self, key: &[u8]) -> Vec<u8> {
-        let mut pref = self.to_string().into_bytes();
-        let mut k: Vec<u8> = Vec::with_capacity(pref.len() + 1 + key.len());
-        k.append(&mut pref);
-        k.push('/' as u8);
-        k.append(&mut key.to_vec());
-        k
-    }
-    fn unwrap_ns(&self, key: &[u8]) -> Option<Vec<u8>> {
-        let mut pref = self.to_string().into_bytes();
-        pref.push('/' as u8);
-        let got = &key[0..pref.len()];
-        if got == pref.as_slice() {
-            Some(key[pref.len()..].to_vec())
-        } else {
-            None
+#[derive(Clone)]
+pub struct NS {
+    pub ns: Vec<u8>,
+}
+
+impl<T: fmt::Display> From<T> for NS {
+    fn from(v: T) -> Self {
+        NS {
+            ns: format!("{}/", v).into(),
         }
     }
-}
-
-/// ShareByNS defines the API to impl a Storage with namespace support.
-pub trait ShareByNS {
-    type NS: NameSpace;
-    type B: RawKV + ?Sized;
-
-    fn get_ns(&self) -> &Self::NS;
-    fn get_storage(&self) -> &Arc<Self::B>;
-}
-
-/// NsStorage is a namespace storage based on a shared storage `Base`.
-/// Write and read operations are wrapped with a namespace.
-pub struct NsStorage<B, NS>
-where
-    NS: NameSpace,
-    B: RawKV + ?Sized,
-{
-    namespace: NS,
-    shared_sto: Arc<B>,
-}
-
-impl<B, NS> ShareByNS for NsStorage<B, NS>
-where
-    B: RawKV + ?Sized,
-    NS: NameSpace,
-{
-    type B = B;
-    type NS = NS;
-
-    fn get_storage(&self) -> &Arc<B> {
-        &self.shared_sto
-    }
-    fn get_ns(&self) -> &NS {
-        &self.namespace
-    }
-}
-
-impl<B, NS> NsStorage<B, NS>
-where
-    NS: NameSpace,
-    B: RawKV,
-{
-    /// new creates a NsStorage with `namespace` and a shared underlying storage `shared_sto`.
-    pub fn new(namespace: NS, shared_sto: Arc<B>) -> Self {
-        Self {
-            namespace,
-            shared_sto,
-        }
-    }
-}
-
-/// impl Base storage API for types that impls SharedStorage.
-impl<T, B, NS> RawKV for T
-where
-    B: RawKV + ?Sized,
-    NS: NameSpace,
-    T: ShareByNS<B = B, NS = NS> + Send + Sync,
-{
-    fn set_raw(&self, cf: DBColumnFamily, key: &[u8], value: &[u8]) -> Result<(), StorageError> {
-        self.get_storage()
-            .set_raw(cf, &self.get_ns().wrap_ns(key), value)
-    }
-
-    fn get_raw(&self, cf: DBColumnFamily, key: &[u8]) -> Result<Option<Vec<u8>>, StorageError> {
-        self.get_storage().get_raw(cf, &self.get_ns().wrap_ns(key))
-    }
-
-    fn delete_raw(&self, cf: DBColumnFamily, key: &[u8]) -> Result<(), StorageError> {
-        self.get_storage()
-            .delete_raw(cf, &self.get_ns().wrap_ns(key))
-    }
-
-    fn next_raw(
-        &self,
-        cf: DBColumnFamily,
-        key: &[u8],
-        include: bool,
-    ) -> Option<(Vec<u8>, Vec<u8>)> {
-        let (k, v) = self
-            .get_storage()
-            .next_raw(cf, &self.get_ns().wrap_ns(key), include)?;
-        let unwrapped = self.get_ns().unwrap_ns(k.as_slice())?;
-
-        Some((unwrapped, v.to_vec()))
-    }
-
-    fn prev_raw(
-        &self,
-        cf: DBColumnFamily,
-        key: &[u8],
-        include: bool,
-    ) -> Option<(Vec<u8>, Vec<u8>)> {
-        let (k, v) = self
-            .get_storage()
-            .prev_raw(cf, &self.get_ns().wrap_ns(key), include)?;
-        let unwrapped = self.get_ns().unwrap_ns(k.as_slice())?;
-
-        Some((unwrapped, v.to_vec()))
-    }
-
-    fn write_batch(&self, entrys: &Vec<WriteEntry>) -> Result<(), StorageError> {
-        let mut es = Vec::with_capacity(entrys.len());
-
-        for en in entrys {
-            let e = match en {
-                WriteEntry::Nil => WriteEntry::Nil,
-                WriteEntry::Set(cf, k, v) => {
-                    WriteEntry::Set(*cf, self.get_ns().wrap_ns(k), v.to_vec())
-                }
-                WriteEntry::Delete(cf, k) => WriteEntry::Delete(*cf, self.get_ns().wrap_ns(k)),
-            };
-            es.push(e);
-        }
-
-        self.get_storage().write_batch(&es)
-    }
-}
-
-pub trait ToKey {
-    fn to_key(&self) -> Vec<u8>;
-}
-
-// TODO from_key and to_key should return error?
-pub trait FromKey {
-    fn from_key(&mut self, buf: &[u8]);
 }
 
 /// RawKV defines access API for raw key-value in byte stream.
@@ -221,39 +114,63 @@ pub trait RawKV: Send + Sync {
 
     /// next_kv returns a key-value pair greater than the given one(include=false),
     /// or greater or equal the given one(include=true)
-    fn next_raw(&self, cf: DBColumnFamily, key: &[u8], include: bool)
-        -> Option<(Vec<u8>, Vec<u8>)>;
+    fn next_raw(
+        &self,
+        cf: DBColumnFamily,
+        key: &[u8],
+        include: bool,
+    ) -> Option<(Vec<u8>, Vec<u8>)> {
+        return self.nxt_raw(cf, key, true, include);
+    }
 
     /// prev_kv returns a key-value pair smaller than the given one(include=false),
     /// or smaller or equal the given one(include=true)
-    fn prev_raw(&self, cf: DBColumnFamily, key: &[u8], include: bool)
-        -> Option<(Vec<u8>, Vec<u8>)>;
+    fn prev_raw(
+        &self,
+        cf: DBColumnFamily,
+        key: &[u8],
+        include: bool,
+    ) -> Option<(Vec<u8>, Vec<u8>)> {
+        return self.nxt_raw(cf, key, false, include);
+    }
+
+    fn nxt_raw(
+        &self,
+        cf: DBColumnFamily,
+        key: &[u8],
+        forward: bool,
+        include: bool,
+    ) -> Option<(Vec<u8>, Vec<u8>)>;
 
     fn write_batch(&self, entrys: &Vec<WriteEntry>) -> Result<(), StorageError>;
 }
 
 /// RawKV defines access API to access object like KV.
-pub trait ObjectKV: RawKV {
+pub trait ObjectKV: RawKV + NameSpace {
     /// set a new key-value
-    fn set<OK: ToKey, OV: Message + Default>(
+    fn set<OK: AsStorageKey, OV: Message + Default>(
         &self,
         cf: DBColumnFamily,
         key: &OK,
         value: &OV,
     ) -> Result<(), StorageError> {
-        let kbytes = key.to_key();
+        let kbytes = self.wrap_ns(key);
+
         let mut vbytes = vec![];
         value.encode(&mut vbytes)?;
 
         self.set_raw(cf, &kbytes, &vbytes)
     }
-    fn get<OK: ToKey, OV: Message + Default>(
+    fn get<OK: AsStorageKey, OV: Message + Default>(
         &self,
         cf: DBColumnFamily,
         key: &OK,
     ) -> Result<Option<OV>, StorageError> {
-        let kbytes = key.to_key();
+        let kbytes = self.wrap_ns(key);
+
         let vbytes = self.get_raw(cf, &kbytes)?;
+        println!("{:?}", vbytes);
+
         let r = match vbytes {
             Some(v) => OV::decode(v.as_slice())?,
             None => return Ok(None),
@@ -263,57 +180,56 @@ pub trait ObjectKV: RawKV {
     }
 
     /// delete a key
-    fn delete<OK: ToKey>(&self, cf: DBColumnFamily, key: &OK) -> Result<(), StorageError> {
-        let kbytes = key.to_key();
+    fn delete<OK: AsStorageKey>(&self, cf: DBColumnFamily, key: &OK) -> Result<(), StorageError> {
+        let kbytes = self.wrap_ns(key);
         self.delete_raw(cf, &kbytes)
     }
 
     // TODO: replace next/prev with a single function "scan"?
+    fn next<OK: AsStorageKey, OV: Message + Default>(
+        &self,
+        cf: DBColumnFamily,
+        key: &OK,
+        include: bool,
+    ) -> Result<Option<(OK, OV)>, StorageError> {
+        self.nxt(cf, key, true, include)
+    }
+    fn prev<OK: AsStorageKey, OV: Message + Default>(
+        &self,
+        cf: DBColumnFamily,
+        key: &OK,
+        include: bool,
+    ) -> Result<Option<(OK, OV)>, StorageError> {
+        self.nxt(cf, key, false, include)
+    }
 
     /// next_kv returns a key-value pair greater than the given one(include=false),
     /// or greater or equal the given one(include=true)
-    fn next<OK: FromKey + ToKey + Default, OV: Message + Default>(
+    fn nxt<OK: AsStorageKey, OV: Message + Default>(
         &self,
         cf: DBColumnFamily,
         key: &OK,
+        forward: bool,
         include: bool,
     ) -> Result<Option<(OK, OV)>, StorageError> {
         // TODO RawKV::next()  should return a Result with StorageError.
-        let kbytes = key.to_key();
-        let nxt = self.next_raw(cf, &kbytes, include);
-        match nxt {
+        let kbytes = self.wrap_ns(key);
+        let nxt = self.nxt_raw(cf, &kbytes, forward, include);
+        let (k, v) = match nxt {
             None => return Ok(None),
-            Some((k, v)) => {
-                let mut rstk: OK = OK::default();
-                rstk.from_key(k.as_slice());
-                let rstv: OV = OV::decode(v.as_slice())?;
-                return Ok(Some((rstk, rstv)));
-            }
-        }
-    }
+            Some((k, v)) => (k, v),
+        };
 
-    /// prev_kv returns a key-value pair smaller than the given one(include=false),
-    /// or smaller or equal the given one(include=true)
-    fn prev<OK: FromKey + ToKey + Default, OV: Message + Default>(
-        &self,
-        cf: DBColumnFamily,
-        key: &OK,
-        include: bool,
-    ) -> Result<Option<(OK, OV)>, StorageError> {
-        let kbytes = key.to_key();
-        let nxt = self.prev_raw(cf, &kbytes, include);
-        match nxt {
+        let kbytes = self.unwrap_ns(&k);
+        let kbs = match kbytes {
             None => return Ok(None),
-            Some((k, v)) => {
-                let mut rstk: OK = OK::default();
-                rstk.from_key(k.as_slice());
-                let rstv: OV = OV::decode(v.as_slice())?;
-                return Ok(Some((rstk, rstv)));
-            }
-        }
-    }
+            Some(kbs) => kbs,
+        };
 
-    // fn write_batch(&self, entrys: &Vec<WriteEntry>) -> Result<(), StorageError>;
+        let rstk: OK = OK::from_key(kbs);
+        let rstv: OV = OV::decode(v.as_slice())?;
+        return Ok(Some((rstk, rstv)));
+    }
 }
 
 /// Storage exports the storage APIs.
@@ -339,17 +255,40 @@ pub trait ObjectKV: RawKV {
 pub struct Storage {
     // TODO change Arc to Box
     inner: Arc<dyn RawKV>,
+    ns: NS,
 }
 
 impl Storage {
-    pub fn new(rawkv: Arc<dyn RawKV>) -> Self {
-        Storage { inner: rawkv }
+    pub fn new<T: Into<NS>>(namespace: T, rawkv: Arc<dyn RawKV>) -> Self {
+        Storage {
+            ns: namespace.into(),
+            inner: rawkv,
+        }
     }
     pub fn get_inner(&self) -> &Arc<dyn RawKV> {
         &self.inner
     }
 }
-impl ObjectKV for Storage {}
+
+impl NameSpace for Storage {
+    fn wrap_ns<K: AsStorageKey>(&self, key: &K) -> Vec<u8> {
+        let pref = &self.ns.ns;
+        let mut k: Vec<u8> = Vec::with_capacity(pref.len() + key.key_len());
+        k.extend(pref);
+        k.extend(&key.to_key());
+        k
+    }
+
+    fn unwrap_ns<'a>(&self, key: &'a [u8]) -> Option<&'a [u8]> {
+        let pref = &self.ns.ns;
+        let got = &key[0..pref.len()];
+        if got == pref.as_slice() {
+            Some(&key[pref.len()..])
+        } else {
+            None
+        }
+    }
+}
 
 // Pass raw-kv api to inner storage engine.
 impl RawKV for Storage {
@@ -365,25 +304,19 @@ impl RawKV for Storage {
         self.get_inner().delete_raw(cf, key)
     }
 
-    fn next_raw(
+    fn nxt_raw(
         &self,
         cf: DBColumnFamily,
         key: &[u8],
+        forward: bool,
         include: bool,
     ) -> Option<(Vec<u8>, Vec<u8>)> {
-        self.get_inner().next_raw(cf, key, include)
-    }
-
-    fn prev_raw(
-        &self,
-        cf: DBColumnFamily,
-        key: &[u8],
-        include: bool,
-    ) -> Option<(Vec<u8>, Vec<u8>)> {
-        self.get_inner().prev_raw(cf, key, include)
+        self.get_inner().nxt_raw(cf, key, forward, include)
     }
 
     fn write_batch(&self, entrys: &Vec<WriteEntry>) -> Result<(), StorageError> {
         self.get_inner().write_batch(entrys)
     }
 }
+
+impl ObjectKV for Storage {}

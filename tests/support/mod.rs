@@ -11,6 +11,7 @@ use std::process;
 use tempfile;
 
 use std::path::PathBuf;
+use std::sync::Arc;
 
 use redis::RedisResult;
 
@@ -18,12 +19,12 @@ use cele::Server;
 use epaxos::qpaxos::ReplicaId;
 use epaxos::replica::Replica;
 use epaxos::testutil;
-use storage::Storage;
+use storage::RawKV;
 
 /// InProcContext setup a small cluster of an in-process server and a client.
 pub struct InProcContext {
     pub server: Server,
-    pub storage: Storage,
+    pub storage: Arc<dyn RawKV>,
     pub client: redis::Client,
 }
 

@@ -7,7 +7,7 @@ use storage::{MemEngine, RawKV};
 
 #[test]
 fn test_base_iter() {
-    let sto: Storage = Storage::new(Arc::new(MemEngine::new().unwrap()));
+    let sto: Storage = Storage::new("foo", Arc::new(MemEngine::new().unwrap()));
 
     let mut ks = vec![];
     let mut vs = vec![];
@@ -52,7 +52,7 @@ fn test_base_iter() {
 #[test]
 fn test_instance_iter() {
     let mut ints = Vec::<Instance>::new();
-    let sto: Storage = Storage::new(Arc::new(MemEngine::new().unwrap()));
+    let sto: Storage = Storage::new("foo", Arc::new(MemEngine::new().unwrap()));
 
     for rid in 0..3 {
         for idx in 0..10 {

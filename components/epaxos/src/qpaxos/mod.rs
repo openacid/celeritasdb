@@ -6,7 +6,7 @@ pub use std::convert::TryInto;
 
 use derive_more;
 use enum_utils;
-use storage::ToKey;
+use storage::AsStorageKey;
 
 include!(concat!(env!("OUT_DIR"), "/qpaxos.rs"));
 
@@ -73,12 +73,28 @@ pub enum ReplicaStatus {
     MaxInstance,
 }
 
-impl ToKey for ReplicaStatus {
+// TODO test
+impl AsStorageKey for ReplicaStatus {
     fn to_key(&self) -> Vec<u8> {
         // TODO: use reference to reduce memory copy.
         match self {
             ReplicaStatus::Exec => "/exec".into(),
             ReplicaStatus::MaxInstance => "/max_inst".into(),
+        }
+    }
+
+    fn key_len(&self) -> usize {
+        // TODO: draft impl
+        self.to_key().len()
+    }
+
+    fn from_key(buf: &[u8]) -> Self {
+        if buf == "/exec".as_bytes() {
+            ReplicaStatus::Exec
+        } else if buf == "/max_inst".as_bytes() {
+            ReplicaStatus::MaxInstance
+        } else {
+            panic!("invalid")
         }
     }
 }
@@ -225,12 +241,47 @@ impl From<&InstanceId> for Dep {
     }
 }
 
-impl ToKey for InstanceId {
+// TODO test
+impl AsStorageKey for InstanceId {
     fn to_key(&self) -> Vec<u8> {
         if self.idx < 0 {
             panic!("idx can not be less than 0:{}", self.idx);
         }
         format!("/instance/{:016x}/{:016x}", self.replica_id, self.idx).into_bytes()
+    }
+
+    fn key_len(&self) -> usize {
+        // TODO implement
+        self.to_key().len()
+    }
+
+    fn from_key(buf: &[u8]) -> Self {
+        let pref = "/instance/";
+        let plen = pref.len();
+        if &buf[..plen] == pref.as_bytes() {
+            let rid = &buf[plen..plen + 16];
+            let rid = u64::from_str_radix(&String::from_utf8_lossy(rid), 16);
+            let rid = match rid {
+                Ok(v) => v,
+                Err(_) => {
+                    panic!("invalid key replica id");
+                }
+            };
+            let idx = &buf[plen + 16..plen + 32];
+            let idx = u64::from_str_radix(&String::from_utf8_lossy(idx), 16);
+            let idx = match idx {
+                Ok(v) => v,
+                Err(_) => {
+                    panic!("invalid key idx");
+                }
+            };
+            InstanceId {
+                replica_id: rid as i64,
+                idx: idx as i64,
+            }
+        } else {
+            panic!("without expected prefix /instance/");
+        }
     }
 }
 
@@ -273,7 +324,7 @@ impl InstanceId {
     }
 }
 
-impl ToKey for Instance {
+impl AsStorageKey for Instance {
     fn to_key(&self) -> Vec<u8> {
         self.instance_id.as_ref().unwrap().to_key()
     }

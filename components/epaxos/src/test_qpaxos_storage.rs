@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use storage::{MemEngine, NsStorage, Storage};
+use storage::{MemEngine, Storage};
 
 use crate::inst;
 use crate::instid;
@@ -13,8 +13,7 @@ use crate::{ReplicaStatus, StorageAPI};
 
 fn new_eng() -> Storage {
     let eng = Arc::new(MemEngine::new().unwrap());
-    let eng = NsStorage::new(5, eng);
-    let eng = Storage::new(Arc::new(eng));
+    let eng = Storage::new(5, eng);
     eng
 }
 

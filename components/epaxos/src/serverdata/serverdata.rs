@@ -1,3 +1,5 @@
+use storage::RawKV;
+
 use crate::conf::ClusterInfo;
 use crate::conf::GroupInfo;
 use crate::conf::Node;
@@ -6,7 +8,7 @@ use crate::qpaxos::ReplicaId;
 use crate::replica::Replica;
 use crate::RangeLookupError;
 use crate::Storage;
-use std::collections::BTreeMap;
+use std::{collections::BTreeMap, sync::Arc};
 
 /// ServerData is shared between threads or coroutine.
 /// TODO: Storage does not need to be shared with Arc any more.
@@ -16,17 +18,17 @@ pub struct ServerData {
     pub node_id: NodeId,
     pub node: Node,
     pub local_replicas: BTreeMap<ReplicaId, Replica>,
-    pub storage: Storage,
+    pub storage: Arc<dyn RawKV>,
 }
 
 impl ServerData {
-    pub fn new(sto: Storage, cluster: ClusterInfo, node_id: NodeId) -> ServerData {
+    pub fn new(sto: Arc<dyn RawKV>, cluster: ClusterInfo, node_id: NodeId) -> ServerData {
         let n = cluster.get(&node_id).unwrap().clone();
 
         let mut rs = BTreeMap::new();
         for (rid, rinfo) in cluster.replicas.iter() {
             if rinfo.node_id == node_id {
-                let rp = Replica::new(*rid, &cluster, sto.clone()).unwrap();
+                let rp = Replica::new(*rid, &cluster, Storage::new(*rid, sto.clone())).unwrap();
                 rs.insert(*rid, rp);
             }
         }

@@ -20,7 +20,7 @@ use epaxos::replica::ReplicaPeer;
 use epaxos::replication::bcast_msg;
 use epaxos::QPaxosImpl;
 use epaxos::ServerData;
-use storage::Storage;
+use storage::RawKV;
 
 use crate::RedisApi;
 use crate::ServerError;
@@ -33,7 +33,7 @@ pub struct Server {
 }
 
 impl Server {
-    pub fn new(sto: Storage, cluster: ClusterInfo, node_id: NodeId) -> Server {
+    pub fn new(sto: Arc<dyn RawKV>, cluster: ClusterInfo, node_id: NodeId) -> Server {
         Self::new_with_server_data(ServerData::new(sto, cluster, node_id))
     }
 

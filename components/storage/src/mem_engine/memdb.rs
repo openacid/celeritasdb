@@ -40,16 +40,23 @@ impl RawKV for MemEngine {
         Ok(())
     }
 
-    fn next_raw(
+    fn nxt_raw(
         &self,
         cf: DBColumnFamily,
         key: &[u8],
+        forward: bool,
         include: bool,
     ) -> Option<(Vec<u8>, Vec<u8>)> {
         let mut cfs = self._db.lock().unwrap();
         let bt = cfs.entry(cf.into()).or_insert(BTreeMap::new());
 
-        for (k, v) in bt.range(key.to_vec()..) {
+        let rng: Box<dyn Iterator<Item = _>> = if forward {
+            Box::new(bt.range(key.to_vec()..))
+        } else {
+            Box::new(bt.range((Unbounded, Included(key.to_vec()))).rev())
+        };
+
+        for (k, v) in rng {
             if include == false && key == k.as_slice() {
                 continue;
             }
@@ -60,25 +67,45 @@ impl RawKV for MemEngine {
         None
     }
 
-    fn prev_raw(
-        &self,
-        cf: DBColumnFamily,
-        key: &[u8],
-        include: bool,
-    ) -> Option<(Vec<u8>, Vec<u8>)> {
-        let mut cfs = self._db.lock().unwrap();
-        let bt = cfs.entry(cf.into()).or_insert(BTreeMap::new());
+    // fn next_raw(
+    //     &self,
+    //     cf: DBColumnFamily,
+    //     key: &[u8],
+    //     include: bool,
+    // ) -> Option<(Vec<u8>, Vec<u8>)> {
+    //     let mut cfs = self._db.lock().unwrap();
+    //     let bt = cfs.entry(cf.into()).or_insert(BTreeMap::new());
 
-        for (k, v) in bt.range((Unbounded, Included(key.to_vec()))).rev() {
-            if include == false && key == k.as_slice() {
-                continue;
-            }
+    //     for (k, v) in bt.range(key.to_vec()..) {
+    //         if include == false && key == k.as_slice() {
+    //             continue;
+    //         }
 
-            return Some((k.to_vec(), v.to_vec()));
-        }
+    //         return Some((k.to_vec(), v.to_vec()));
+    //     }
 
-        None
-    }
+    //     None
+    // }
+
+    // fn prev_raw(
+    //     &self,
+    //     cf: DBColumnFamily,
+    //     key: &[u8],
+    //     include: bool,
+    // ) -> Option<(Vec<u8>, Vec<u8>)> {
+    //     let mut cfs = self._db.lock().unwrap();
+    //     let bt = cfs.entry(cf.into()).or_insert(BTreeMap::new());
+
+    //     for (k, v) in bt.range((Unbounded, Included(key.to_vec()))).rev() {
+    //         if include == false && key == k.as_slice() {
+    //             continue;
+    //         }
+
+    //         return Some((k.to_vec(), v.to_vec()));
+    //     }
+
+    //     None
+    // }
 
     // TODO now just execute these commands in order
     fn write_batch(&self, entrys: &Vec<WriteEntry>) -> Result<(), StorageError> {

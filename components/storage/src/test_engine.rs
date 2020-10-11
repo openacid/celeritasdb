@@ -1,9 +1,8 @@
+use crate::AsStorageKey;
 use crate::DBColumnFamily;
-use crate::FromKey;
 use crate::ObjectKV;
 use crate::RawKV;
 use crate::Storage;
-use crate::ToKey;
 use crate::WriteEntry;
 use prost::Message;
 
@@ -21,22 +20,24 @@ pub struct TestId {
     pub id: i64,
 }
 
-impl ToKey for TestId {
+impl AsStorageKey for TestId {
     fn to_key(&self) -> Vec<u8> {
         format!("key: {:?}", self.id).as_bytes().to_vec()
     }
-}
-impl FromKey for TestId {
-    fn from_key(&mut self, buf: &[u8]) {
+    fn from_key(buf: &[u8]) -> Self {
         let s = String::from_utf8_lossy(buf);
-        self.id = match u64::from_str_radix(&s, 16) {
+        let id = match u64::from_str_radix(&s, 16) {
             Ok(v) => v as i64,
             Err(_) => 0,
         };
+        TestId { id }
+    }
+
+    fn key_len(&self) -> usize {
+        self.to_key().len()
     }
 }
-
-impl ToKey for TestInstance {
+impl AsStorageKey for TestInstance {
     fn to_key(&self) -> Vec<u8> {
         format!("key: {:?}", self.id).as_bytes().to_vec()
     }

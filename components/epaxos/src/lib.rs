@@ -37,11 +37,11 @@ pub use service::*;
 #[cfg(test)]
 mod test_qpaxos_storage;
 
+use storage::AsStorageKey;
 use storage::DBColumnFamily;
 use storage::RawKV;
 use storage::Storage;
 use storage::StorageError;
-use storage::ToKey;
 use storage::WriteEntry;
 
 /// AccessRecord provides API to access user key/value record.

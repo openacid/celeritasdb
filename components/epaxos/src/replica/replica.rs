@@ -24,7 +24,7 @@ use crate::Iter;
 use crate::StorageAPI;
 use std::collections::HashMap;
 use std::sync::Arc;
-use storage::{NsStorage, Storage};
+use storage::Storage;
 use storage::{RawKV, StorageError};
 use tokio::sync::oneshot::Sender;
 use tokio::sync::Mutex;
@@ -124,7 +124,7 @@ impl Replica {
             replica_id: rid,
             group_replica_ids: group.replicas.keys().cloned().collect(),
             peers,
-            storage: Storage::new(Arc::new(NsStorage::new(rid, Arc::new(sto)))),
+            storage: Storage::new(rid, Arc::new(sto)),
             // TODO get from conf
             committed_timeout: 10000,
             waiting_replies: Mutex::new(HashMap::new()),

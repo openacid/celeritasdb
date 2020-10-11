@@ -7,7 +7,7 @@ use crate::qpaxos::*;
 use crate::replica::*;
 use crate::testutil;
 use crate::StorageAPI;
-use storage::ToKey;
+use storage::AsStorageKey;
 use storage::{DBColumnFamily, Storage};
 use storage::{MemEngine, RawKV};
 
@@ -65,14 +65,14 @@ fn new_foo_inst(leader_id: i64) -> Instance {
     )
 }
 
-fn new_mem_sto() -> Storage {
-    Storage::new(Arc::new(MemEngine::new().unwrap()))
+fn new_mem_sto() -> Arc<dyn RawKV> {
+    Arc::new(MemEngine::new().unwrap())
 }
 
 /// Create a stupid replica with some instances stored.
 fn new_foo_replica(
     replica_id: i64,
-    storage: Storage,
+    storage: Arc<dyn RawKV>,
     insts: &[((i64, i64), &Instance)],
 ) -> Replica {
     let r = testutil::new_replica(replica_id, vec![0, 1, 2], vec![], storage);
@@ -465,7 +465,7 @@ groups:
 
     let ci = ClusterInfo::from_str(cont).unwrap();
 
-    let mut rp = Replica::new(1, &ci, new_mem_sto()).unwrap();
+    let mut rp = Replica::new(1, &ci, Storage::new(1, new_mem_sto())).unwrap();
     assert_eq!(1, rp.replica_id);
 
     rp.group_replica_ids.sort();
@@ -490,6 +490,6 @@ groups:
         rp.peers[1]
     );
 
-    let rp = Replica::new(4, &ci, new_mem_sto());
+    let rp = Replica::new(4, &ci, Storage::new(4, new_mem_sto()));
     assert!(rp.is_err());
 }
