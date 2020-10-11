@@ -40,7 +40,7 @@ impl RawKV for MemEngine {
         Ok(())
     }
 
-    fn nxt_raw(
+    fn next_raw(
         &self,
         cf: DBColumnFamily,
         key: &[u8],

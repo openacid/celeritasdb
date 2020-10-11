@@ -64,13 +64,13 @@ fn test_ballotnum_derived() {
 
 #[test]
 fn test_instance_id_to_key() {
-    let k = InstanceId::from((1, 10)).to_key();
+    let k = InstanceId::from((1, 10)).into_key();
     assert_eq!(
         "/instance/0000000000000001/000000000000000a",
         str::from_utf8(&k).unwrap()
     );
 
-    let k = InstanceId::from((-1, 0)).to_key();
+    let k = InstanceId::from((-1, 0)).into_key();
     assert_eq!(
         "/instance/ffffffffffffffff/0000000000000000",
         str::from_utf8(&k).unwrap()
@@ -79,17 +79,17 @@ fn test_instance_id_to_key() {
 
 #[test]
 fn test_replica_status_to_key() {
-    let k = ReplicaStatus::Exec.to_key();
+    let k = ReplicaStatus::Exec.into_key();
     assert_eq!("/exec", str::from_utf8(&k).unwrap());
 
-    let k = ReplicaStatus::MaxInstance.to_key();
+    let k = ReplicaStatus::MaxInstance.into_key();
     assert_eq!("/max_inst", str::from_utf8(&k).unwrap());
 }
 
 #[test]
 #[should_panic(expected = "idx can not be less than 0:-1")]
 fn test_instance_id_to_key_negative() {
-    InstanceId::from((1, -1)).to_key();
+    InstanceId::from((1, -1)).into_key();
 }
 
 #[test]

@@ -15,11 +15,9 @@ impl Iterator for BaseIter {
     type Item = (Vec<u8>, Vec<u8>);
 
     fn next(&mut self) -> Option<Self::Item> {
-        let r = if self.reverse {
-            self.storage.prev_raw(self.cf, &self.cursor, self.include)
-        } else {
-            self.storage.next_raw(self.cf, &self.cursor, self.include)
-        };
+        let r = self
+            .storage
+            .next_raw(self.cf, &self.cursor, !self.reverse, self.include);
 
         self.include = false;
         match r {
@@ -42,14 +40,10 @@ impl Iterator for InstanceIter {
     type Item = Instance;
 
     fn next(&mut self) -> Option<Instance> {
-        let k = self.curr_inst_id.to_key();
-        let (key_bytes, val_bytes) = if self.reverse {
+        let k = self.curr_inst_id.into_key();
+        let (key_bytes, val_bytes) =
             self.storage
-                .prev_raw(DBColumnFamily::Instance, &k, self.include)?
-        } else {
-            self.storage
-                .next_raw(DBColumnFamily::Instance, &k, self.include)?
-        };
+                .next_raw(DBColumnFamily::Instance, &k, !self.reverse, self.include)?;
 
         let key = String::from_utf8(key_bytes);
         let key = match key {

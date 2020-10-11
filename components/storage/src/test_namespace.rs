@@ -1,21 +1,21 @@
 use crate::DBColumnFamily;
 use crate::MemEngine;
 use crate::ObjectKV;
-use crate::{test_engine::*, NameSpace};
+use crate::{test_engine::*, WithNameSpace};
 use prost::Message;
 use std::sync::Arc;
 
 use crate::traits::RawKV;
 use crate::WriteEntry;
 
+use crate::NameSpace;
 use crate::Storage;
-use crate::NS;
 
 #[test]
 fn test_ns_storage() {
     let eng = MemEngine::new().unwrap();
     let eng = Arc::new(eng);
-    let w = Storage::new(NS { ns: "5/".into() }, eng);
+    let w = Storage::new(NameSpace { ns: "5/".into() }, eng);
     test_base_trait(&w);
 }
 #[test]
@@ -23,7 +23,7 @@ fn test_ns_storage_objectkv() {
     {
         let eng = MemEngine::new().unwrap();
         let eng = Arc::new(eng);
-        let w = Storage::new(NS { ns: "5/".into() }, eng);
+        let w = Storage::new(NameSpace { ns: "5/".into() }, eng);
         test_objectkv_trait(&w);
     }
 }
@@ -31,8 +31,8 @@ fn test_ns_storage_objectkv() {
 fn two_storages() -> (Storage, Storage) {
     let eng = MemEngine::new().unwrap();
     let eng = Arc::new(eng);
-    let w1 = Storage::new(NS { ns: "1/".into() }, eng.clone());
-    let w2 = Storage::new(NS { ns: "2/".into() }, eng.clone());
+    let w1 = Storage::new(NameSpace { ns: "1/".into() }, eng.clone());
+    let w2 = Storage::new(NameSpace { ns: "2/".into() }, eng.clone());
     (w1, w2)
 }
 
@@ -76,16 +76,16 @@ fn test_ns_storage_no_overriding() {
         w1.set(DBColumnFamily::Status, &k, &v1).unwrap();
         w2.set(DBColumnFamily::Status, &k, &v2).unwrap();
 
-        let r = w1.next(DBColumnFamily::Status, &k, true).unwrap();
+        let r = w1.next(DBColumnFamily::Status, &k, true, true).unwrap();
         assert_eq!((k.clone(), v1.clone()), r.unwrap());
 
         let r = w1
-            .next::<Vec<u8>, Vec<u8>>(DBColumnFamily::Status, &k, false)
+            .next::<Vec<u8>, Vec<u8>>(DBColumnFamily::Status, &k, true, false)
             .unwrap();
         assert!(r.is_none(), "next should not get k/v from other namespace");
 
         let r = w2
-            .prev::<Vec<u8>, Vec<u8>>(DBColumnFamily::Status, &k, false)
+            .next::<Vec<u8>, Vec<u8>>(DBColumnFamily::Status, &k, false, false)
             .unwrap();
         assert!(r.is_none(), "prev should not get k/v from other namespace");
     }
@@ -101,8 +101,8 @@ fn test_ns_storage_no_overriding() {
         v1.encode(&mut b).unwrap();
 
         let batch = vec![
-            WriteEntry::Set(DBColumnFamily::Record, w1.wrap_ns(&k1), b.clone()),
-            WriteEntry::Set(DBColumnFamily::Status, w1.wrap_ns(&k2), b.clone()),
+            WriteEntry::Set(DBColumnFamily::Record, w1.prepend_ns(&k1), b.clone()),
+            WriteEntry::Set(DBColumnFamily::Status, w1.prepend_ns(&k2), b.clone()),
         ];
 
         w1.write_batch(&batch).unwrap();

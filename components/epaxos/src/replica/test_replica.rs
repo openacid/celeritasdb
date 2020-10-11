@@ -83,7 +83,7 @@ fn new_foo_replica(
 
         let iid = InstanceId::from(iid);
         r.storage
-            .set_raw(DBColumnFamily::Instance, &iid.to_key(), &value)
+            .set_raw(DBColumnFamily::Instance, &iid.into_key(), &value)
             .unwrap();
     }
 

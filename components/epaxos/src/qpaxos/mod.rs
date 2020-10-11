@@ -75,7 +75,7 @@ pub enum ReplicaStatus {
 
 // TODO test
 impl AsStorageKey for ReplicaStatus {
-    fn to_key(&self) -> Vec<u8> {
+    fn into_key(&self) -> Vec<u8> {
         // TODO: use reference to reduce memory copy.
         match self {
             ReplicaStatus::Exec => "/exec".into(),
@@ -85,7 +85,7 @@ impl AsStorageKey for ReplicaStatus {
 
     fn key_len(&self) -> usize {
         // TODO: draft impl
-        self.to_key().len()
+        self.into_key().len()
     }
 
     fn from_key(buf: &[u8]) -> Self {
@@ -243,7 +243,7 @@ impl From<&InstanceId> for Dep {
 
 // TODO test
 impl AsStorageKey for InstanceId {
-    fn to_key(&self) -> Vec<u8> {
+    fn into_key(&self) -> Vec<u8> {
         if self.idx < 0 {
             panic!("idx can not be less than 0:{}", self.idx);
         }
@@ -252,7 +252,7 @@ impl AsStorageKey for InstanceId {
 
     fn key_len(&self) -> usize {
         // TODO implement
-        self.to_key().len()
+        self.into_key().len()
     }
 
     fn from_key(buf: &[u8]) -> Self {
@@ -325,8 +325,8 @@ impl InstanceId {
 }
 
 impl AsStorageKey for Instance {
-    fn to_key(&self) -> Vec<u8> {
-        self.instance_id.as_ref().unwrap().to_key()
+    fn into_key(&self) -> Vec<u8> {
+        self.instance_id.as_ref().unwrap().into_key()
     }
 }
 

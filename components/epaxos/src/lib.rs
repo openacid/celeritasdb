@@ -48,7 +48,7 @@ use storage::WriteEntry;
 pub trait StorageAPI: RawKV {
     /// set status
     fn set_status(&self, key: &ReplicaStatus, value: &InstanceIds) -> Result<(), StorageError> {
-        let kbytes = key.to_key();
+        let kbytes = key.into_key();
         let mut vbytes = vec![];
         value.encode(&mut vbytes)?;
 
@@ -57,7 +57,7 @@ pub trait StorageAPI: RawKV {
 
     /// get an status with key
     fn get_status(&self, key: &ReplicaStatus) -> Result<Option<InstanceIds>, StorageError> {
-        let kbytes = key.to_key();
+        let kbytes = key.into_key();
         let vbytes = self.get_raw(DBColumnFamily::Status, &kbytes)?;
         let r = match vbytes {
             Some(v) => InstanceIds::decode(v.as_slice())?,
@@ -69,7 +69,7 @@ pub trait StorageAPI: RawKV {
     /// set an instance
     fn set_instance(&self, v: &Instance) -> Result<(), StorageError> {
         // TODO does not guarantee in a transaction
-        let iid = v.to_key();
+        let iid = v.into_key();
         let mut value = vec![];
         v.encode(&mut value)?;
 
@@ -78,7 +78,7 @@ pub trait StorageAPI: RawKV {
 
     /// get an instance with instance id
     fn get_instance(&self, k: InstanceId) -> Result<Option<Instance>, StorageError> {
-        let key = k.to_key();
+        let key = k.into_key();
         let vbs = self.get_raw(DBColumnFamily::Instance, &key)?;
         let r = match vbs {
             Some(v) => Instance::decode(v.as_slice())?,
@@ -100,11 +100,11 @@ pub trait StorageAPI: RawKV {
     }
 
     fn next_kv(&self, key: &[u8], include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
-        self.next_raw(DBColumnFamily::Record, key, include)
+        self.next_raw(DBColumnFamily::Record, key, true, include)
     }
 
     fn prev_kv(&self, key: &[u8], include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
-        self.prev_raw(DBColumnFamily::Record, key, include)
+        self.next_raw(DBColumnFamily::Record, key, false, include)
     }
 }
 
@@ -126,6 +126,6 @@ impl From<Instance> for WriteEntry {
     fn from(inst: Instance) -> Self {
         let mut v = vec![];
         inst.encode(&mut v).unwrap();
-        return WriteEntry::Set(DBColumnFamily::Instance, inst.to_key(), v);
+        return WriteEntry::Set(DBColumnFamily::Instance, inst.into_key(), v);
     }
 }
