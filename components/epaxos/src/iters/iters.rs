@@ -1,6 +1,5 @@
 use crate::qpaxos::*;
 use crate::Storage;
-use prost::Message;
 use storage::*;
 
 pub struct BaseIter {
@@ -40,42 +39,34 @@ impl Iterator for InstanceIter {
     type Item = Instance;
 
     fn next(&mut self) -> Option<Instance> {
-        let k = self.curr_inst_id.into_key();
-        let (key_bytes, val_bytes) =
-            self.storage
-                .next_raw(DBColumnFamily::Instance, &k, !self.reverse, self.include)?;
+        let nxt = self.storage.next::<InstanceId, Instance>(
+            DBColumnFamily::Instance,
+            &self.curr_inst_id,
+            !self.reverse,
+            self.include,
+        );
 
-        let key = String::from_utf8(key_bytes);
-        let key = match key {
-            Ok(v) => v,
-            Err(_) => {
-                // this is not a key of instance id, done
-                return None;
+        let nxt = match nxt {
+            Err(e) => {
+                // TODO handle StorageError
+                // TODO handle data damaging.
+                // TODO add test of data corruption
+                panic!("storage error: {:?}", e);
             }
+            Ok(nxt) => nxt,
         };
 
-        let iid = InstanceId::from_key(&key[..]);
-        let iid = match iid {
-            Some(v) => v,
+        let (iid, inst) = match nxt {
             None => {
-                // this is not a key of instance id, done
                 return None;
             }
+            Some((a, b)) => (a, b),
         };
 
         if iid.replica_id != self.curr_inst_id.replica_id {
             // out of bound, done
             return None;
         }
-
-        let inst = match Self::Item::decode(val_bytes.as_slice()) {
-            Ok(v) => v,
-            Err(e) => {
-                // TODO handle data damaging.
-                // TODO add test of data corruption
-                panic!(e);
-            }
-        };
 
         self.curr_inst_id = iid;
         self.include = false;

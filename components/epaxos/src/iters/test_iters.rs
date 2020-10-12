@@ -5,6 +5,13 @@ use std::sync::Arc;
 use storage::Storage;
 use storage::{MemEngine, RawKV};
 
+fn new_two_sto() -> (Storage, Storage) {
+    let eng = Arc::new(MemEngine::new().unwrap());
+    let s1: Storage = Storage::new("1/", eng.clone());
+    let s2: Storage = Storage::new("2/", eng);
+    (s1, s2)
+}
+
 #[test]
 fn test_base_iter() {
     let sto: Storage = Storage::new("foo", Arc::new(MemEngine::new().unwrap()));
@@ -52,7 +59,7 @@ fn test_base_iter() {
 #[test]
 fn test_instance_iter() {
     let mut ints = Vec::<Instance>::new();
-    let sto: Storage = Storage::new("foo", Arc::new(MemEngine::new().unwrap()));
+    let (sto, s2) = new_two_sto();
 
     for rid in 0..3 {
         for idx in 0..10 {
@@ -78,7 +85,7 @@ fn test_instance_iter() {
         }
     }
 
-    let cases = vec![
+    let cases: Vec<(InstanceId, bool, &[Instance], &[Instance])> = vec![
         (InstanceId::from((0, 0)), true, &ints[..10], &ints[0..1]),
         (InstanceId::from((0, 0)), false, &ints[1..10], &[]),
         (InstanceId::from((2, 0)), true, &ints[20..30], &ints[20..21]),
@@ -87,35 +94,39 @@ fn test_instance_iter() {
     ];
 
     for (start_iid, include, exp_insts, rev_exp_insts) in cases {
-        let mut n = 0;
-
         let iter = sto.get_instance_iter(start_iid, include, false);
+        let mut exp = vec![];
+        exp.extend(exp_insts.iter());
+        assert_inst_iter(iter, &exp);
 
-        for act_inst in iter {
-            assert_eq!(act_inst.cmds, exp_insts[n].cmds);
-            assert_eq!(act_inst.ballot, exp_insts[n].ballot);
-
-            assert_eq!(act_inst.instance_id, exp_insts[n].instance_id);
-
-            n = n + 1;
-        }
-
-        assert_eq!(exp_insts.len(), n);
-
-        n = 0;
         let iter = sto.get_instance_iter(start_iid, include, true);
-
         let mut exp = vec![];
         exp.extend(rev_exp_insts.iter().rev());
-        for act_inst in iter {
-            assert_eq!(act_inst.cmds, exp[n].cmds);
-            assert_eq!(act_inst.ballot, exp[n].ballot);
+        assert_inst_iter(iter, &exp);
 
-            assert_eq!(act_inst.instance_id, exp[n].instance_id);
+        // storage is separated by namespace
 
-            n = n + 1;
-        }
+        let exp = vec![];
 
-        assert_eq!(exp.len(), n);
+        let iter = s2.get_instance_iter(start_iid, include, false);
+        assert_inst_iter(iter, &exp);
+
+        let iter = s2.get_instance_iter(start_iid, include, true);
+        assert_inst_iter(iter, &exp);
     }
+}
+
+fn assert_inst_iter(it: InstanceIter, want: &[&Instance]) {
+    let mut n = 0;
+
+    for act_inst in it {
+        assert_eq!(act_inst.cmds, want[n].cmds);
+        assert_eq!(act_inst.ballot, want[n].ballot);
+
+        assert_eq!(act_inst.instance_id, want[n].instance_id);
+
+        n = n + 1;
+    }
+
+    assert_eq!(want.len(), n);
 }

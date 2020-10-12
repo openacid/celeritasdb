@@ -7,12 +7,11 @@ use crate::qpaxos::*;
 use crate::replica::*;
 use crate::testutil;
 use crate::StorageAPI;
-use storage::AsStorageKey;
+use storage::ObjectKV;
 use storage::{DBColumnFamily, Storage};
 use storage::{MemEngine, RawKV};
 
 use pretty_assertions::assert_eq;
-use prost::Message;
 
 /// Create an instance with command "set x=y".
 /// Use this when only deps are concerned.
@@ -73,18 +72,13 @@ fn new_mem_sto() -> Arc<dyn RawKV> {
 fn new_foo_replica(
     replica_id: i64,
     storage: Arc<dyn RawKV>,
-    insts: &[((i64, i64), &Instance)],
+    insts: &[((i64, i64), Instance)],
 ) -> Replica {
     let r = testutil::new_replica(replica_id, vec![0, 1, 2], vec![], storage);
 
     for (iid, inst) in insts.iter() {
-        let mut value = vec![];
-        inst.encode(&mut value).unwrap();
-
         let iid = InstanceId::from(iid);
-        r.storage
-            .set_raw(DBColumnFamily::Instance, &iid.into_key(), &value)
-            .unwrap();
+        r.storage.set(DBColumnFamily::Instance, &iid, inst).unwrap();
     }
 
     r
@@ -93,47 +87,58 @@ fn new_foo_replica(
 #[test]
 fn test_new_instance() {
     let rid1 = 1;
-    let rid2 = 2;
 
     let cmds = cmdvec![("Set", "x", "1")];
-    let sto = new_mem_sto();
+    let eng = new_mem_sto();
+    {
+        // initial
+        let r1 = new_foo_replica(rid1, eng.clone(), &[]);
+        // R1: (1, 0) -> []
+        let i10 = r1.new_instance(&cmds).unwrap();
+        assert_eq!(
+            i10,
+            inst!((rid1, 0), (0, _), [(x = "1")], (0, [-1, -1, -1]))
+        );
+        assert_eq!(
+            i10,
+            r1.storage.get_instance((rid1, 0).into()).unwrap().unwrap()
+        );
+    }
+    {
+        // depends on existent conflicting instances
+        //
+        //             new
+        //             2:a=b
+        //             1:x=z
+        // 1:a=b
+        // 0:x=y
+        // -----------------
+        // R0    R1    R2
+        let r2 = new_foo_replica(
+            2,
+            eng.clone(),
+            &[
+                ((0, 0), inst!((0, 0), [(x = y)])), // depends on conflicting
+                ((0, 1), inst!((0, 0), [(a = b)])), // not depends non-conflicing
+                ((2, 1), inst!((2, 1), [(x = z)])), // conflicting too
+                ((2, 2), inst!((2, 2), [(a = b)])), // depends on all instance by the same leader.
+            ],
+        );
 
-    let r1 = new_foo_replica(rid1, sto.clone(), &[]);
-    let r2 = new_foo_replica(rid2, sto.clone(), &[]);
-
-    // (1, 0) -> []
-    let i10 = r1.new_instance(&cmds).unwrap();
-    assert_eq!(
-        i10,
-        inst!((rid1, 0), (0, _), [(x = "1")], (0, [-1, -1, -1]))
-    );
-    assert_eq!(
-        i10,
-        r1.storage.get_instance((rid1, 0).into()).unwrap().unwrap()
-    );
-
-    // (2, 0) -> [(1, 0)]
-    let i20 = r2.new_instance(&cmds).unwrap();
-    assert_eq!(i20, inst!((rid2, 0), (0, _), [(x = "1")], (0, [-1, 0, -1])));
-    assert_eq!(
-        i20,
-        r1.storage.get_instance((rid2, 0).into()).unwrap().unwrap()
-    );
-
-    // (2, 1) -> [(1, 0), (2, 0)]
-    let i21 = r2.new_instance(&cmds).unwrap();
-    assert_eq!(i21, inst!((rid2, 1), (0, _), [(x = "1")], (0, [-1, 0, 0])));
-    assert_eq!(
-        i21,
-        r1.storage.get_instance((rid2, 1).into()).unwrap().unwrap()
-    );
+        let i20 = r2.new_instance(&cmds).unwrap();
+        assert_eq!(i20, inst!((2, 3), (0, _), [(x = "1")], (0, [0, -1, 2])));
+        assert_eq!(
+            i20,
+            r2.storage.get_instance((2, 3).into()).unwrap().unwrap()
+        );
+    }
 }
 
 #[test]
 fn test_get_max_instance_ids() {
     let (i12, i13, i34) = (inst!((1, 2)), inst!((1, 3)), inst!((3, 4)));
 
-    let insts = vec![((1, 2), &i12), ((1, 3), &i13), ((3, 4), &i34)];
+    let insts = vec![((1, 2), i12), ((1, 3), i13), ((3, 4), i34)];
 
     let r = new_foo_replica(3, new_mem_sto(), &insts);
     let maxs = r.get_max_instance_ids(&[1, 3, 5]);
@@ -247,7 +252,7 @@ fn test_handle_prepare_request_panic_local_instance_id_none() {
 }
 
 fn _handle_prepare_request(iid: (i64, i64), mut inst: Instance, req_inst: Instance) {
-    let replica = new_foo_replica(1, new_mem_sto(), &[(iid, &inst)]);
+    let replica = new_foo_replica(1, new_mem_sto(), &[(iid, inst.clone())]);
 
     let req = MakeRequest::prepare(1, &req_inst, &vec![false]);
     let req: PrepareRequest = req.phase.unwrap().try_into().unwrap();
@@ -325,12 +330,12 @@ fn test_handle_prepare_normal() {
             replica_id,
             new_mem_sto(),
             &vec![
-                ((0, 0), &instx),
-                ((0, 2), &instd),
-                ((1, 0), &insty),
-                ((1, 1), &instb),
-                ((2, 0), &instz),
-                ((2, 3), &instc),
+                ((0, 0), instx.clone()),
+                ((0, 2), instd.clone()),
+                ((1, 0), insty.clone()),
+                ((1, 1), instb.clone()),
+                ((2, 0), instz.clone()),
+                ((2, 3), instc.clone()),
             ],
         );
 

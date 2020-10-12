@@ -39,54 +39,35 @@ mod test_qpaxos_storage;
 
 use storage::AsStorageKey;
 use storage::DBColumnFamily;
+use storage::ObjectKV;
 use storage::RawKV;
 use storage::Storage;
 use storage::StorageError;
 use storage::WriteEntry;
 
 /// AccessRecord provides API to access user key/value record.
-pub trait StorageAPI: RawKV {
+/// TODO: do not need RawKV
+pub trait StorageAPI: ObjectKV + RawKV {
     /// set status
     fn set_status(&self, key: &ReplicaStatus, value: &InstanceIds) -> Result<(), StorageError> {
-        let kbytes = key.into_key();
-        let mut vbytes = vec![];
-        value.encode(&mut vbytes)?;
-
-        self.set_raw(DBColumnFamily::Status, &kbytes, &vbytes)
+        self.set(DBColumnFamily::Status, key, value)
     }
 
-    /// get an status with key
+    /// get an status by key
     fn get_status(&self, key: &ReplicaStatus) -> Result<Option<InstanceIds>, StorageError> {
-        let kbytes = key.into_key();
-        let vbytes = self.get_raw(DBColumnFamily::Status, &kbytes)?;
-        let r = match vbytes {
-            Some(v) => InstanceIds::decode(v.as_slice())?,
-            None => return Ok(None),
-        };
-
-        Ok(Some(r))
+        self.get(DBColumnFamily::Status, key)
     }
+
     /// set an instance
     fn set_instance(&self, v: &Instance) -> Result<(), StorageError> {
-        // TODO does not guarantee in a transaction
-        let iid = v.into_key();
-        let mut value = vec![];
-        v.encode(&mut value)?;
-
-        self.set_raw(DBColumnFamily::Instance, &iid, &value)
+        self.set(DBColumnFamily::Instance, &v.instance_id.unwrap(), v)
     }
 
-    /// get an instance with instance id
+    /// get an instance by instance id
     fn get_instance(&self, k: InstanceId) -> Result<Option<Instance>, StorageError> {
-        let key = k.into_key();
-        let vbs = self.get_raw(DBColumnFamily::Instance, &key)?;
-        let r = match vbs {
-            Some(v) => Instance::decode(v.as_slice())?,
-            None => return Ok(None),
-        };
-
-        Ok(Some(r))
+        self.get(DBColumnFamily::Instance, &k)
     }
+
     fn set_kv(&self, key: &[u8], value: &[u8]) -> Result<(), StorageError> {
         self.set_raw(DBColumnFamily::Record, key, value)
     }

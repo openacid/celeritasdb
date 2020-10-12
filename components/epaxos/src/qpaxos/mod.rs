@@ -35,33 +35,26 @@ pub use quorums::*;
 
 #[cfg(test)]
 mod t;
-
-#[cfg(test)]
-mod test_display;
-
-#[cfg(test)]
-mod test_macros;
-
-#[cfg(test)]
-mod test_quorums;
-
 #[cfg(test)]
 mod test_command;
-
-#[cfg(test)]
-mod test_errors;
-
 #[cfg(test)]
 mod test_deps;
-
+#[cfg(test)]
+mod test_display;
+#[cfg(test)]
+mod test_errors;
 #[cfg(test)]
 mod test_instance;
-
+#[cfg(test)]
+mod test_instance_id_as_key;
 #[cfg(test)]
 mod test_instance_id_vec;
-
 #[cfg(test)]
 mod test_instance_ids;
+#[cfg(test)]
+mod test_macros;
+#[cfg(test)]
+mod test_quorums;
 
 pub type InstanceIdx = i64;
 pub type ReplicaId = i64;
@@ -259,20 +252,22 @@ impl AsStorageKey for InstanceId {
         let pref = "/instance/";
         let plen = pref.len();
         if &buf[..plen] == pref.as_bytes() {
-            let rid = &buf[plen..plen + 16];
-            let rid = u64::from_str_radix(&String::from_utf8_lossy(rid), 16);
+            let ridbuf = &buf[plen..plen + 16];
+            let ridstr = String::from_utf8_lossy(ridbuf);
+            let rid = u64::from_str_radix(&ridstr, 16);
             let rid = match rid {
                 Ok(v) => v,
                 Err(_) => {
                     panic!("invalid key replica id");
                 }
             };
-            let idx = &buf[plen + 16..plen + 32];
-            let idx = u64::from_str_radix(&String::from_utf8_lossy(idx), 16);
+            let idxbuf = &buf[plen + 16 + 1..plen + 32 + 1];
+            let idxstr = String::from_utf8_lossy(idxbuf);
+            let idx = u64::from_str_radix(&idxstr, 16);
             let idx = match idx {
                 Ok(v) => v,
-                Err(_) => {
-                    panic!("invalid key idx");
+                Err(e) => {
+                    panic!("invalid key idx: {:?}", e);
                 }
             };
             InstanceId {
@@ -300,27 +295,6 @@ impl<A: Into<ReplicaId> + Copy, B: Into<i64> + Copy> From<&(A, B)> for InstanceI
             replica_id: t.0.into(),
             idx: t.1.into(),
         }
-    }
-}
-
-impl InstanceId {
-    pub fn from_key(s: &str) -> Option<InstanceId> {
-        let items: Vec<&str> = s.split("/").collect();
-        if items[1] == "instance" && items.len() == 4 {
-            let replica_id = match u64::from_str_radix(&items[2][..], 16) {
-                Ok(v) => v as i64,
-                Err(_) => return None,
-            };
-
-            let idx = match u64::from_str_radix(&items[3][..], 16) {
-                Ok(v) => v as i64,
-                Err(_) => return None,
-            };
-
-            return Some(InstanceId { replica_id, idx });
-        }
-
-        return None;
     }
 }
 
