@@ -36,6 +36,19 @@ macro_rules! test_enc_dec {
     };
 }
 
+pub fn new_sto(rid: ReplicaId) -> Storage {
+    let eng = MemEngine::new().unwrap();
+    Storage::new(rid, Arc::new(eng))
+}
+
+pub fn new_two_sto(rid1: ReplicaId, rid2: ReplicaId) -> (Storage, Storage) {
+    let eng = Arc::new(MemEngine::new().unwrap());
+    (
+        Storage::new(rid1, eng.clone()),
+        Storage::new(rid2, eng.clone()),
+    )
+}
+
 pub fn new_replica(
     rid: ReplicaId,
     group: Vec<ReplicaId>,

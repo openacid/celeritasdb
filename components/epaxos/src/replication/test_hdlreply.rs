@@ -256,7 +256,9 @@ fn test_handle_accept_reply() {
 
     let mut inst = inst!((1, 2), (0, _), [(x = "1")], []);
     inst.deps = Some(depvec![].into());
-    rp.storage.set_instance(&inst).unwrap();
+    rp.storage
+        .set_instance(&inst.instance_id.unwrap(), &inst)
+        .unwrap();
     let n = rp.group_replica_ids.len() as i32;
 
     {

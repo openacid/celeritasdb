@@ -229,7 +229,9 @@ async fn test_replica_execute() {
 
     for (insts, exec_ref, rst) in cases.iter() {
         insts.iter().for_each(|inst| {
-            rp.storage.set_instance(&inst).unwrap();
+            rp.storage
+                .set_instance(&inst.instance_id.unwrap(), &inst)
+                .unwrap();
         });
 
         let mut executed = InstanceIds {

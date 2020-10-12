@@ -76,9 +76,9 @@ fn test_instance_iter() {
             let mut inst = Instance::of(&cmds[..], ballot, &depvec[..]);
             inst.instance_id = Some(iid);
 
-            let _ = sto.set_instance(&inst).unwrap();
+            let _ = sto.set_instance(&inst.instance_id.unwrap(), &inst).unwrap();
 
-            let act = sto.get_instance(iid).unwrap().unwrap();
+            let act = sto.get_instance(&iid).unwrap().unwrap();
             assert_eq!(act.cmds, cmds);
 
             ints.push(inst);

@@ -183,7 +183,7 @@ impl RedisApi {
 
         let inst = &mut st.instance;
         inst.committed = true;
-        let _ = r.storage.set_instance(inst)?;
+        let _ = r.storage.set_instance(&inst.instance_id.unwrap(), inst)?;
 
         if let Err(err) = self
             .commit_sender
@@ -217,7 +217,7 @@ impl RedisApi {
         inst.committed = true;
         let (tx, rx) = oneshot::channel();
         r.insert_tx(inst.instance_id.unwrap(), tx).await;
-        r.storage.set_instance(inst)?;
+        r.storage.set_instance(&inst.instance_id.unwrap(), inst)?;
 
         if let Err(err) = self
             .commit_sender

@@ -84,7 +84,8 @@ pub async fn replicate(
 
     st.instance.deps = Some(adeps.into());
     st.start_accept();
-    r.storage.set_instance(&st.instance)?;
+    r.storage
+        .set_instance(&st.instance.instance_id.unwrap(), &st.instance)?;
 
     let req = MakeRequest::accept(0, &st.instance);
     let repls = bcast_msg(&r.peers, req).await;

@@ -18,15 +18,15 @@ async fn test_replica_exec_thread() {
     let ctx = InProcContext::new("az_1");
 
     let cases = [
-        inst!((1, 0), (4, 2), [("Set", "x", "y")], [(1, 0)], (2, 3), true,),
-        inst!((1, 1), (4, 2), [("Set", "z", "a")], [(1, 0)], (2, 3), true,),
+        inst!((1, 0), (4, 2), [(x = y)], [(1, 0)], (2, 3), true,),
+        inst!((1, 1), (4, 2), [(z = a)], [(1, 0)], (2, 3), true,),
     ];
 
     // there is only replica
 
     for inst in cases.iter() {
         let sto = &ctx.get_replica(1).storage;
-        sto.set_instance(&inst).unwrap();
+        sto.set_instance(&inst.instance_id.unwrap(), &inst).unwrap();
 
         loop {
             let exec = sto.get_status(&ReplicaStatus::Exec).unwrap();

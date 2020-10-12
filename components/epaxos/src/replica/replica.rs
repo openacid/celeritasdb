@@ -156,7 +156,8 @@ impl Replica {
         let mut inst = Instance::of(cmds, (0, rid).into(), &deps);
         inst.instance_id = Some(iid);
 
-        self.storage.set_instance(&inst)?;
+        self.storage
+            .set_instance(&inst.instance_id.unwrap(), &inst)?;
 
         Ok(inst)
     }
@@ -227,7 +228,8 @@ impl Replica {
             Phase::Commit(r) => self.handle_commit(r, &mut inst)?.into(),
         };
 
-        self.storage.set_instance(&inst)?;
+        self.storage
+            .set_instance(&inst.instance_id.unwrap(), &inst)?;
 
         Ok(ReplicateReply {
             err: None,
@@ -322,7 +324,7 @@ impl Replica {
     }
 
     pub fn get_instance(&self, iid: InstanceId) -> Result<Instance, ReplicaError> {
-        let inst = self.storage.get_instance(iid)?;
+        let inst = self.storage.get_instance(&iid)?;
 
         let inst = match inst {
             Some(inst) => inst,

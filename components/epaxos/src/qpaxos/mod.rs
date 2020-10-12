@@ -6,6 +6,7 @@ pub use std::convert::TryInto;
 
 use derive_more;
 use enum_utils;
+
 use storage::AsStorageKey;
 
 include!(concat!(env!("OUT_DIR"), "/qpaxos.rs"));

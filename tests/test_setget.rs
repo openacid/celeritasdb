@@ -26,7 +26,7 @@ async fn test_set() {
 
     for rid in 1..=3 {
         let sto = &ctx.get_replica(rid).storage;
-        let inst = sto.get_instance((1, 0).into());
+        let inst = sto.get_instance(&(1, 0).into());
 
         assert!(inst.is_ok());
         let inst = inst.unwrap();
@@ -50,7 +50,7 @@ async fn test_set() {
 
         for rid in 1..=3 {
             let sto = &ctx.get_replica(rid).storage;
-            let inst = sto.get_instance((1, 0).into());
+            let inst = sto.get_instance(&(1, 0).into());
             let inst = inst.unwrap().unwrap();
 
             assert_eq!(

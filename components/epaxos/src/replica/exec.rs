@@ -222,7 +222,7 @@ impl Replica {
         let mut recover_iids = InstanceIdVec::from([0; 0]);
 
         for iid in inst_ids {
-            let inst = match self.storage.get_instance(*iid)? {
+            let inst = match self.storage.get_instance(iid)? {
                 Some(i) => i,
                 None => {
                     continue;

@@ -101,7 +101,7 @@ fn test_new_instance() {
         );
         assert_eq!(
             i10,
-            r1.storage.get_instance((rid1, 0).into()).unwrap().unwrap()
+            r1.storage.get_instance(&(rid1, 0).into()).unwrap().unwrap()
         );
     }
     {
@@ -129,7 +129,7 @@ fn test_new_instance() {
         assert_eq!(i20, inst!((2, 3), (0, _), [(x = "1")], (0, [0, -1, 2])));
         assert_eq!(
             i20,
-            r2.storage.get_instance((2, 3).into()).unwrap().unwrap()
+            r2.storage.get_instance(&(2, 3).into()).unwrap().unwrap()
         );
     }
 }
@@ -196,7 +196,10 @@ fn test_handle_replicate_ballot_check() {
     let replica = new_foo_replica(replica_id, new_mem_sto(), &vec![]);
 
     let local_inst = inst!((3, 4), (2, _), [("Set", "x", "0")]);
-    replica.storage.set_instance(&local_inst).unwrap();
+    replica
+        .storage
+        .set_instance(&local_inst.instance_id.unwrap(), &local_inst)
+        .unwrap();
 
     let inst = inst!((3, 4), (1, _), [("Set", "x", "1")],);
 
@@ -374,7 +377,7 @@ fn test_handle_accept_request() {
     let fdeps = inst.deps.clone();
 
     let replica = new_foo_replica(replica_id, new_mem_sto(), &vec![]);
-    let none = replica.storage.get_instance(iid).unwrap();
+    let none = replica.storage.get_instance(&iid).unwrap();
     assert_eq!(None, none);
 
     {

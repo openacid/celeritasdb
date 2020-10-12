@@ -59,13 +59,13 @@ pub trait StorageAPI: ObjectKV + RawKV {
     }
 
     /// set an instance
-    fn set_instance(&self, v: &Instance) -> Result<(), StorageError> {
-        self.set(DBColumnFamily::Instance, &v.instance_id.unwrap(), v)
+    fn set_instance(&self, key: &InstanceId, v: &Instance) -> Result<(), StorageError> {
+        self.set(DBColumnFamily::Instance, key, v)
     }
 
     /// get an instance by instance id
-    fn get_instance(&self, k: InstanceId) -> Result<Option<Instance>, StorageError> {
-        self.get(DBColumnFamily::Instance, &k)
+    fn get_instance(&self, k: &InstanceId) -> Result<Option<Instance>, StorageError> {
+        self.get(DBColumnFamily::Instance, k)
     }
 
     fn set_kv(&self, key: &[u8], value: &[u8]) -> Result<(), StorageError> {
