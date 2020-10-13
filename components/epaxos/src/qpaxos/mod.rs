@@ -33,7 +33,7 @@ pub use macros::*;
 pub use q_paxos_client::*;
 pub use q_paxos_server::*;
 pub use quorums::*;
-pub use record::*;
+pub use value::*;
 
 #[cfg(test)]
 mod t;
@@ -358,9 +358,27 @@ impl Instance {
         great
     }
 }
-impl From<&str> for Value {
-    fn from(t: &str) -> Value {
-        Value::Vbytes(t.as_bytes().into())
+impl From<&str> for ValueEnum {
+    fn from(t: &str) -> Self {
+        ValueEnum::Vbytes(t.as_bytes().into())
+    }
+}
+
+impl<T: Into<ValueEnum>> From<T> for Value {
+    fn from(t: T) -> Self {
+        Value {
+            value_enum: Some(t.into()),
+        }
+    }
+}
+
+impl Value {
+    pub fn to_vec(&self) -> Vec<u8> {
+        let value = self.value_enum.as_ref().unwrap();
+        match value {
+            ValueEnum::Vi64(v) => format!("{}", v).as_bytes().into(),
+            ValueEnum::Vbytes(v) => v.clone(),
+        }
     }
 }
 
@@ -374,10 +392,7 @@ impl<T: Into<Value>> From<T> for Record {
 
 impl Record {
     pub fn to_vec(&self) -> Vec<u8> {
-        match self.value.as_ref().unwrap() {
-            Value::Vi64(v) => format!("{}", v).as_bytes().into(),
-            Value::Vbytes(v) => v.clone(),
-        }
+        self.value.as_ref().unwrap().to_vec()
     }
 }
 

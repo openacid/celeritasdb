@@ -4,6 +4,19 @@ package qpaxos;
 
 import "message.proto";
 
+// Value is used to represent different data types in a Record or in a Command
+message Value {
+    oneof value_enum {
+        int64 vi64 = 1;
+        bytes vbytes = 10;
+    }
+}
+
+// Record is the the value of a key-value pair, with additional information, such as: TODO
+message Record {
+    Value value = 1;
+}
+
 service QPaxos {
     rpc replicate   (ReplicateRequest)  returns (ReplicateReply) {}
 }

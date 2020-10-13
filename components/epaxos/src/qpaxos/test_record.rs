@@ -1,12 +1,16 @@
 use crate::Record;
 use crate::Value;
+use crate::ValueEnum;
 #[test]
 fn test_record_from() {
+    let foo: Vec<u8> = "foo".as_bytes().into();
     let a = "foo";
     let r = Record::from(a);
     assert_eq!(
         Record {
-            value: Some(Value::Vbytes("foo".as_bytes().into())),
+            value: Some(Value {
+                value_enum: Some(ValueEnum::Vbytes(foo.clone()))
+            }),
         },
         r
     );
@@ -15,7 +19,9 @@ fn test_record_from() {
     let r = Record::from(a);
     assert_eq!(
         Record {
-            value: Some(Value::Vbytes("foo".as_bytes().into())),
+            value: Some(Value {
+                value_enum: Some(ValueEnum::Vbytes(foo.clone()))
+            }),
         },
         r
     );
@@ -24,7 +30,9 @@ fn test_record_from() {
     let r = Record::from(a);
     assert_eq!(
         Record {
-            value: Some(Value::Vi64(3)),
+            value: Some(Value {
+                value_enum: Some(ValueEnum::Vi64(3))
+            }),
         },
         r
     );
