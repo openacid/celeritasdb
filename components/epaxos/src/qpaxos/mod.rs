@@ -246,42 +246,36 @@ impl AsStorageKey for InstanceId {
         if self.idx < 0 {
             panic!("idx can not be less than 0:{}", self.idx);
         }
-        format!("/instance/{:016x}/{:016x}", self.replica_id, self.idx).into_bytes()
+        format!("{:016x}/{:016x}", self.replica_id, self.idx).into_bytes()
     }
 
     fn key_len(&self) -> usize {
-        // TODO implement
-        self.into_key().len()
+        16 + 1 + 16
     }
 
     fn from_key(buf: &[u8]) -> Self {
-        let pref = "/instance/";
-        let plen = pref.len();
-        if &buf[..plen] == pref.as_bytes() {
-            let ridbuf = &buf[plen..plen + 16];
-            let ridstr = String::from_utf8_lossy(ridbuf);
-            let rid = u64::from_str_radix(&ridstr, 16);
-            let rid = match rid {
-                Ok(v) => v,
-                Err(_) => {
-                    panic!("invalid key replica id");
-                }
-            };
-            let idxbuf = &buf[plen + 16 + 1..plen + 32 + 1];
-            let idxstr = String::from_utf8_lossy(idxbuf);
-            let idx = u64::from_str_radix(&idxstr, 16);
-            let idx = match idx {
-                Ok(v) => v,
-                Err(e) => {
-                    panic!("invalid key idx: {:?}", e);
-                }
-            };
-            InstanceId {
-                replica_id: rid as i64,
-                idx: idx as i64,
+        let ridbuf = &buf[0..16];
+        let ridstr = String::from_utf8_lossy(ridbuf);
+        let rid = u64::from_str_radix(&ridstr, 16);
+        let rid = match rid {
+            Ok(v) => v,
+            Err(_) => {
+                panic!("invalid key replica id");
             }
-        } else {
-            panic!("without expected prefix /instance/");
+        };
+        // 1 for a "/" between replica id and idx
+        let idxbuf = &buf[16 + 1..32 + 1];
+        let idxstr = String::from_utf8_lossy(idxbuf);
+        let idx = u64::from_str_radix(&idxstr, 16);
+        let idx = match idx {
+            Ok(v) => v,
+            Err(e) => {
+                panic!("invalid key idx: {:?}", e);
+            }
+        };
+        InstanceId {
+            replica_id: rid as i64,
+            idx: idx as i64,
         }
     }
 }

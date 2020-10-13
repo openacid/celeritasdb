@@ -71,10 +71,10 @@ fn new_mem_sto() -> Arc<dyn RawKV> {
 /// Create a stupid replica with some instances stored.
 fn new_foo_replica(
     replica_id: i64,
-    storage: Arc<dyn RawKV>,
+    engine: Arc<dyn RawKV>,
     insts: &[((i64, i64), Instance)],
 ) -> Replica {
-    let r = testutil::new_replica(replica_id, vec![0, 1, 2], vec![], storage);
+    let r = testutil::new_replica(replica_id, vec![0, 1, 2], vec![], engine);
 
     for (iid, inst) in insts.iter() {
         let iid = InstanceId::from(iid);

@@ -66,13 +66,13 @@ fn test_ballotnum_derived() {
 fn test_instance_id_to_key() {
     let k = InstanceId::from((1, 10)).into_key();
     assert_eq!(
-        "/instance/0000000000000001/000000000000000a",
+        "0000000000000001/000000000000000a",
         str::from_utf8(&k).unwrap()
     );
 
     let k = InstanceId::from((-1, 0)).into_key();
     assert_eq!(
-        "/instance/ffffffffffffffff/0000000000000000",
+        "ffffffffffffffff/0000000000000000",
         str::from_utf8(&k).unwrap()
     );
 }
