@@ -46,7 +46,7 @@ impl RawKV for MemEngine {
         key: &[u8],
         forward: bool,
         include: bool,
-    ) -> Option<(Vec<u8>, Vec<u8>)> {
+    ) -> Result<Option<(Vec<u8>, Vec<u8>)>, StorageError> {
         let mut cfs = self._db.lock().unwrap();
         let bt = cfs.entry(cf.into()).or_insert(BTreeMap::new());
 
@@ -61,10 +61,10 @@ impl RawKV for MemEngine {
                 continue;
             }
 
-            return Some((k.to_vec(), v.to_vec()));
+            return Ok(Some((k.to_vec(), v.to_vec())));
         }
 
-        None
+        Ok(None)
     }
 
     // TODO now just execute these commands in order

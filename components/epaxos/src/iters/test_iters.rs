@@ -50,6 +50,7 @@ fn test_base_iter() {
         let cur = cur.as_bytes().to_vec();
         let it = sto.get_iter(cur.clone(), *include, *reverse, DBColumnFamily::Record);
         for (i, kv) in it.enumerate() {
+            let kv = kv.unwrap();
             assert_eq!(ks[idx(i)], kv.0);
             assert_eq!(vs[idx(i)], kv.1);
         }

@@ -2,6 +2,7 @@ use crate::qpaxos::*;
 use crate::Storage;
 use storage::*;
 
+// TODO rename to RawKVIter
 pub struct BaseIter {
     pub cursor: Vec<u8>,
     pub include: bool,
@@ -11,18 +12,25 @@ pub struct BaseIter {
 }
 
 impl Iterator for BaseIter {
-    type Item = (Vec<u8>, Vec<u8>);
+    type Item = Result<(Vec<u8>, Vec<u8>), StorageError>;
 
     fn next(&mut self) -> Option<Self::Item> {
         let r = self
             .storage
             .next_raw(self.cf, &self.cursor, !self.reverse, self.include);
 
+        let r = match r {
+            Ok(v) => v,
+            Err(e) => {
+                return Some(Err(e));
+            }
+        };
+
         self.include = false;
         match r {
             Some(kv) => {
                 self.cursor = kv.0.clone();
-                Some(kv)
+                Some(Ok(kv))
             }
             None => None,
         }

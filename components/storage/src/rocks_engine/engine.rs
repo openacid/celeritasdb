@@ -35,44 +35,51 @@ impl RocksDBEngine {
         }
     }
 
+    // TODO merge it into next()
     fn _range(
         &self,
         cf: DBColumnFamily,
         key: &[u8],
         include: bool,
         reverse: bool,
-    ) -> Option<(Vec<u8>, Vec<u8>)> {
-        // TODO: _get_cf_handle should not discard error.
-        let cf = self._get_cf_handle(cf).ok()?;
+    ) -> Result<Option<(Vec<u8>, Vec<u8>)>, StorageError> {
+        let cf = self._get_cf_handle(cf)?;
         let mut iter = self.db.iter_cf(cf);
 
-        if !iter.seek(SeekKey::from(&key[..])).ok()? {
-            // TODO may be a rocksdb panic here
-            return None;
+        let rst = iter.seek(SeekKey::from(&key[..]));
+        let valid = match rst {
+            Ok(valid) => valid,
+            Err(estr) => {
+                return Err(estr.into());
+            }
+        };
+
+        if !valid {
+            return Ok(None);
         }
 
         let k = iter.key();
         let v = iter.value();
         if include {
-            return Some((k.to_vec(), v.to_vec()));
+            return Ok(Some((k.to_vec(), v.to_vec())));
         }
 
         if k != key {
-            return Some((k.to_vec(), v.to_vec()));
+            return Ok(Some((k.to_vec(), v.to_vec())));
         }
 
         let valid = {
             if reverse {
-                iter.prev().ok()?
+                iter.prev()?
             } else {
-                iter.next().ok()?
+                iter.next()?
             }
         };
         if !valid {
-            return None;
+            return Ok(None);
         }
 
-        Some((iter.key().to_vec(), iter.value().to_vec()))
+        Ok(Some((iter.key().to_vec(), iter.value().to_vec())))
     }
 }
 
@@ -99,7 +106,7 @@ impl RawKV for RocksDBEngine {
         key: &[u8],
         forward: bool,
         include: bool,
-    ) -> Option<(Vec<u8>, Vec<u8>)> {
+    ) -> Result<Option<(Vec<u8>, Vec<u8>)>, StorageError> {
         self._range(cf, key, include, !forward)
     }
 

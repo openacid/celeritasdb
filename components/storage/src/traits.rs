@@ -138,7 +138,7 @@ pub trait RawKV: Send + Sync {
         key: &[u8],
         forward: bool,
         include: bool,
-    ) -> Option<(Vec<u8>, Vec<u8>)>;
+    ) -> Result<Option<(Vec<u8>, Vec<u8>)>, StorageError>;
 
     fn write_batch(&self, entrys: &Vec<WriteEntry>) -> Result<(), StorageError>;
 }
@@ -159,6 +159,7 @@ pub trait ObjectKV: RawKV + WithNameSpace {
 
         self.set_raw(cf, &kbytes, &vbytes)
     }
+
     fn get<OK: AsStorageKey + ?Sized, OV: Message + Default>(
         &self,
         cf: DBColumnFamily,
@@ -197,7 +198,7 @@ pub trait ObjectKV: RawKV + WithNameSpace {
     ) -> Result<Option<(OK, OV)>, StorageError> {
         // TODO RawKV::next()  should return a Result with StorageError.
         let kbytes = self.prepend_ns(key);
-        let nxt = self.next_raw(cf, &kbytes, forward, include);
+        let nxt = self.next_raw(cf, &kbytes, forward, include)?;
         let (k, v) = match nxt {
             None => return Ok(None),
             Some((k, v)) => (k, v),
@@ -292,7 +293,7 @@ impl RawKV for Storage {
         key: &[u8],
         forward: bool,
         include: bool,
-    ) -> Option<(Vec<u8>, Vec<u8>)> {
+    ) -> Result<Option<(Vec<u8>, Vec<u8>)>, StorageError> {
         self.get_inner().next_raw(cf, key, forward, include)
     }
 

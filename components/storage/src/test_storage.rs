@@ -54,35 +54,43 @@ fn new_inst() -> TestInstance {
 }
 
 pub fn test_base_trait(eng: &dyn RawKV) {
-    let none = eng.next_raw(
-        DBColumnFamily::Record,
-        &"init".as_bytes().to_vec(),
-        true,
-        true,
-    );
+    let none = eng
+        .next_raw(
+            DBColumnFamily::Record,
+            &"init".as_bytes().to_vec(),
+            true,
+            true,
+        )
+        .unwrap();
     assert_eq!(none, None);
-    let none = eng.next_raw(
-        DBColumnFamily::Instance,
-        &"init".as_bytes().to_vec(),
-        true,
-        true,
-    );
-    assert_eq!(none, None);
-
-    let none = eng.next_raw(
-        DBColumnFamily::Record,
-        &"init".as_bytes().to_vec(),
-        false,
-        true,
-    );
+    let none = eng
+        .next_raw(
+            DBColumnFamily::Instance,
+            &"init".as_bytes().to_vec(),
+            true,
+            true,
+        )
+        .unwrap();
     assert_eq!(none, None);
 
-    let none = eng.next_raw(
-        DBColumnFamily::Instance,
-        &"init".as_bytes().to_vec(),
-        false,
-        true,
-    );
+    let none = eng
+        .next_raw(
+            DBColumnFamily::Record,
+            &"init".as_bytes().to_vec(),
+            false,
+            true,
+        )
+        .unwrap();
+    assert_eq!(none, None);
+
+    let none = eng
+        .next_raw(
+            DBColumnFamily::Instance,
+            &"init".as_bytes().to_vec(),
+            false,
+            true,
+        )
+        .unwrap();
     assert_eq!(none, None);
 
     let none = eng
@@ -113,28 +121,44 @@ pub fn test_base_trait(eng: &dyn RawKV) {
     let r = eng.get_raw(DBColumnFamily::Status, &kvs[0].0).unwrap();
     assert_eq!(r, Some(kvs[0].1.clone()));
 
-    let next = eng.next_raw(DBColumnFamily::Record, &kvs[0].0, true, true);
+    let next = eng
+        .next_raw(DBColumnFamily::Record, &kvs[0].0, true, true)
+        .unwrap();
     assert!(next.is_none());
 
-    let next = eng.next_raw(DBColumnFamily::Status, &kvs[0].0, true, true);
+    let next = eng
+        .next_raw(DBColumnFamily::Status, &kvs[0].0, true, true)
+        .unwrap();
     assert_eq!(next, Some(kvs[0].clone()));
 
-    let next = eng.next_raw(DBColumnFamily::Status, &kvs[0].0, true, false);
+    let next = eng
+        .next_raw(DBColumnFamily::Status, &kvs[0].0, true, false)
+        .unwrap();
     assert_eq!(next, Some(kvs[1].clone()));
 
-    let next = eng.next_raw(DBColumnFamily::Status, &kvs[3].0, true, false);
+    let next = eng
+        .next_raw(DBColumnFamily::Status, &kvs[3].0, true, false)
+        .unwrap();
     assert!(next.is_none());
 
-    let prev = eng.next_raw(DBColumnFamily::Record, &kvs[0].0, false, true);
+    let prev = eng
+        .next_raw(DBColumnFamily::Record, &kvs[0].0, false, true)
+        .unwrap();
     assert!(prev.is_none());
 
-    let prev = eng.next_raw(DBColumnFamily::Status, &kvs[0].0, false, true);
+    let prev = eng
+        .next_raw(DBColumnFamily::Status, &kvs[0].0, false, true)
+        .unwrap();
     assert_eq!(prev, Some(kvs[0].clone()));
 
-    let prev = eng.next_raw(DBColumnFamily::Status, &kvs[0].0, false, false);
+    let prev = eng
+        .next_raw(DBColumnFamily::Status, &kvs[0].0, false, false)
+        .unwrap();
     assert!(prev.is_none());
 
-    let prev = eng.next_raw(DBColumnFamily::Status, &kvs[3].0, false, true);
+    let prev = eng
+        .next_raw(DBColumnFamily::Status, &kvs[3].0, false, true)
+        .unwrap();
     assert_eq!(prev, Some(kvs[3].clone()));
 
     eng.delete_raw(DBColumnFamily::Record, &kvs[0].0).unwrap();
