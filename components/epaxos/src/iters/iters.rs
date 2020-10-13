@@ -3,7 +3,7 @@ use crate::Storage;
 use storage::*;
 
 // TODO rename to RawKVIter
-pub struct BaseIter {
+pub struct RawKVIter {
     pub cursor: Vec<u8>,
     pub include: bool,
     pub storage: Storage,
@@ -11,7 +11,7 @@ pub struct BaseIter {
     pub cf: DBColumnFamily,
 }
 
-impl Iterator for BaseIter {
+impl Iterator for RawKVIter {
     type Item = Result<(Vec<u8>, Vec<u8>), StorageError>;
 
     fn next(&mut self) -> Option<Self::Item> {
@@ -85,7 +85,8 @@ impl Iterator for InstanceIter {
 
 pub trait Iter {
     fn get_instance_iter(&self, iid: InstanceId, include: bool, reverse: bool) -> InstanceIter;
-    fn get_iter(&self, cur: Vec<u8>, include: bool, reverse: bool, cf: DBColumnFamily) -> BaseIter;
+    fn get_iter(&self, cur: Vec<u8>, include: bool, reverse: bool, cf: DBColumnFamily)
+        -> RawKVIter;
 }
 
 impl Iter for Storage {
@@ -98,8 +99,14 @@ impl Iter for Storage {
         }
     }
 
-    fn get_iter(&self, cur: Vec<u8>, include: bool, reverse: bool, cf: DBColumnFamily) -> BaseIter {
-        BaseIter {
+    fn get_iter(
+        &self,
+        cur: Vec<u8>,
+        include: bool,
+        reverse: bool,
+        cf: DBColumnFamily,
+    ) -> RawKVIter {
+        RawKVIter {
             cursor: cur,
             include,
             storage: self.clone(),
