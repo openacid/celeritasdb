@@ -274,8 +274,16 @@ fn test_storage_no_overriding() {
         v1.encode(&mut b).unwrap();
 
         let batch = vec![
-            WriteEntry::Set(DBColumnFamily::Record, w1.prepend_ns(&k1), b.clone()),
-            WriteEntry::Set(DBColumnFamily::Status, w1.prepend_ns(&k2), b.clone()),
+            WriteEntry::Set(
+                DBColumnFamily::Record,
+                w1.prepend_ns(&k1.clone()),
+                b.clone(),
+            ),
+            WriteEntry::Set(
+                DBColumnFamily::Status,
+                w1.prepend_ns(&k2.clone()),
+                b.clone(),
+            ),
         ];
 
         w1.write_batch(&batch).unwrap();

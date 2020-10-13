@@ -21,6 +21,11 @@ fn main() {
         .type_attribute("InstanceIdVec", "#[derive(derive_more::From)]")
         .type_attribute("Deps", "#[derive(derive_more::From)]")
         .type_attribute("Dep", "#[derive(Copy, Eq, Ord, PartialOrd, Hash)]")
+        .type_attribute("Record", "#[derive(Eq)]")
+        .type_attribute(
+            "Record.value",
+            "#[derive(Eq, derive_more::From, derive_more::TryInto)]",
+        )
         .type_attribute(
             "ReplicateRequest.phase",
             "#[derive(derive_more::From, derive_more::TryInto)]",
@@ -41,6 +46,7 @@ fn main() {
                 "src/protos/message.proto",
                 "src/protos/qpaxos.proto",
                 "src/protos/errors.proto",
+                "src/protos/record.proto",
             ],
             &["src/protos/"],
         )

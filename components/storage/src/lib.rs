@@ -13,3 +13,5 @@ pub use traits::*;
 
 #[cfg(test)]
 mod test_storage;
+#[cfg(test)]
+mod test_traits;

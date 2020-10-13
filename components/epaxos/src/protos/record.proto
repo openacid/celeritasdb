@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package qpaxos;
+
+
+// Record is the the value of a key-value pair, with additional information, such as: TODO
+message Record {
+
+    oneof value {
+        int64 vi64 = 1;
+        bytes vbytes = 10;
+    }
+
+}

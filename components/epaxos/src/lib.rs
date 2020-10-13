@@ -68,45 +68,54 @@ pub trait StorageAPI: ObjectKV + RawKV {
         self.get(DBColumnFamily::Instance, k)
     }
 
-    fn set_kv(&self, key: &[u8], value: &[u8]) -> Result<(), StorageError> {
-        self.set_raw(DBColumnFamily::Record, key, value)
+    fn set_kv(&self, key: &[u8], value: &Record) -> Result<(), StorageError> {
+        self.set(DBColumnFamily::Record, key, value)
     }
 
-    fn get_kv(&self, key: &[u8]) -> Result<Option<Vec<u8>>, StorageError> {
-        self.get_raw(DBColumnFamily::Record, key)
+    fn get_kv(&self, key: &[u8]) -> Result<Option<Record>, StorageError> {
+        self.get(DBColumnFamily::Record, key)
     }
 
     fn delete_kv(&self, key: &[u8]) -> Result<(), StorageError> {
-        self.delete_raw(DBColumnFamily::Record, key)
+        self.delete(DBColumnFamily::Record, key)
     }
 
-    fn next_kv(&self, key: &[u8], include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
-        self.next_raw(DBColumnFamily::Record, key, true, include)
+    fn next_kv(
+        &self,
+        key: &Vec<u8>,
+        include: bool,
+    ) -> Result<Option<(Vec<u8>, Record)>, StorageError> {
+        self.next::<Vec<u8>, Record>(DBColumnFamily::Record, key, true, include)
     }
 
-    fn prev_kv(&self, key: &[u8], include: bool) -> Option<(Vec<u8>, Vec<u8>)> {
-        self.next_raw(DBColumnFamily::Record, key, false, include)
+    fn prev_kv(
+        &self,
+        key: &Vec<u8>,
+        include: bool,
+    ) -> Result<Option<(Vec<u8>, Record)>, StorageError> {
+        self.next(DBColumnFamily::Record, key, false, include)
     }
-}
 
-impl StorageAPI for Storage {}
-
-impl From<&Command> for WriteEntry {
-    fn from(c: &Command) -> Self {
+    fn make_cmd_entry(&self, c: &Command) -> WriteEntry {
         if OpCode::Set as i32 == c.op {
-            return WriteEntry::Set(DBColumnFamily::Record, c.key.clone(), c.value.clone());
+            let mut vbytes = vec![];
+            Record::from(c.value.clone()).encode(&mut vbytes).unwrap();
+            return WriteEntry::Set(DBColumnFamily::Record, self.prepend_ns(&c.key), vbytes);
         } else if OpCode::Delete as i32 == c.op {
-            return WriteEntry::Delete(DBColumnFamily::Record, c.key.clone());
+            return WriteEntry::Delete(DBColumnFamily::Record, self.prepend_ns(&c.key));
         } else {
             return WriteEntry::Nil;
         }
     }
-}
-
-impl From<Instance> for WriteEntry {
-    fn from(inst: Instance) -> Self {
+    fn make_inst_entry(&self, inst: &Instance) -> WriteEntry {
         let mut v = vec![];
         inst.encode(&mut v).unwrap();
-        return WriteEntry::Set(DBColumnFamily::Instance, inst.into_key(), v);
+        return WriteEntry::Set(
+            DBColumnFamily::Instance,
+            self.prepend_ns(&inst.into_key()),
+            v,
+        );
     }
 }
+
+impl StorageAPI for Storage {}

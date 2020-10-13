@@ -33,6 +33,7 @@ pub use macros::*;
 pub use q_paxos_client::*;
 pub use q_paxos_server::*;
 pub use quorums::*;
+pub use record::*;
 
 #[cfg(test)]
 mod t;
@@ -56,6 +57,10 @@ mod test_instance_ids;
 mod test_macros;
 #[cfg(test)]
 mod test_quorums;
+#[cfg(test)]
+mod test_record;
+#[cfg(test)]
+mod test_value;
 
 pub type InstanceIdx = i64;
 pub type ReplicaId = i64;
@@ -351,6 +356,28 @@ impl Instance {
         }
 
         great
+    }
+}
+impl From<&str> for Value {
+    fn from(t: &str) -> Value {
+        Value::Vbytes(t.as_bytes().into())
+    }
+}
+
+impl<T: Into<Value>> From<T> for Record {
+    fn from(t: T) -> Record {
+        Record {
+            value: Some(t.into()),
+        }
+    }
+}
+
+impl Record {
+    pub fn to_vec(&self) -> Vec<u8> {
+        match self.value.as_ref().unwrap() {
+            Value::Vi64(v) => format!("{}", v).as_bytes().into(),
+            Value::Vbytes(v) => v.clone(),
+        }
     }
 }
 

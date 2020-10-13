@@ -229,7 +229,7 @@ impl RedisApi {
 
         let repl = rx.await?.pop().unwrap_or(None);
         if let Some(v) = repl {
-            return Ok(Response::Data(v));
+            return Ok(Response::Data(v.to_vec()));
         }
 
         Ok(Response::Nil)

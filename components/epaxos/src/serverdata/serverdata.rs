@@ -7,7 +7,6 @@ use crate::conf::NodeId;
 use crate::qpaxos::ReplicaId;
 use crate::replica::Replica;
 use crate::RangeLookupError;
-use crate::Storage;
 use std::{collections::BTreeMap, sync::Arc};
 
 /// ServerData is shared between threads or coroutine.
@@ -28,7 +27,7 @@ impl ServerData {
         let mut rs = BTreeMap::new();
         for (rid, rinfo) in cluster.replicas.iter() {
             if rinfo.node_id == node_id {
-                let rp = Replica::new(*rid, &cluster, Storage::new(*rid, sto.clone())).unwrap();
+                let rp = Replica::new(*rid, &cluster, sto.clone()).unwrap();
                 rs.insert(*rid, rp);
             }
         }

@@ -37,12 +37,13 @@ async fn test_replica_exec_thread() {
                 }
             }
 
-            delay_for(Duration::from_millis(10)).await;
+            delay_for(Duration::from_millis(100)).await;
         }
 
         for cmd in inst.cmds.iter() {
-            let v = sto.get_kv(&cmd.key).unwrap().unwrap();
-            assert_eq!(v, cmd.value);
+            let rst = sto.get_kv(&cmd.key);
+            let v = rst.unwrap().unwrap();
+            assert_eq!(v.to_vec(), cmd.value);
         }
     }
 }

@@ -21,6 +21,7 @@ use crate::qpaxos::ReplicateRequest;
 use crate::replica::ReplicaError;
 use crate::replication::RpcHandlerError;
 use crate::Iter;
+use crate::Record;
 use crate::StorageAPI;
 use std::collections::HashMap;
 use std::sync::Arc;
@@ -79,7 +80,7 @@ impl From<(ReplicaId, String, bool)> for ReplicaPeer {
     }
 }
 
-pub type ExecRst = Vec<Option<Vec<u8>>>;
+pub type ExecRst = Vec<Option<Record>>;
 
 /// structure to represent a replica
 pub struct Replica {
@@ -93,14 +94,11 @@ pub struct Replica {
 
 impl Replica {
     /// create a new Replica
-    pub fn new<T: RawKV>(
+    pub fn new(
         rid: ReplicaId,
         cinfo: &ClusterInfo,
-        sto: T,
-    ) -> Result<Replica, ReplicaError>
-    where
-        T: 'static,
-    {
+        sto: Arc<dyn RawKV>,
+    ) -> Result<Replica, ReplicaError> {
         let group = cinfo
             .get_group(rid)
             .ok_or(ReplicaError::ReplicaNotFound(rid))?;
@@ -124,7 +122,7 @@ impl Replica {
             replica_id: rid,
             group_replica_ids: group.replicas.keys().cloned().collect(),
             peers,
-            storage: Storage::new(rid, Arc::new(sto)),
+            storage: Storage::new(rid, sto),
             // TODO get from conf
             committed_timeout: 10000,
             waiting_replies: Mutex::new(HashMap::new()),

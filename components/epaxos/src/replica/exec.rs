@@ -6,6 +6,7 @@ use crate::qpaxos::{Deps, Instance, InstanceId, InstanceIdVec, OpCode};
 use crate::replica::ExecRst;
 use crate::replica::Replica;
 use crate::InstanceIds;
+use crate::Record;
 use crate::ReplicaStatus;
 use crate::StorageAPI;
 use storage::WriteEntry;
@@ -97,8 +98,8 @@ impl Replica {
     ) -> Result<Vec<InstanceId>, StorageError> {
         let mut rst = Vec::with_capacity(insts.len());
         let mut entrys: Vec<WriteEntry> = Vec::with_capacity(insts.len());
-        let mut existed = HashMap::new();
-        let mut replies = Vec::with_capacity(insts.len());
+        let mut existed: HashMap<&Vec<u8>, Option<Record>> = HashMap::new();
+        let mut replies: Vec<(InstanceId, Vec<Option<Record>>)> = Vec::with_capacity(insts.len());
 
         for inst in insts.iter() {
             let iid = inst.instance_id.unwrap();
@@ -106,21 +107,22 @@ impl Replica {
 
             let mut repl = Vec::with_capacity(inst.cmds.len());
             for cmd in inst.cmds.iter() {
-                entrys.push(cmd.into());
+                entrys.push(self.storage.make_cmd_entry(cmd));
 
                 if cmd.op == OpCode::Get as i32 {
                     if !existed.contains_key(&cmd.key) {
-                        let v = self.storage.get_kv(&cmd.key)?;
+                        let v: Option<Record> = self.storage.get_kv(&cmd.key)?;
                         existed.insert(&cmd.key, v);
                     }
-                    repl.push(existed[&cmd.key].clone());
+                    let rcd: &Option<Record> = &existed[&cmd.key];
+                    repl.push(rcd.clone());
                 } else if cmd.op == OpCode::NoOp as i32 {
                     repl.push(None);
                 } else {
-                    let v = if cmd.op == OpCode::Delete as i32 {
+                    let v: Option<Record> = if cmd.op == OpCode::Delete as i32 {
                         None
                     } else {
-                        Some(cmd.value.clone())
+                        Some(cmd.value.clone().into())
                     };
                     existed.insert(&cmd.key, v);
                     repl.push(None);
@@ -133,13 +135,13 @@ impl Replica {
 
         // TODO: Since executed status is moved to ReplciaStatus::Exec, maybe no more instance update is required.
         while let Some(inst) = insts.pop() {
-            entrys.push(inst.into());
+            entrys.push(self.storage.make_inst_entry(&inst));
         }
 
         // TODO: use write batch to update exec-status
 
-        self.storage.set_status(&ReplicaStatus::Exec, &executed)?;
         self.storage.write_batch(&entrys)?;
+        self.storage.set_status(&ReplicaStatus::Exec, &executed)?;
         self.send_replies(replies).await;
         Ok(rst)
     }

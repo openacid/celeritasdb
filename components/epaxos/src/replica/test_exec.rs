@@ -9,6 +9,7 @@ use crate::qpaxos::{Command, Instance, InstanceId};
 use crate::replica::*;
 use crate::testutil;
 use crate::InstanceIds;
+use crate::Record;
 use crate::ReplicaId;
 use crate::ReplicaStatus;
 use crate::StorageAPI;
@@ -103,10 +104,10 @@ fn test_find_missing_instances() {
 async fn test_execute_commands() {
     let rp = new_replica();
     rp.storage
-        .set_kv(&"x".as_bytes().to_vec(), &vec![11])
+        .set_kv(&"x".as_bytes().to_vec(), &vec![11].into())
         .unwrap();
     rp.storage
-        .set_kv(&"y".as_bytes().to_vec(), &vec![22])
+        .set_kv(&"y".as_bytes().to_vec(), &vec![22].into())
         .unwrap();
 
     let cases: &[Instance] = &[
@@ -284,7 +285,7 @@ async fn test_send_reply() {
             println!("got = {:?}", v);
             match &v[0] {
                 Some(r) => {
-                    assert_eq!("vx".as_bytes().to_vec(), &r[..]);
+                    assert_eq!(&Record::from("vx"), r);
                 }
                 _ => assert!(false, "invalid reply"),
             }

@@ -42,6 +42,7 @@ impl From<DBColumnFamily> for &str {
     }
 }
 
+#[derive(Debug)]
 pub enum WriteEntry {
     Nil,
     Set(DBColumnFamily, Vec<u8>, Vec<u8>),
@@ -83,6 +84,16 @@ impl AsStorageKey for Vec<u8> {
     }
 }
 
+impl AsStorageKey for [u8] {
+    fn into_key(&self) -> Vec<u8> {
+        self.into()
+    }
+
+    fn key_len(&self) -> usize {
+        self.len()
+    }
+}
+
 /// WithNameSpace wraps a key with a prefix namespace.
 /// E.g.: key: "abc" -> key with namespace "my_namespace/abc";
 ///
@@ -90,7 +101,7 @@ impl AsStorageKey for Vec<u8> {
 pub trait WithNameSpace {
     /// prepend_ns wraps a key with namespace string, e.g.:
     /// key: "foo" with ns:NameSpace = 5i64: "5/foo".
-    fn prepend_ns<K: AsStorageKey>(&self, key: &K) -> Vec<u8>;
+    fn prepend_ns<K: AsStorageKey + ?Sized>(&self, key: &K) -> Vec<u8>;
 
     /// strip_ns strip namespace prefix from key, If the key belongs to another namespace, it
     /// returns None.
@@ -135,7 +146,7 @@ pub trait RawKV: Send + Sync {
 /// ObjectKV defines access API to access object like KV and provides namespace in order to share a storage with several user.
 pub trait ObjectKV: RawKV + WithNameSpace {
     /// set a new key-value
-    fn set<OK: AsStorageKey, OV: Message + Default>(
+    fn set<OK: AsStorageKey + ?Sized, OV: Message + Default>(
         &self,
         cf: DBColumnFamily,
         key: &OK,
@@ -148,7 +159,7 @@ pub trait ObjectKV: RawKV + WithNameSpace {
 
         self.set_raw(cf, &kbytes, &vbytes)
     }
-    fn get<OK: AsStorageKey, OV: Message + Default>(
+    fn get<OK: AsStorageKey + ?Sized, OV: Message + Default>(
         &self,
         cf: DBColumnFamily,
         key: &OK,
@@ -166,7 +177,11 @@ pub trait ObjectKV: RawKV + WithNameSpace {
     }
 
     /// delete a key
-    fn delete<OK: AsStorageKey>(&self, cf: DBColumnFamily, key: &OK) -> Result<(), StorageError> {
+    fn delete<OK: AsStorageKey + ?Sized>(
+        &self,
+        cf: DBColumnFamily,
+        key: &OK,
+    ) -> Result<(), StorageError> {
         let kbytes = self.prepend_ns(key);
         self.delete_raw(cf, &kbytes)
     }
@@ -238,7 +253,7 @@ impl Storage {
 }
 
 impl WithNameSpace for Storage {
-    fn prepend_ns<K: AsStorageKey>(&self, key: &K) -> Vec<u8> {
+    fn prepend_ns<K: AsStorageKey + ?Sized>(&self, key: &K) -> Vec<u8> {
         let pref = &self.ns.ns;
         let mut k: Vec<u8> = Vec::with_capacity(pref.len() + key.key_len());
         k.extend(pref);
@@ -282,7 +297,8 @@ impl RawKV for Storage {
     }
 
     fn write_batch(&self, entrys: &Vec<WriteEntry>) -> Result<(), StorageError> {
-        self.get_inner().write_batch(entrys)
+        let inn = self.get_inner();
+        inn.write_batch(&entrys)
     }
 }
 

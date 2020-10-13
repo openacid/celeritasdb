@@ -7,8 +7,8 @@ use crate::qpaxos::*;
 use crate::replica::*;
 use crate::testutil;
 use crate::StorageAPI;
+use storage::DBColumnFamily;
 use storage::ObjectKV;
-use storage::{DBColumnFamily, Storage};
 use storage::{MemEngine, RawKV};
 
 use pretty_assertions::assert_eq;
@@ -473,7 +473,7 @@ groups:
 
     let ci = ClusterInfo::from_str(cont).unwrap();
 
-    let mut rp = Replica::new(1, &ci, Storage::new(1, new_mem_sto())).unwrap();
+    let mut rp = Replica::new(1, &ci, new_mem_sto()).unwrap();
     assert_eq!(1, rp.replica_id);
 
     rp.group_replica_ids.sort();
@@ -498,6 +498,6 @@ groups:
         rp.peers[1]
     );
 
-    let rp = Replica::new(4, &ci, Storage::new(4, new_mem_sto()));
+    let rp = Replica::new(4, &ci, new_mem_sto());
     assert!(rp.is_err());
 }
