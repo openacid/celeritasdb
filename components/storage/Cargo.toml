@@ -10,5 +10,5 @@ edition = "2018"
 rocksdb = { git = "https://github.com/tikv/rust-rocksdb.git" }
 quick-error = { version = "1.2.2" }
 tempfile = { version = "3.1.0" }
-prost = { version = "0.6.1" }
+prost = { version = "0.7.0" }
 backtrace = {version= "0.3.53"}
