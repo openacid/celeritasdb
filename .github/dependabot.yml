@@ -1,0 +1,34 @@
+version: 2
+updates:
+- package-ecosystem: cargo
+  directory: "/"
+  schedule:
+    interval: daily
+  open-pull-requests-limit: 10
+  ignore:
+  - dependency-name: tokio-util
+    versions:
+    - 0.6.2
+    - 0.6.3
+    - 0.6.4
+    - 0.6.5
+  - dependency-name: tokio
+    versions:
+    - 1.1.0
+    - 1.1.1
+    - 1.2.0
+    - 1.3.0
+    - 1.4.0
+  - dependency-name: tonic-build
+    versions:
+    - 0.4.0
+    - 0.4.1
+  - dependency-name: pretty_assertions
+    versions:
+    - 0.7.1
+  - dependency-name: redis
+    versions:
+    - 0.19.0
+  - dependency-name: num
+    versions:
+    - 0.3.1
